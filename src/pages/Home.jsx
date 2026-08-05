@@ -1,8 +1,9 @@
 import { useSession } from '../hooks/useSession'
 import { formatarDataLonga, saudacao } from '../lib/dateUtils'
 import DashStats from '../components/home/DashStats'
-import AgendaHoje from '../components/home/AgendaHoje'
+import Calendario from '../components/calendar/Calendario'
 import AvisosFeed from '../components/home/AvisosFeed'
+import BibliotecaLinks from '../components/home/BibliotecaLinks'
 import PlantaoCard from '../components/home/PlantaoCard'
 
 export default function Home() {
@@ -21,22 +22,27 @@ export default function Home() {
 
       <DashStats />
 
-      <div className="two-col" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 'var(--space-6)', alignItems: 'start' }}>
-        <section>
-          <div className="page-eyebrow">Agenda de hoje</div>
-          <AgendaHoje />
-        </section>
+      <section style={{ marginBottom: 'var(--space-7)' }}>
+        <div className="page-eyebrow">Agenda</div>
+        <Calendario />
+      </section>
 
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-6)', alignItems: 'start' }}>
         <section>
           <div className="page-eyebrow">Avisos & Novidades</div>
           <AvisosFeed />
         </section>
-      </div>
 
-      <section style={{ marginTop: 'var(--space-7)' }}>
-        <div className="page-eyebrow">Controle de plantão — semana atual</div>
-        <PlantaoCard />
-      </section>
+        <section>
+          <div className="page-eyebrow">Biblioteca & Processos</div>
+          <BibliotecaLinks />
+        </section>
+
+        <section>
+          <div className="page-eyebrow">Controle de plantão — semana atual</div>
+          <PlantaoCard />
+        </section>
+      </div>
     </div>
   )
 }

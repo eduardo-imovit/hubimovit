@@ -7,6 +7,11 @@ export function hojeISO() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 }
 
+/** Converte um timestamp com timezone (ex: campos timestamptz do Supabase) pro dia local de São Paulo. */
+export function paraDataLocalISO(dataHoraISO) {
+  return new Date(dataHoraISO).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+}
+
 export function formatarDataLonga(date = new Date()) {
   const diaSemana = diaSemanaFormatter.format(date)
   const capitalizado = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1)
@@ -30,13 +35,13 @@ export function saudacao() {
   return 'Boa noite'
 }
 
-export function inicioDaSemanaISO(offsetDias = 0) {
-  const hoje = new Date(`${hojeISO()}T12:00:00`)
-  hoje.setDate(hoje.getDate() + offsetDias)
-  const diaSemana = hoje.getDay()
+export function inicioDaSemanaISO(offsetDias = 0, baseISO = hojeISO()) {
+  const base = new Date(`${baseISO}T12:00:00`)
+  base.setDate(base.getDate() + offsetDias)
+  const diaSemana = base.getDay()
   const diff = diaSemana === 0 ? -6 : 1 - diaSemana
-  hoje.setDate(hoje.getDate() + diff)
-  return hoje.toLocaleDateString('en-CA')
+  base.setDate(base.getDate() + diff)
+  return base.toLocaleDateString('en-CA')
 }
 
 export function diasDaSemana(inicioISO) {
