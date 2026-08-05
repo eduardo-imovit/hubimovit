@@ -15,7 +15,7 @@ function TooltipCampanha({ active, payload }) {
       <div style={{ fontWeight: 600, marginBottom: 4 }}>{d.campanha}</div>
       <div>Canal: {d.canal}</div>
       <div>Investimento: {moeda(d.investimento)}</div>
-      <div>Leads: {d.leads}</div>
+      <div>Leads: {Math.round(d.leads)}</div>
       {d.cpl != null && <div>CPL: {moeda(d.cpl)}</div>}
     </div>
   )
@@ -68,7 +68,7 @@ export default function CampanhasChart({ meta, google }) {
                 <td>{c.canal}</td>
                 <td className="num">{moeda(c.investimento)}</td>
                 <td className="num">{c.cliques}</td>
-                <td className="num">{c.leads}</td>
+                <td className="num">{Math.round(c.leads)}</td>
                 <td className="num">{c.cpl != null ? moeda(c.cpl) : '—'}</td>
               </tr>
             ))}

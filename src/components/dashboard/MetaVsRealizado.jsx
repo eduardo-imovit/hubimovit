@@ -52,7 +52,7 @@ export default function MetaVsRealizado({ metasCampanhas, meta, google }) {
                   ) : '—'}
                 </td>
                 <td className="num">{m.meta_leads ?? '—'}</td>
-                <td className="num">{realizado?.leads ?? '—'}</td>
+                <td className="num">{realizado?.leads != null ? Math.round(realizado.leads) : '—'}</td>
               </tr>
             )
           })}

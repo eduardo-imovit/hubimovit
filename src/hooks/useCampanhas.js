@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { fetchTodasLinhas, supabase } from '../lib/supabaseClient'
 
 export function useCampanhas() {
   const [meta, setMeta] = useState([])
@@ -10,24 +10,25 @@ export function useCampanhas() {
   useEffect(() => {
     let ativo = true
     Promise.all([
-      supabase
-        .from('dashboard_meta_ads')
-        .select('data, campanha, anuncio, investimento, alcance_impressoes, cliques, leads_conversoes')
-        .range(0, 4999),
-      supabase
-        .from('dashboard_google_ads')
-        .select('data, campanha, investimento, alcance_impressoes, cliques, leads_conversoes')
-        .range(0, 4999),
-    ]).then(([metaRes, googleRes]) => {
-      if (!ativo) return
-      if (metaRes.error) setErro(metaRes.error.message)
-      else if (googleRes.error) setErro(googleRes.error.message)
-      else {
-        setMeta(metaRes.data ?? [])
-        setGoogle(googleRes.data ?? [])
-      }
-      setCarregando(false)
-    })
+      fetchTodasLinhas(() =>
+        supabase.from('dashboard_meta_ads').select('data, campanha, anuncio, investimento, alcance_impressoes, cliques, leads_conversoes')
+      ),
+      fetchTodasLinhas(() =>
+        supabase.from('dashboard_google_ads').select('data, campanha, investimento, alcance_impressoes, cliques, leads_conversoes')
+      ),
+    ])
+      .then(([metaData, googleData]) => {
+        if (!ativo) return
+        setMeta(metaData)
+        setGoogle(googleData)
+      })
+      .catch((error) => {
+        if (!ativo) return
+        setErro(error.message)
+      })
+      .finally(() => {
+        if (ativo) setCarregando(false)
+      })
     return () => { ativo = false }
   }, [])
 
