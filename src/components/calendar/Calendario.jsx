@@ -26,12 +26,22 @@ function agruparPorDia(itens, obterDataISO) {
   return mapa
 }
 
+function opcoesPorFrequencia(valores) {
+  const contagem = new Map()
+  for (const v of valores) {
+    if (!v) continue
+    contagem.set(v, (contagem.get(v) ?? 0) + 1)
+  }
+  return [...contagem.entries()].sort((a, b) => b[1] - a[1]).map(([valor]) => valor)
+}
+
 export default function Calendario() {
   const [visao, setVisao] = useState('mes')
   const [fonte, setFonte] = useState('equipe')
   const [dataFoco, setDataFoco] = useState(hojeISO())
   const [mostrarAgendar, setMostrarAgendar] = useState(false)
   const [mostrarBloquear, setMostrarBloquear] = useState(false)
+  const [filtroColaborador, setFiltroColaborador] = useState('')
 
   const semanas = useMemo(() => (visao === 'mes' ? matrizDoMes(dataFoco) : null), [visao, dataFoco])
   const diasDaSemanaAtual = useMemo(() => diasDaSemana(inicioDaSemanaISO(0, dataFoco)), [dataFoco])
@@ -48,9 +58,14 @@ export default function Calendario() {
   const { datas: datasComemorativas, criarDataComemorativa, desativarDataComemorativa } = useDatasComemorativas()
   const { colaboradores } = useColaboradores()
 
+  const colaboradoresDaAgenda = useMemo(() => opcoesPorFrequencia(atividades.map((a) => a.nomeusuario)), [atividades])
+
   const eventosPorDia = useMemo(() => {
     if (fonte === 'equipe') {
-      const porDia = agruparPorDia(atividades, (a) => a.datahorainicio.slice(0, 10))
+      const atividadesFiltradas = filtroColaborador
+        ? atividades.filter((a) => a.nomeusuario === filtroColaborador)
+        : atividades
+      const porDia = agruparPorDia(atividadesFiltradas, (a) => a.datahorainicio.slice(0, 10))
       return Object.fromEntries(
         Object.entries(porDia).map(([dia, itens]) => [
           dia,
@@ -71,7 +86,7 @@ export default function Calendario() {
       mapa[dia].sort((a, b) => a.hora.localeCompare(b.hora))
     }
     return mapa
-  }, [fonte, atividades, ocupacoes, bloqueios])
+  }, [fonte, atividades, ocupacoes, bloqueios, filtroColaborador])
 
   function navegar(direcao) {
     if (visao === 'dia') setDataFoco(direcao === -1 ? diaAnterior(dataFoco) : diaSeguinte(dataFoco))
@@ -104,6 +119,14 @@ export default function Calendario() {
             <button type="button" className={fonte === 'equipe' ? 'is-active' : ''} onClick={() => setFonte('equipe')}>Equipe</button>
             <button type="button" className={fonte === 'fotografo' ? 'is-active' : ''} onClick={() => setFonte('fotografo')}>Fotógrafo</button>
           </div>
+          {fonte === 'equipe' && (
+            <select value={filtroColaborador} onChange={(e) => setFiltroColaborador(e.target.value)}>
+              <option value="">Colaborador: todos</option>
+              {colaboradoresDaAgenda.map((nome) => (
+                <option key={nome} value={nome}>{nome}</option>
+              ))}
+            </select>
+          )}
           <div className="segmented">
             {VISOES.map((v) => (
               <button key={v.valor} type="button" className={visao === v.valor ? 'is-active' : ''} onClick={() => setVisao(v.valor)}>{v.label}</button>

@@ -200,6 +200,16 @@
 .cal-nav-title { font-family: var(--font-serif); font-size: var(--text-lg); font-weight: var(--weight-light); color: var(--grafite); min-width: 180px; }
 .cal-nav-arrows { display: flex; gap: 4px; }
 .cal-nav-right { display: flex; align-items: center; gap: var(--space-3); }
+.cal-nav select {
+  height: 36px;
+  padding: 0 var(--space-3);
+  border: 1.5px solid var(--champagne);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  background: var(--branco);
+  color: var(--grafite);
+}
+.cal-nav select:focus { outline: none; border-color: var(--coral); }
 
 .cal-allday-strip {
   display: flex;
