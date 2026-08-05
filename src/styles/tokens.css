@@ -1,0 +1,175 @@
+/* ============================================================
+   IMOVIT HUB — DESIGN TOKENS v2.0
+   "Lares com a sua alma."
+   ------------------------------------------------------------
+   Fonte única de verdade. Importe em qualquer tela do Hub.
+   ============================================================ */
+
+:root {
+  /* ---------- BASE / NEUTROS ---------- */
+  --creme:        #F5F0E8;
+  --champagne:    #EDE7D9;
+  --pergaminho:   #FAF6EF;   /* base mais clara para overlays */
+  --grafite:      #2D2D2D;
+  --grafite-mid:  #444444;
+  --grafite-soft: #888888;
+  --grafite-fade: #B8B5B0;
+  --branco:       #FFFFFF;
+
+  /* ---------- CORAL — CORAÇÃO DA IMOVIT ---------- */
+  --coral:        #E8593C;
+  --coral-light:  #F5C4B3;
+  --coral-soft:   #FDE8E0;
+  --coral-dark:   #B93A18;
+
+  /* ---------- SEGMENTOS ---------- */
+  --solteiros:        #D4755A;   /* Argila */
+  --solteiros-soft:   #F5E8E3;
+  --casais:           #C9909A;   /* Rosé */
+  --casais-soft:      #F5E8EA;
+  --ninho-cheio:      #5C8A6B;   /* Sálvia */
+  --ninho-cheio-soft: #E5F0E8;
+  --ninho-vazio:      #C9A96E;   /* Gold Fosco */
+  --ninho-vazio-soft: #F5EEDF;
+  --investidores:     #2B4A6B;   /* Petróleo */
+  --investidores-soft:#E0E9F2;
+
+  /* ---------- SEMÂNTICOS ---------- */
+  --success:        #2E7D4F;
+  --success-soft:   #E5F1EA;
+  --warning:        #B8741A;
+  --warning-soft:   #FBEFD6;
+  --danger:         #C13E2C;
+  --danger-soft:    #FBE5E0;
+  --info:           #2C5F8D;
+  --info-soft:      #E2EBF4;
+
+  /* ---------- TIPOGRAFIA ---------- */
+  --font-serif:   'Noto Serif Display', 'Iowan Old Style', Georgia, serif;
+  --font-sans:    'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono:    'JetBrains Mono', 'SF Mono', Menlo, monospace;
+
+  /* Escala tipográfica */
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-md:   17px;
+  --text-lg:   20px;
+  --text-xl:   26px;
+  --text-2xl:  34px;
+  --text-3xl:  48px;
+  --text-4xl:  64px;
+
+  /* Pesos */
+  --weight-light:    300;
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+
+  /* ---------- ESPAÇAMENTO (8pt) ---------- */
+  --space-0:  0px;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-7:  48px;
+  --space-8:  64px;
+  --space-9:  96px;
+  --space-10: 128px;
+
+  /* ---------- LAYOUT / GRID ---------- */
+  --grid-cols: 12;
+  --grid-gap:  var(--space-5);
+  --container-sm:  640px;
+  --container-md:  900px;
+  --container-lg:  1200px;
+  --container-xl:  1440px;
+
+  /* ---------- BORDAS & RAIOS ---------- */
+  --radius-xs:    2px;
+  --radius-sm:    4px;
+  --radius-md:    8px;
+  --radius-lg:    14px;
+  --radius-xl:    20px;
+  --radius-2xl:   28px;
+  --radius-full:  999px;
+
+  --border:        1px solid var(--champagne);
+  --border-strong: 1.5px solid var(--champagne);
+  --border-focus:  1.5px solid var(--coral);
+
+  /* ---------- ELEVAÇÃO ---------- */
+  --shadow-xs: 0 1px 2px rgba(45,45,45,.05);
+  --shadow-sm: 0 1px 3px rgba(45,45,45,.08);
+  --shadow-md: 0 4px 16px rgba(45,45,45,.10);
+  --shadow-lg: 0 8px 32px rgba(45,45,45,.12);
+  --shadow-xl: 0 20px 60px rgba(45,45,45,.18);
+  --shadow-coral: 0 6px 24px rgba(232,89,60,.25);
+
+  /* ---------- MOTION ---------- */
+  /* Durações — escala curta porque a marca é boutique, gestos pequenos */
+  --duration-instant: 80ms;
+  --duration-fast:    160ms;
+  --duration-base:    220ms;
+  --duration-slow:    360ms;
+  --duration-poetic:  600ms;   /* hero, abertura, momentos editoriais */
+
+  /* Curvas — emocional vs. técnico */
+  --ease-out:     cubic-bezier(.2, .8, .2, 1);          /* default */
+  --ease-in-out:  cubic-bezier(.65, 0, .35, 1);
+  --ease-soft:    cubic-bezier(.4, 0, .2, 1);           /* curadoria */
+  --ease-spring:  cubic-bezier(.34, 1.56, .64, 1);      /* feedback de ação */
+
+  --transition-base: all var(--duration-fast) var(--ease-out);
+  --transition-color: color var(--duration-fast) var(--ease-out),
+                      background-color var(--duration-fast) var(--ease-out),
+                      border-color var(--duration-fast) var(--ease-out);
+
+  /* ---------- Z-INDEX ---------- */
+  --z-base:    1;
+  --z-sticky:  100;
+  --z-drawer:  200;
+  --z-modal:   300;
+  --z-toast:   400;
+  --z-tooltip: 500;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: var(--font-sans);
+  background: var(--creme);
+  color: var(--grafite);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+img, svg { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+
+/* ============================================================
+   UTILS — apenas o essencial
+   ============================================================ */
+.font-serif { font-family: var(--font-serif); }
+.font-sans  { font-family: var(--font-sans); }
+.font-mono  { font-family: var(--font-mono); }
+
+.text-coral   { color: var(--coral); }
+.text-grafite { color: var(--grafite); }
+.text-soft    { color: var(--grafite-soft); }
+
+.muted { color: var(--grafite-soft); }
+.italic { font-style: italic; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
