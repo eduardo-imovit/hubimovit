@@ -27,7 +27,7 @@ export default function Home() {
         <Calendario />
       </section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--space-6)', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'var(--space-6)', alignItems: 'start', marginBottom: 'var(--space-7)' }}>
         <section>
           <div className="page-eyebrow">Avisos & Novidades</div>
           <AvisosFeed />
@@ -37,12 +37,12 @@ export default function Home() {
           <div className="page-eyebrow">Biblioteca & Processos</div>
           <BibliotecaLinks />
         </section>
-
-        <section>
-          <div className="page-eyebrow">Controle de plantão — semana atual</div>
-          <PlantaoCard />
-        </section>
       </div>
+
+      <section>
+        <div className="page-eyebrow">Controle de plantão — semana atual</div>
+        <PlantaoCard />
+      </section>
     </div>
   )
 }
