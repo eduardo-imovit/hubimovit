@@ -1,20 +1,20 @@
 import KanbanCard from './KanbanCard'
+import { FASES_FUNIL } from '../../lib/atendimentos'
 
-const COLUNAS = ['Em atendimento', 'Negócio realizado', 'Descartado']
 const LIMITE_POR_COLUNA = 120
 
 export default function KanbanBoard({ atendimentos }) {
   return (
     <div className="kanban">
-      {COLUNAS.map((situacao) => {
-        const itens = atendimentos.filter((a) => a.situacao === situacao)
+      {FASES_FUNIL.map(({ fase, label }) => {
+        const itens = atendimentos.filter((a) => a.fase === fase)
         const visiveis = itens.slice(0, LIMITE_POR_COLUNA)
         const restantes = itens.length - visiveis.length
 
         return (
-          <div className="kanban-col" key={situacao}>
+          <div className="kanban-col" key={fase}>
             <div className="kanban-col-header">
-              <span className="kanban-col-title">{situacao}</span>
+              <span className="kanban-col-title">{label}</span>
               <span className="kanban-count">{itens.length}</span>
             </div>
             {visiveis.map((a) => (

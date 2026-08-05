@@ -1,3 +1,5 @@
+import { SITUACOES } from '../../lib/atendimentos'
+
 function opcoesPorFrequencia(valores) {
   const contagem = new Map()
   for (const v of valores) {
@@ -17,6 +19,13 @@ export default function KanbanFiltros({ atendimentos, filtros, setFiltros }) {
 
   return (
     <div className="filters-bar">
+      <select value={filtros.situacao} onChange={(e) => set('situacao', e.target.value)}>
+        <option value="">Situação: todas</option>
+        {SITUACOES.map((s) => (
+          <option key={s} value={s}>{s}</option>
+        ))}
+      </select>
+
       <select value={filtros.finalidade} onChange={(e) => set('finalidade', e.target.value)}>
         <option value="">Finalidade: todas</option>
         <option value="Venda">Venda</option>
@@ -46,11 +55,11 @@ export default function KanbanFiltros({ atendimentos, filtros, setFiltros }) {
       <input type="date" value={filtros.dataInicio} onChange={(e) => set('dataInicio', e.target.value)} title="Entrada a partir de" />
       <input type="date" value={filtros.dataFim} onChange={(e) => set('dataFim', e.target.value)} title="Entrada até" />
 
-      {(filtros.finalidade || filtros.funil || filtros.corretor || filtros.midia || filtros.dataInicio || filtros.dataFim) && (
+      {(filtros.situacao || filtros.finalidade || filtros.funil || filtros.corretor || filtros.midia || filtros.dataInicio || filtros.dataFim) && (
         <button
           type="button"
           className="btn btn-ghost btn-sm"
-          onClick={() => setFiltros({ finalidade: '', funil: '', corretor: '', midia: '', dataInicio: '', dataFim: '' })}
+          onClick={() => setFiltros({ situacao: '', finalidade: '', funil: '', corretor: '', midia: '', dataInicio: '', dataFim: '' })}
         >
           Limpar filtros
         </button>

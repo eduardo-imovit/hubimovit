@@ -3,7 +3,7 @@ import { useAtendimentos } from '../hooks/useAtendimentos'
 import KanbanFiltros from '../components/kanban/KanbanFiltros'
 import KanbanBoard from '../components/kanban/KanbanBoard'
 
-const FILTROS_VAZIOS = { finalidade: '', funil: '', corretor: '', midia: '', dataInicio: '', dataFim: '' }
+const FILTROS_VAZIOS = { situacao: '', finalidade: '', funil: '', corretor: '', midia: '', dataInicio: '', dataFim: '' }
 
 export default function Kanban() {
   const { atendimentos, carregando, erro } = useAtendimentos()
@@ -11,6 +11,7 @@ export default function Kanban() {
 
   const filtrados = useMemo(() => {
     return atendimentos.filter((a) => {
+      if (filtros.situacao && a.situacao !== filtros.situacao) return false
       if (filtros.finalidade && a.finalidade !== filtros.finalidade) return false
       if (filtros.funil && a.funil !== filtros.funil) return false
       if (filtros.corretor && a.corretor !== filtros.corretor) return false
