@@ -291,6 +291,8 @@
 }
 .cal-pill-ocupado { background: var(--investidores); }
 .cal-pill-bloqueado { background: var(--grafite-fade); color: var(--grafite); }
+.cal-pill-pendente { outline: 2px solid var(--warning); outline-offset: 1px; display: inline-flex; align-items: center; gap: 4px; }
+.cal-pill-pendente-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--warning); flex-shrink: 0; }
 
 .cal-source-toggle { display: inline-flex; background: var(--champagne); padding: 3px; border-radius: var(--radius-md); gap: 2px; }
 .cal-source-toggle button {
@@ -305,6 +307,84 @@
   transition: var(--transition-base);
 }
 .cal-source-toggle button.is-active { background: var(--branco); color: var(--grafite); box-shadow: var(--shadow-xs); }
+
+/* ------- DASHBOARD: SEÇÕES ------- */
+.dash-section {
+  background: var(--branco);
+  border: 1px solid var(--champagne);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+}
+.dash-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.dash-section-title { font-family: var(--font-serif); font-size: var(--text-lg); font-weight: var(--weight-regular); color: var(--grafite); }
+.dash-section-sub { font-size: var(--text-xs); color: var(--grafite-soft); margin-top: 2px; }
+.dash-section .filters-bar { margin-bottom: var(--space-5); }
+
+.dash-media-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: var(--space-6);
+  align-items: start;
+}
+.dash-media-layout .kpi-grid { margin-bottom: 0; }
+@media (max-width: 900px) {
+  .dash-media-layout { grid-template-columns: 1fr; }
+}
+
+/* ------- DASHBOARD: MINI FUNIL ------- */
+.mini-funnel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--pergaminho);
+  border: 1px solid var(--champagne);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  height: 100%;
+}
+.mini-funnel-title { font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--grafite-soft); font-weight: var(--weight-medium); }
+.mini-funnel-row { display: flex; flex-direction: column; gap: 6px; }
+.mini-funnel-row-label { display: flex; justify-content: space-between; gap: var(--space-2); font-size: var(--text-xs); color: var(--grafite); font-weight: var(--weight-medium); }
+.mini-funnel-track { height: 10px; background: var(--champagne); border-radius: var(--radius-full); overflow: hidden; }
+.mini-funnel-fill { height: 100%; border-radius: var(--radius-full); transition: width var(--duration-slow) var(--ease-out); }
+
+/* ------- DASHBOARD: CAMPANHAS POR ETAPA ------- */
+.etapa-group {
+  border: 1px solid var(--champagne);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-4);
+}
+.etapa-group:last-child { margin-bottom: 0; }
+.etapa-group summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  background: var(--pergaminho);
+}
+.etapa-group summary::-webkit-details-marker { display: none; }
+.etapa-group summary::after { content: '›'; font-size: var(--text-lg); color: var(--grafite-soft); transition: transform var(--duration-fast) var(--ease-out); }
+.etapa-group[open] summary::after { transform: rotate(90deg); }
+.etapa-group-title { display: flex; align-items: center; gap: var(--space-3); }
+.etapa-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.etapa-group-name { font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--grafite); }
+.etapa-group-count { font-size: var(--text-xs); color: var(--grafite-soft); }
+.etapa-group-stats { display: flex; gap: var(--space-5); font-size: var(--text-xs); color: var(--grafite-soft); font-variant-numeric: tabular-nums; }
+.etapa-group-stats strong { color: var(--grafite); font-weight: var(--weight-semibold); }
+.etapa-group .data-table { border: none; border-radius: 0; border-top: 1px solid var(--champagne); }
 
 /* ------- ESTADOS ------- */
 .hub-loading, .hub-error {

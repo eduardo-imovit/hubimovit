@@ -50,3 +50,28 @@ export function agregarPorCampanha(linhas) {
     .map((c) => ({ ...c, cpl: c.leads > 0 ? c.investimento / c.leads : null }))
     .sort((a, b) => b.investimento - a.investimento)
 }
+
+export const ETAPAS_FUNIL = [
+  { etapa: 'topo', label: 'Topo (reconhecimento)', cor: 'var(--info)' },
+  { etapa: 'mql', label: 'MQL', cor: 'var(--warning)' },
+  { etapa: 'lead', label: 'Lead (conversão)', cor: 'var(--success)' },
+]
+const ETAPA_NAO_CLASSIFICADO = { etapa: 'nao_classificado', label: 'Não classificado', cor: 'var(--grafite-fade)' }
+
+/** Agrupa campanhas já agregadas (agregarPorCampanha) pela etapa de funil cadastrada em metas_campanhas. */
+export function agruparPorEtapaFunil(campanhas, classificacao) {
+  const grupos = new Map(ETAPAS_FUNIL.map((e) => [e.etapa, { ...e, campanhas: [], investimento: 0, leads: 0 }]))
+  grupos.set(ETAPA_NAO_CLASSIFICADO.etapa, { ...ETAPA_NAO_CLASSIFICADO, campanhas: [], investimento: 0, leads: 0 })
+
+  for (const c of campanhas) {
+    const etapa = classificacao.get(c.campanha) ?? 'nao_classificado'
+    const grupo = grupos.get(etapa) ?? grupos.get('nao_classificado')
+    grupo.campanhas.push(c)
+    grupo.investimento += c.investimento
+    grupo.leads += c.leads
+  }
+
+  return [...grupos.values()]
+    .map((g) => ({ ...g, campanhas: g.campanhas.sort((a, b) => b.investimento - a.investimento), cpl: g.leads > 0 ? g.investimento / g.leads : null }))
+    .filter((g) => g.campanhas.length > 0)
+}
