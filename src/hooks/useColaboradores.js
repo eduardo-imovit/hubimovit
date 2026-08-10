@@ -10,7 +10,7 @@ export function useColaboradores() {
     let ativo = true
     supabase
       .from('colaboradores_raw')
-      .select('id_corretor_crm, nome_completo, email_oficial, equipe, cargo, ativo')
+      .select('id_corretor_crm, nome_completo, email_oficial, equipe, cargo, ativo, data_nascimento, data_admissao')
       .eq('ativo', true)
       .order('nome_completo', { ascending: true })
       .then(({ data, error }) => {

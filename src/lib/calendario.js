@@ -78,6 +78,25 @@ export function semanaISO(dataISO) {
   return `${d.getFullYear()}-W${String(numeroSemana).padStart(2, '0')}`
 }
 
+/** Reuniões fixas da equipe: rodada de negócios toda terça e reunião geral na primeira sexta do mês, ambas às 09:30. */
+export function reunioesRecorrentesNoIntervalo(inicioISO, fimISO) {
+  const eventos = []
+  const atual = new Date(`${inicioISO}T12:00:00`)
+  const fim = new Date(`${fimISO}T12:00:00`)
+  while (atual <= fim) {
+    const dia = atual.toLocaleDateString('en-CA')
+    const diaSemana = atual.getDay()
+    if (diaSemana === 2) {
+      eventos.push({ id: `rodada-negocios-${dia}`, dataISO: dia, hora: `${dia}T09:30:00`, titulo: 'Rodada de negócios' })
+    }
+    if (diaSemana === 5 && atual.getDate() <= 7) {
+      eventos.push({ id: `reuniao-geral-${dia}`, dataISO: dia, hora: `${dia}T09:30:00`, titulo: 'Reunião geral' })
+    }
+    atual.setDate(atual.getDate() + 1)
+  }
+  return eventos
+}
+
 export function dataComemorativaOcorreEm(dataComemorativa, dataISO) {
   if (dataComemorativa.recorrente_anual) {
     const anoAlvo = Number(dataISO.slice(0, 4))

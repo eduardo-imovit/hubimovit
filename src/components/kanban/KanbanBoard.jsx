@@ -1,14 +1,26 @@
+import { useEffect, useState } from 'react'
 import KanbanCard from './KanbanCard'
 import { FASES_FUNIL } from '../../lib/atendimentos'
 
-const LIMITE_POR_COLUNA = 120
+const LOTE = 10
 
 export default function KanbanBoard({ atendimentos }) {
+  const [visiveisPorFase, setVisiveisPorFase] = useState({})
+
+  useEffect(() => {
+    setVisiveisPorFase({})
+  }, [atendimentos])
+
+  function carregarMais(fase) {
+    setVisiveisPorFase((prev) => ({ ...prev, [fase]: (prev[fase] ?? LOTE) + LOTE }))
+  }
+
   return (
     <div className="kanban">
       {FASES_FUNIL.map(({ fase, label }) => {
         const itens = atendimentos.filter((a) => a.fase === fase)
-        const visiveis = itens.slice(0, LIMITE_POR_COLUNA)
+        const limite = visiveisPorFase[fase] ?? LOTE
+        const visiveis = itens.slice(0, limite)
         const restantes = itens.length - visiveis.length
 
         return (
@@ -21,9 +33,14 @@ export default function KanbanBoard({ atendimentos }) {
               <KanbanCard key={a.id} atendimento={a} />
             ))}
             {restantes > 0 && (
-              <div className="plantao-empty" style={{ textAlign: 'center', padding: 'var(--space-3)' }}>
-                +{restantes} — refine os filtros para ver mais
-              </div>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                style={{ width: '100%', justifyContent: 'center' }}
+                onClick={() => carregarMais(fase)}
+              >
+                Carregar mais ({restantes} restantes)
+              </button>
             )}
             {itens.length === 0 && (
               <div className="empty" style={{ padding: 'var(--space-5) var(--space-3)' }}>

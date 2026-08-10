@@ -10,7 +10,12 @@ export default function EventoPilula({ evento, mostrarHora = false }) {
     return <div className="cal-pill cal-pill-bloqueado">{texto}</div>
   }
   return (
-    <div className="cal-pill" style={{ background: evento.cor || 'var(--champagne)', color: evento.cor ? 'var(--branco)' : 'var(--grafite-mid)' }}>
+    <div
+      className={`cal-pill${evento.pendente ? ' cal-pill-pendente' : ''}`}
+      style={{ background: evento.cor || 'var(--champagne)', color: evento.cor ? 'var(--branco)' : 'var(--grafite-mid)' }}
+      title={evento.pendente ? 'Tarefa pendente (em atraso)' : undefined}
+    >
+      {evento.pendente && <span className="cal-pill-pendente-dot" />}
       {texto}
     </div>
   )

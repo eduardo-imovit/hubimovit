@@ -27,6 +27,7 @@ export default function DatasComemorativasFaixa({ datas, inicioISO, fimISO, onCr
       }
     }
   }
+  ocorrencias.sort((a, b) => a.ocorrenciaISO.localeCompare(b.ocorrenciaISO))
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -47,14 +48,16 @@ export default function DatasComemorativasFaixa({ datas, inicioISO, fimISO, onCr
           <div className="cal-allday-strip" style={{ marginBottom: 0 }}>
             {ocorrencias.map((o) => (
               <span className="cal-allday-pill" key={`${o.id}-${o.ocorrenciaISO}`}>
-                🎉 {o.nome} — {o.ocorrenciaISO.slice(8, 10)}/{o.ocorrenciaISO.slice(5, 7)}
-                <button
-                  type="button"
-                  onClick={() => onRemover(o.id)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', marginLeft: 4, padding: 0 }}
-                >
-                  ✕
-                </button>
+                {o.emoji ?? '🎉'} {o.nome} — {o.ocorrenciaISO.slice(8, 10)}/{o.ocorrenciaISO.slice(5, 7)}
+                {o.removivel !== false && (
+                  <button
+                    type="button"
+                    onClick={() => onRemover(o.id)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', marginLeft: 4, padding: 0 }}
+                  >
+                    ✕
+                  </button>
+                )}
               </span>
             ))}
           </div>

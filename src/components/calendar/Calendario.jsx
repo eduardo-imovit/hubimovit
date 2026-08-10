@@ -4,7 +4,7 @@ import { useFotografoAgenda } from '../../hooks/useFotografoAgenda'
 import { useDatasComemorativas } from '../../hooks/useDatasComemorativas'
 import { useColaboradores } from '../../hooks/useColaboradores'
 import { diasDaSemana, formatarDataLonga, hojeISO, inicioDaSemanaISO, paraDataLocalISO } from '../../lib/dateUtils'
-import { diaAnterior, diaSeguinte, formatarMesAno, matrizDoMes, mesAnterior, mesSeguinte, semanaISO } from '../../lib/calendario'
+import { diaAnterior, diaSeguinte, formatarMesAno, matrizDoMes, mesAnterior, mesSeguinte, reunioesRecorrentesNoIntervalo, semanaISO } from '../../lib/calendario'
 import CalendarioMes from './CalendarioMes'
 import CalendarioSemana from './CalendarioSemana'
 import CalendarioDia from './CalendarioDia'
@@ -58,7 +58,27 @@ export default function Calendario() {
   const { datas: datasComemorativas, criarDataComemorativa, desativarDataComemorativa } = useDatasComemorativas()
   const { colaboradores } = useColaboradores()
 
+  const datasEquipe = useMemo(() => {
+    const datas = []
+    for (const c of colaboradores) {
+      if (c.data_nascimento) {
+        datas.push({ id: `aniv-${c.id_corretor_crm}`, nome: `Aniversário — ${c.nome_completo}`, data: c.data_nascimento, recorrente_anual: true, emoji: '🎂', removivel: false })
+      }
+      if (c.data_admissao) {
+        datas.push({ id: `admissao-${c.id_corretor_crm}`, nome: `Empresa — ${c.nome_completo}`, data: c.data_admissao, recorrente_anual: true, emoji: '🏢', removivel: false })
+      }
+    }
+    return datas
+  }, [colaboradores])
+
+  const datasFaixa = useMemo(() => [...datasComemorativas, ...datasEquipe], [datasComemorativas, datasEquipe])
+
   const colaboradoresDaAgenda = useMemo(() => opcoesPorFrequencia(atividades.map((a) => a.nomeusuario)), [atividades])
+
+  const reunioesRecorrentes = useMemo(
+    () => reunioesRecorrentesNoIntervalo(inicioISO, fimISO),
+    [inicioISO, fimISO],
+  )
 
   const eventosPorDia = useMemo(() => {
     if (fonte === 'equipe') {
@@ -66,12 +86,30 @@ export default function Calendario() {
         ? atividades.filter((a) => a.nomeusuario === filtroColaborador)
         : atividades
       const porDia = agruparPorDia(atividadesFiltradas, (a) => a.datahorainicio.slice(0, 10))
-      return Object.fromEntries(
+      const agora = new Date()
+      const mapa = Object.fromEntries(
         Object.entries(porDia).map(([dia, itens]) => [
           dia,
-          itens.map((a) => ({ id: a.codigo, hora: a.datahorainicio, titulo: a.titulo || a.nometipo, sub: a.nomeusuario, cor: a.cortipo, tipo: 'atividade' })),
+          itens.map((a) => ({
+            id: a.codigo,
+            hora: a.datahorainicio,
+            titulo: a.titulo || a.nometipo,
+            sub: a.nomeusuario,
+            cor: a.cortipo,
+            tipo: 'atividade',
+            realizada: a.realizada,
+            pendente: !a.realizada && new Date(a.datahorainicio) < agora,
+          })),
         ]),
       )
+      for (const r of reunioesRecorrentes) {
+        const item = { id: r.id, hora: r.hora, titulo: r.titulo, sub: null, cor: 'var(--info)', tipo: 'reuniao' }
+        mapa[r.dataISO] = mapa[r.dataISO] ? [item, ...mapa[r.dataISO]] : [item]
+      }
+      for (const dia of Object.keys(mapa)) {
+        mapa[dia].sort((a, b) => a.hora.localeCompare(b.hora))
+      }
+      return mapa
     }
     const ocupPorDia = agruparPorDia(ocupacoes, (o) => paraDataLocalISO(o.data_hora_inicio))
     const bloqPorDia = agruparPorDia(bloqueios, (b) => paraDataLocalISO(b.data_hora_inicio))
@@ -161,7 +199,7 @@ export default function Calendario() {
       )}
 
       <DatasComemorativasFaixa
-        datas={datasComemorativas}
+        datas={datasFaixa}
         inicioISO={inicioISO}
         fimISO={fimISO}
         onCriar={criarDataComemorativa}
