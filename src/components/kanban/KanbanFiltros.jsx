@@ -1,4 +1,4 @@
-import { SITUACOES } from '../../lib/atendimentos'
+import { FILTROS_VAZIOS, SITUACOES } from '../../lib/atendimentos'
 
 function opcoesPorFrequencia(valores) {
   const contagem = new Map()
@@ -59,7 +59,7 @@ export default function KanbanFiltros({ atendimentos, filtros, setFiltros }) {
         <button
           type="button"
           className="btn btn-ghost btn-sm"
-          onClick={() => setFiltros({ situacao: '', finalidade: '', funil: '', corretor: '', midia: '', dataInicio: '', dataFim: '' })}
+          onClick={() => setFiltros(FILTROS_VAZIOS)}
         >
           Limpar filtros
         </button>

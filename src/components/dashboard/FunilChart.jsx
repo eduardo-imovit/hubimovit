@@ -1,8 +1,5 @@
-const SITUACAO_COR = {
-  'Em atendimento': 'var(--info)',
-  'Negócio realizado': 'var(--success)',
-  Descartado: 'var(--grafite-fade)',
-}
+import { SITUACAO_COR } from '../../lib/atendimentos'
+
 const ORDEM_SITUACAO = ['Em atendimento', 'Negócio realizado', 'Descartado']
 
 function agruparPorFunil(atendimentos, funil) {

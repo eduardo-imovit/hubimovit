@@ -1,26 +1,15 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAtendimentos } from '../hooks/useAtendimentos'
+import { FILTROS_VAZIOS, filtrarAtendimentos } from '../lib/atendimentos'
 import KanbanFiltros from '../components/kanban/KanbanFiltros'
 import KanbanBoard from '../components/kanban/KanbanBoard'
-
-const FILTROS_VAZIOS = { situacao: '', finalidade: '', funil: '', corretor: '', midia: '', dataInicio: '', dataFim: '' }
 
 export default function Kanban() {
   const { atendimentos, carregando, erro } = useAtendimentos()
   const [filtros, setFiltros] = useState(FILTROS_VAZIOS)
 
-  const filtrados = useMemo(() => {
-    return atendimentos.filter((a) => {
-      if (filtros.situacao && a.situacao !== filtros.situacao) return false
-      if (filtros.finalidade && a.finalidade !== filtros.finalidade) return false
-      if (filtros.funil && a.funil !== filtros.funil) return false
-      if (filtros.corretor && a.corretor !== filtros.corretor) return false
-      if (filtros.midia && a.midia !== filtros.midia) return false
-      if (filtros.dataInicio && (!a.data_de_entrada || a.data_de_entrada < filtros.dataInicio)) return false
-      if (filtros.dataFim && (!a.data_de_entrada || a.data_de_entrada > `${filtros.dataFim}T23:59:59`)) return false
-      return true
-    })
-  }, [atendimentos, filtros])
+  const filtrados = useMemo(() => filtrarAtendimentos(atendimentos, filtros), [atendimentos, filtros])
 
   return (
     <div>
@@ -30,6 +19,7 @@ export default function Kanban() {
           <div className="page-title">Kanban de atendimentos</div>
           <div className="page-sub">Somente leitura — espelho do CRM, atualizado por sincronização.</div>
         </div>
+        <Link to="/kanban/dados" className="btn btn-ghost btn-sm">Dados de atendimento →</Link>
       </header>
 
       {carregando && <div className="hub-loading">Carregando atendimentos…</div>}
