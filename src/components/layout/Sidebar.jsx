@@ -1,17 +1,20 @@
 import { NavLink } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useSession } from '../../hooks/useSession'
+import { usePerfil } from '../../hooks/usePerfil'
 
 const links = [
   { to: '/', label: 'Home', end: true },
   { to: '/kanban', label: 'Kanban' },
-  { to: '/dashboard', label: 'Dashboard' },
+  { to: '/dashboard', label: 'Dashboard', somenteAdmin: true },
 ]
 
 export default function Sidebar() {
   const { session } = useSession()
+  const { perfil } = usePerfil()
   const email = session?.user?.email ?? ''
   const iniciais = email.slice(0, 2).toUpperCase()
+  const visiveis = links.filter((link) => !link.somenteAdmin || perfil?.role === 'admin')
 
   async function sair() {
     await supabase.auth.signOut()
@@ -25,7 +28,7 @@ export default function Sidebar() {
       </div>
 
       <div className="sidebar-section">Hub</div>
-      {links.map((link) => (
+      {visiveis.map((link) => (
         <NavLink
           key={link.to}
           to={link.to}
