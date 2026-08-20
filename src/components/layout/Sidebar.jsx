@@ -5,7 +5,12 @@ import { usePerfil } from '../../hooks/usePerfil'
 
 const links = [
   { to: '/', label: 'Home', end: true },
-  { to: '/kanban', label: 'Kanban' },
+  {
+    to: '/kanban',
+    label: 'Kanban',
+    end: true,
+    children: [{ to: '/kanban/dados', label: 'Dados de Atendimento' }],
+  },
   { to: '/dashboard', label: 'Dashboard', somenteAdmin: true },
 ]
 
@@ -29,15 +34,26 @@ export default function Sidebar() {
 
       <div className="sidebar-section">Hub</div>
       {visiveis.map((link) => (
-        <NavLink
-          key={link.to}
-          to={link.to}
-          end={link.end}
-          className={({ isActive }) => `sidebar-item${isActive ? ' is-active' : ''}`}
-        >
-          <span className="sidebar-nav-dot" style={{ background: 'currentColor', opacity: 0.6 }} />
-          {link.label}
-        </NavLink>
+        <div key={link.to}>
+          <NavLink
+            to={link.to}
+            end={link.end}
+            className={({ isActive }) => `sidebar-item${isActive ? ' is-active' : ''}`}
+          >
+            <span className="sidebar-nav-dot" style={{ background: 'currentColor', opacity: 0.6 }} />
+            {link.label}
+          </NavLink>
+          {link.children?.map((child) => (
+            <NavLink
+              key={child.to}
+              to={child.to}
+              className={({ isActive }) => `sidebar-item sidebar-subitem${isActive ? ' is-active' : ''}`}
+            >
+              <span className="sidebar-nav-dot" style={{ background: 'currentColor', opacity: 0.4 }} />
+              {child.label}
+            </NavLink>
+          ))}
+        </div>
       ))}
 
       <div className="sidebar-spacer" />

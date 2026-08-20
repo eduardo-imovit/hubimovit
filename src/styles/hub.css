@@ -289,25 +289,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.cal-pill-ocupado { background: var(--investidores); }
-.cal-pill-bloqueado { background: var(--grafite-fade); color: var(--grafite); }
-.cal-pill-pendente { outline: 2px solid var(--warning); outline-offset: 1px; display: inline-flex; align-items: center; gap: 4px; }
-.cal-pill-pendente-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--warning); flex-shrink: 0; }
-
-.cal-source-toggle { display: inline-flex; background: var(--champagne); padding: 3px; border-radius: var(--radius-md); gap: 2px; }
-.cal-source-toggle button {
-  padding: 6px 14px;
-  border: none;
-  background: transparent;
-  font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
-  color: var(--grafite-mid);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: var(--transition-base);
-}
-.cal-source-toggle button.is-active { background: var(--branco); color: var(--grafite); box-shadow: var(--shadow-xs); }
-
 /* ------- DASHBOARD: SEÇÕES ------- */
 .dash-section {
   background: var(--branco);

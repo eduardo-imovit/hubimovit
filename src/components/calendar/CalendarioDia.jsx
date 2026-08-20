@@ -13,14 +13,13 @@ export default function CalendarioDia({ eventos }) {
   return (
     <div className="agenda-list">
       {eventos.map((e) => (
-        <div className={`agenda-item${e.pendente ? ' agenda-item-pendente' : ''}`} key={`${e.tipo}-${e.id}`}>
+        <div className="agenda-item" key={`${e.tipo}-${e.id}`}>
           <span className="agenda-time">{formatarHora(e.hora)}</span>
-          <span className="agenda-dot" style={{ background: e.tipo === 'ocupado' ? 'var(--investidores)' : e.tipo === 'bloqueado' ? 'var(--grafite-fade)' : e.cor || 'var(--champagne)' }} />
+          <span className="agenda-dot" style={{ background: e.cor || 'var(--champagne)' }} />
           <div className="agenda-info">
             <div className="agenda-title">{e.titulo}</div>
             {e.sub && <div className="agenda-sub">{e.sub}</div>}
           </div>
-          {e.pendente && <span className="badge badge-warning agenda-badge-pendente">Pendente</span>}
         </div>
       ))}
     </div>

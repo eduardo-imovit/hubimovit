@@ -7,11 +7,6 @@ export function hojeISO() {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 }
 
-/** Converte um timestamp com timezone (ex: campos timestamptz do Supabase) pro dia local de São Paulo. */
-export function paraDataLocalISO(dataHoraISO) {
-  return new Date(dataHoraISO).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-}
-
 export function formatarDataLonga(date = new Date()) {
   const diaSemana = diaSemanaFormatter.format(date)
   const capitalizado = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1)
