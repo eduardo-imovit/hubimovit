@@ -11,21 +11,23 @@ import {
   agruparOrigem,
   agruparPorCorretor,
   agruparPrimeiroContato,
+  agruparTaxaAtualizacao,
   agruparTempoFunil,
   agruparTiposAtividade,
   agruparUltimoContato,
+  tempoMedioDescarteDias,
   tempoMedioFunilDias,
-  tempoMedioPrimeiroContatoDias,
 } from '../lib/analiseAtendimentos'
 import KanbanFiltros from '../components/kanban/KanbanFiltros'
 import KpiCard from '../components/dashboard/KpiCard'
 import OrigemChart from '../components/dashboard/OrigemChart'
-import BairrosChart from '../components/dashboard/BairrosChart'
+import BairrosHeatmap from '../components/dashboard/BairrosHeatmap'
 import FunilEtapasChart from '../components/dashboard/FunilEtapasChart'
 import CorretorChart from '../components/dashboard/CorretorChart'
 import EntradasFinalidadeChart from '../components/dashboard/EntradasFinalidadeChart'
 import TempoFunilChart from '../components/dashboard/TempoFunilChart'
 import UltimoContatoChart from '../components/dashboard/UltimoContatoChart'
+import TaxaAtualizacaoChart from '../components/dashboard/TaxaAtualizacaoChart'
 import PrimeiroContatoChart from '../components/dashboard/PrimeiroContatoChart'
 import AtualizacoesChart from '../components/dashboard/AtualizacoesChart'
 import TiposAtividadeChart from '../components/dashboard/TiposAtividadeChart'
@@ -53,7 +55,7 @@ export default function DadosAtendimento() {
 
   const funilEtapas = useMemo(() => agruparFunilEtapas(atendimentosFiltrados), [atendimentosFiltrados])
   const origem = useMemo(() => agruparOrigem(atendimentosFiltrados), [atendimentosFiltrados])
-  const bairros = useMemo(() => agruparBairrosVisitados(atividadesFiltradas), [atividadesFiltradas])
+  const bairros = useMemo(() => agruparBairrosVisitados(atividadesFiltradas, 16), [atividadesFiltradas])
   const entradasPorFinalidade = useMemo(() => agruparEntradasPorFinalidade(atendimentosFiltrados), [atendimentosFiltrados])
   const tempoFunil = useMemo(() => agruparTempoFunil(atendimentosFiltrados), [atendimentosFiltrados])
   const tempoMedio = useMemo(() => tempoMedioFunilDias(atendimentosFiltrados), [atendimentosFiltrados])
@@ -61,7 +63,8 @@ export default function DadosAtendimento() {
   const corretoresAluguel = useMemo(() => agruparPorCorretor(atendimentosFiltrados.filter((a) => a.finalidade === 'Aluguel')), [atendimentosFiltrados])
   const ultimoContato = useMemo(() => agruparUltimoContato(atendimentosFiltrados, resumoPorAtendimento), [atendimentosFiltrados, resumoPorAtendimento])
   const primeiroContato = useMemo(() => agruparPrimeiroContato(atendimentosFiltrados, resumoPorAtendimento), [atendimentosFiltrados, resumoPorAtendimento])
-  const tempoMedioPrimeiroContato = useMemo(() => tempoMedioPrimeiroContatoDias(atendimentosFiltrados, resumoPorAtendimento), [atendimentosFiltrados, resumoPorAtendimento])
+  const taxaAtualizacao = useMemo(() => agruparTaxaAtualizacao(atendimentosFiltrados, resumoPorAtendimento), [atendimentosFiltrados, resumoPorAtendimento])
+  const tempoMedioDescarte = useMemo(() => tempoMedioDescarteDias(atendimentosFiltrados), [atendimentosFiltrados])
   const atualizacoes = useMemo(() => agruparAtualizacoes(atendimentosFiltrados, resumoPorAtendimento), [atendimentosFiltrados, resumoPorAtendimento])
   const tiposAtividade = useMemo(() => agruparTiposAtividade(atividadesFiltradas), [atividadesFiltradas])
 
@@ -104,7 +107,7 @@ export default function DadosAtendimento() {
           <div className="kpi-grid">
             <KpiCard label="Atendimentos analisados" valor={resumo.total} />
             <KpiCard label="Tempo médio no funil" valor={`${tempoMedio.toFixed(0)} dias`} corDestaque="var(--coral)" />
-            <KpiCard label="Tempo até 1º contato" valor={`${tempoMedioPrimeiroContato.toFixed(1)} dias`} sub="pode estar inflado — veja nota abaixo" />
+            <KpiCard label="Tempo médio de descarte" valor={`${tempoMedioDescarte.toFixed(0)} dias`} sub="entrada até fechamento, só descartados com data registrada" />
             <KpiCard label="Sem nenhuma atividade" valor={`${resumo.pctSemAtividade.toFixed(0)}%`} sub="do total de atendimentos" />
           </div>
 
@@ -116,17 +119,14 @@ export default function DadosAtendimento() {
             <EntradasFinalidadeChart dados={entradasPorFinalidade} />
           </Secao>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-7)', marginTop: 'var(--space-7)' }}>
-            <div>
-              <div className="page-eyebrow">Origem dos leads</div>
-              <OrigemChart dados={origem} />
-            </div>
-            <div>
-              <div className="page-eyebrow">Bairros mais visitados</div>
-              <BairrosChart dados={bairros} />
-              <div className="stat-sub is-muted" style={{ marginTop: 'var(--space-2)' }}>Aproximado a partir do endereço das visitas registradas.</div>
-            </div>
-          </div>
+          <Secao titulo="Origem dos leads">
+            <OrigemChart dados={origem} />
+          </Secao>
+
+          <Secao titulo="Bairros mais visitados">
+            <BairrosHeatmap dados={bairros} />
+            <div className="stat-sub is-muted" style={{ marginTop: 'var(--space-2)' }}>Aproximado a partir do endereço das visitas registradas — quanto mais forte a cor, mais visitas.</div>
+          </Secao>
 
           <Secao titulo="Tempo no funil">
             <TempoFunilChart dados={tempoFunil} />
@@ -166,6 +166,13 @@ export default function DadosAtendimento() {
               <UltimoContatoChart dados={ultimoContato} />
             </div>
           </div>
+
+          <Secao titulo="Taxa de atualização (atendimentos em aberto)">
+            <TaxaAtualizacaoChart dados={taxaAtualizacao} />
+            <div className="stat-sub is-muted" style={{ marginTop: 'var(--space-2)' }}>
+              Dias desde o último contato registrado. Até 15 dias é saudável, 16–30 precisa de atenção, 31+ (incluindo quem nunca teve contato registrado) é passível de descarte.
+            </div>
+          </Secao>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-7)', marginTop: 'var(--space-7)' }}>
             <div>

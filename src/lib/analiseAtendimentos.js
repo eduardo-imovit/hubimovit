@@ -114,6 +114,29 @@ export function agruparUltimoContato(atendimentos, resumoPorAtendimento) {
   return linhas
 }
 
+const BUCKETS_TAXA_ATUALIZACAO = [
+  { bucket: 'Saudável (até 15 dias)', min: 0, max: 15, cor: 'var(--success)' },
+  { bucket: 'Atenção (16–30 dias)', min: 16, max: 30, cor: 'var(--warning)' },
+  { bucket: 'Descarte (31+ dias)', min: 31, max: Infinity, cor: 'var(--danger)' },
+]
+
+/**
+ * Saúde de atualização dos atendimentos em aberto: dias desde o último contato registrado.
+ * Sem nenhum contato registrado conta como o pior balde — é o caso mais negligenciado, não o menos.
+ */
+export function agruparTaxaAtualizacao(atendimentos, resumoPorAtendimento) {
+  const agora = new Date()
+  const linhas = BUCKETS_TAXA_ATUALIZACAO.map((b) => ({ bucket: b.bucket, cor: b.cor, total: 0 }))
+  for (const a of atendimentos) {
+    if (a.situacao !== 'Em atendimento') continue
+    const resumo = resumoPorAtendimento[a.codigo]
+    const dias = resumo ? diasEntre(new Date(resumo.ultimoContato), agora) : Infinity
+    const idx = BUCKETS_TAXA_ATUALIZACAO.findIndex((b) => dias >= b.min && dias <= b.max)
+    if (idx !== -1) linhas[idx].total += 1
+  }
+  return linhas
+}
+
 const BUCKETS_ATUALIZACOES = [
   { bucket: '0', min: 0, max: 0 },
   { bucket: '1–2', min: 1, max: 2 },
@@ -222,6 +245,17 @@ export function agruparTiposAtividade(atividades, limiteTop = 8) {
     .slice(0, limiteTop)
 }
 
+/**
+ * Média de dias entre entrada e fechamento, só entre descartados com data_fechamento
+ * registrada no CRM — sem ela não sabemos quanto tempo o lead ficou ativo antes do descarte.
+ */
+export function tempoMedioDescarteDias(atendimentos) {
+  const validos = atendimentos.filter((a) => a.situacao === 'Descartado' && a.data_de_entrada && a.data_fechamento)
+  if (validos.length === 0) return 0
+  const total = validos.reduce((acc, a) => acc + diasEntre(new Date(a.data_de_entrada), new Date(a.data_fechamento)), 0)
+  return total / validos.length
+}
+
 const BUCKETS_PRIMEIRO_CONTATO = [
   { bucket: 'Mesmo dia', min: 0, max: 0, cor: 'var(--success)' },
   { bucket: '1 dia', min: 1, max: 1, cor: 'var(--success)' },
@@ -230,15 +264,6 @@ const BUCKETS_PRIMEIRO_CONTATO = [
   { bucket: '8–15 dias', min: 8, max: 15, cor: 'var(--warning)' },
   { bucket: '15+ dias', min: 16, max: Infinity, cor: 'var(--danger)' },
 ]
-
-/** Média de dias entre a entrada do lead e o primeiro contato registrado, só entre os que têm contato. */
-export function tempoMedioPrimeiroContatoDias(atendimentos, resumoPorAtendimento) {
-  const comContato = atendimentos
-    .filter((a) => a.data_de_entrada && resumoPorAtendimento[a.codigo])
-    .map((a) => diasEntre(new Date(a.data_de_entrada), new Date(resumoPorAtendimento[a.codigo].primeiroContato)))
-  if (comContato.length === 0) return 0
-  return comContato.reduce((acc, d) => acc + d, 0) / comContato.length
-}
 
 /** Tempo entre a entrada do lead e o primeiro contato registrado — mede agilidade de resposta. */
 export function agruparPrimeiroContato(atendimentos, resumoPorAtendimento) {

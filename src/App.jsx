@@ -5,7 +5,10 @@ import RedefinirSenha from './pages/RedefinirSenha'
 import Home from './pages/Home'
 import Kanban from './pages/Kanban'
 import DadosAtendimento from './pages/DadosAtendimento'
-import Dashboard from './pages/Dashboard'
+import RelatorioAtividades from './pages/RelatorioAtividades'
+import DashboardVisaoGeral from './pages/DashboardVisaoGeral'
+import DashboardFunil from './pages/DashboardFunil'
+import DashboardCampanhas from './pages/DashboardCampanhas'
 
 export default function App() {
   return (
@@ -16,7 +19,10 @@ export default function App() {
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/kanban" element={<ProtectedRoute><Kanban /></ProtectedRoute>} />
         <Route path="/kanban/dados" element={<ProtectedRoute><DadosAtendimento /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute somenteAdmin><Dashboard /></ProtectedRoute>} />
+        <Route path="/kanban/atividades" element={<ProtectedRoute><RelatorioAtividades /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute somenteAdmin><DashboardVisaoGeral /></ProtectedRoute>} />
+        <Route path="/dashboard/funil" element={<ProtectedRoute somenteAdmin><DashboardFunil /></ProtectedRoute>} />
+        <Route path="/dashboard/campanhas" element={<ProtectedRoute somenteAdmin><DashboardCampanhas /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )

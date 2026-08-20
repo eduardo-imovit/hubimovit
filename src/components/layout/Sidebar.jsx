@@ -9,9 +9,21 @@ const links = [
     to: '/kanban',
     label: 'Kanban',
     end: true,
-    children: [{ to: '/kanban/dados', label: 'Dados de Atendimento' }],
+    children: [
+      { to: '/kanban/dados', label: 'Dados de Atendimento' },
+      { to: '/kanban/atividades', label: 'Relatório de Atividades' },
+    ],
   },
-  { to: '/dashboard', label: 'Dashboard', somenteAdmin: true },
+  {
+    to: '/dashboard',
+    label: 'Dashboard',
+    end: true,
+    somenteAdmin: true,
+    children: [
+      { to: '/dashboard/funil', label: 'Funil' },
+      { to: '/dashboard/campanhas', label: 'Campanhas' },
+    ],
+  },
 ]
 
 export default function Sidebar() {

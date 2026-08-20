@@ -351,6 +351,12 @@
 .data-table tbody tr:hover { background: var(--pergaminho); }
 .data-table .num { font-variant-numeric: tabular-nums; text-align: right; font-family: var(--font-mono); font-size: var(--text-xs); }
 
+.mini-bar-cell { width: 140px; }
+.mini-bar-track { background: var(--creme); border-radius: var(--radius-sm); height: 6px; overflow: hidden; }
+.mini-bar-track + .mini-bar-track { margin-top: 3px; }
+.mini-bar-fill { height: 100%; border-radius: var(--radius-sm); background: var(--coral); }
+.mini-bar-fill.is-muted { background: var(--grafite-fade); }
+
 /* ============================================================
    TIMELINE
    ============================================================ */
