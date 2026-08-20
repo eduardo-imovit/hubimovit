@@ -29,11 +29,17 @@ export function useBibliotecaLinks() {
     await recarregar()
   }
 
+  async function atualizarLink(id, link) {
+    const { error } = await supabase.from('biblioteca_links').update(link).eq('id', id)
+    if (error) throw error
+    await recarregar()
+  }
+
   async function desativarLink(id) {
     const { error } = await supabase.from('biblioteca_links').update({ ativo: false }).eq('id', id)
     if (error) throw error
     await recarregar()
   }
 
-  return { links, carregando, erro, criarLink, desativarLink }
+  return { links, carregando, erro, criarLink, atualizarLink, desativarLink }
 }

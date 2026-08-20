@@ -3,7 +3,7 @@ import { useAvisos } from '../../hooks/useAvisos'
 import { useDatasComemorativas } from '../../hooks/useDatasComemorativas'
 import { useColaboradores } from '../../hooks/useColaboradores'
 import { diasDaSemana, formatarDataLonga, hojeISO, inicioDaSemanaISO } from '../../lib/dateUtils'
-import { diaAnterior, diaSeguinte, formatarMesAno, matrizDoMes, mesAnterior, mesSeguinte, reunioesRecorrentesNoIntervalo } from '../../lib/calendario'
+import { dataComemorativaOcorreEm, diaAnterior, diaSeguinte, formatarMesAno, matrizDoMes, mesAnterior, mesSeguinte, reunioesRecorrentesNoIntervalo } from '../../lib/calendario'
 import CalendarioMes from './CalendarioMes'
 import CalendarioSemana from './CalendarioSemana'
 import CalendarioDia from './CalendarioDia'
@@ -30,7 +30,7 @@ export default function Calendario() {
   }, [visao, dataFoco, diasDaSemanaAtual, semanas])
 
   const { avisos } = useAvisos()
-  const { datas: datasComemorativas, criarDataComemorativa, desativarDataComemorativa } = useDatasComemorativas()
+  const { datas: datasComemorativas, criarDataComemorativa, atualizarDataComemorativa, desativarDataComemorativa } = useDatasComemorativas()
   const { colaboradores } = useColaboradores()
 
   const datasEquipe = useMemo(() => {
@@ -64,11 +64,23 @@ export default function Calendario() {
       const item = { id: a.id, hora: `${a.data_referencia}T08:00:00`, titulo: a.titulo, sub: null, cor: 'var(--champagne)', tipo: 'aviso' }
       mapa[a.data_referencia] = mapa[a.data_referencia] ? [...mapa[a.data_referencia], item] : [item]
     }
-    for (const dia of Object.keys(mapa)) {
-      mapa[dia].sort((a, b) => a.hora.localeCompare(b.hora))
+    let dia = new Date(`${inicioISO}T12:00:00`)
+    const fim = new Date(`${fimISO}T12:00:00`)
+    while (dia <= fim) {
+      const diaISO = dia.toLocaleDateString('en-CA')
+      for (const dc of datasFaixa) {
+        if (dataComemorativaOcorreEm(dc, diaISO)) {
+          const item = { id: dc.id, hora: `${diaISO}T00:00:00`, titulo: `${dc.emoji ?? '🎉'} ${dc.nome}`, sub: null, cor: 'var(--coral)', tipo: 'data-comemorativa' }
+          mapa[diaISO] = mapa[diaISO] ? [...mapa[diaISO], item] : [item]
+        }
+      }
+      dia.setDate(dia.getDate() + 1)
+    }
+    for (const chave of Object.keys(mapa)) {
+      mapa[chave].sort((a, b) => a.hora.localeCompare(b.hora))
     }
     return mapa
-  }, [reunioesRecorrentes, avisos])
+  }, [reunioesRecorrentes, avisos, datasFaixa, inicioISO, fimISO])
 
   function navegar(direcao) {
     if (visao === 'dia') setDataFoco(direcao === -1 ? diaAnterior(dataFoco) : diaSeguinte(dataFoco))
@@ -110,6 +122,7 @@ export default function Calendario() {
         inicioISO={inicioISO}
         fimISO={fimISO}
         onCriar={criarDataComemorativa}
+        onAtualizar={atualizarDataComemorativa}
         onRemover={desativarDataComemorativa}
       />
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAvisos } from '../../hooks/useAvisos'
+import { usePerfil } from '../../hooks/usePerfil'
 import { formatarDiaCurto } from '../../lib/dateUtils'
 
 const TIPO_LABEL = {
@@ -12,23 +13,47 @@ const TIPO_LABEL = {
 const vazio = { tipo: 'aviso', titulo: '', corpo: '', link_url: '', data_referencia: '' }
 
 export default function AvisosFeed() {
-  const { avisos, carregando, erro, criarAviso, desativarAviso } = useAvisos()
+  const { avisos, carregando, erro, criarAviso, atualizarAviso, desativarAviso } = useAvisos()
+  const { perfil } = usePerfil()
+  const isAdmin = perfil?.role === 'admin'
   const [mostrarForm, setMostrarForm] = useState(false)
   const [form, setForm] = useState(vazio)
+  const [editandoId, setEditandoId] = useState(null)
   const [salvando, setSalvando] = useState(false)
+
+  function abrirNovo() {
+    setForm(vazio)
+    setEditandoId(null)
+    setMostrarForm((v) => !v)
+  }
+
+  function abrirEdicao(aviso) {
+    setForm({
+      tipo: aviso.tipo,
+      titulo: aviso.titulo,
+      corpo: aviso.corpo ?? '',
+      link_url: aviso.link_url ?? '',
+      data_referencia: aviso.data_referencia ?? '',
+    })
+    setEditandoId(aviso.id)
+    setMostrarForm(true)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setSalvando(true)
     try {
-      await criarAviso({
+      const dados = {
         tipo: form.tipo,
         titulo: form.titulo,
         corpo: form.corpo || null,
         link_url: form.link_url || null,
         data_referencia: form.data_referencia || null,
-      })
+      }
+      if (editandoId) await atualizarAviso(editandoId, dados)
+      else await criarAviso(dados)
       setForm(vazio)
+      setEditandoId(null)
       setMostrarForm(false)
     } finally {
       setSalvando(false)
@@ -38,7 +63,7 @@ export default function AvisosFeed() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-3)' }}>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMostrarForm((v) => !v)}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={abrirNovo}>
           {mostrarForm ? 'Cancelar' : '+ Novo item'}
         </button>
       </div>
@@ -89,7 +114,7 @@ export default function AvisosFeed() {
             />
           </div>
           <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
-            {salvando ? 'Salvando…' : 'Salvar'}
+            {salvando ? 'Salvando…' : editandoId ? 'Atualizar' : 'Salvar'}
           </button>
         </form>
       )}
@@ -120,9 +145,16 @@ export default function AvisosFeed() {
                 )}
               </div>
             </div>
-            <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Arquivar" onClick={() => desativarAviso(a.id)}>
-              ✕
-            </button>
+            <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+              {isAdmin && (
+                <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Editar" onClick={() => abrirEdicao(a)}>
+                  ✎
+                </button>
+              )}
+              <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Arquivar" onClick={() => desativarAviso(a.id)}>
+                ✕
+              </button>
+            </div>
           </div>
         ))}
       </div>

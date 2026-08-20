@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useBibliotecaLinks } from '../../hooks/useBibliotecaLinks'
+import { usePerfil } from '../../hooks/usePerfil'
 
 const vazio = { titulo: '', url: '', categoria: '', descricao: '' }
 
@@ -14,22 +15,45 @@ function agruparPorCategoria(links) {
 }
 
 export default function BibliotecaLinks() {
-  const { links, carregando, erro, criarLink, desativarLink } = useBibliotecaLinks()
+  const { links, carregando, erro, criarLink, atualizarLink, desativarLink } = useBibliotecaLinks()
+  const { perfil } = usePerfil()
+  const isAdmin = perfil?.role === 'admin'
   const [mostrarForm, setMostrarForm] = useState(false)
   const [form, setForm] = useState(vazio)
+  const [editandoId, setEditandoId] = useState(null)
   const [salvando, setSalvando] = useState(false)
+
+  function abrirNovo() {
+    setForm(vazio)
+    setEditandoId(null)
+    setMostrarForm((v) => !v)
+  }
+
+  function abrirEdicao(link) {
+    setForm({
+      titulo: link.titulo,
+      url: link.url,
+      categoria: link.categoria ?? '',
+      descricao: link.descricao ?? '',
+    })
+    setEditandoId(link.id)
+    setMostrarForm(true)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
     setSalvando(true)
     try {
-      await criarLink({
+      const dados = {
         titulo: form.titulo,
         url: form.url,
         categoria: form.categoria || null,
         descricao: form.descricao || null,
-      })
+      }
+      if (editandoId) await atualizarLink(editandoId, dados)
+      else await criarLink(dados)
       setForm(vazio)
+      setEditandoId(null)
       setMostrarForm(false)
     } finally {
       setSalvando(false)
@@ -41,7 +65,7 @@ export default function BibliotecaLinks() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-3)' }}>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMostrarForm((v) => !v)}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={abrirNovo}>
           {mostrarForm ? 'Cancelar' : '+ Novo link'}
         </button>
       </div>
@@ -64,7 +88,9 @@ export default function BibliotecaLinks() {
             <label htmlFor="link-descricao">Descrição (opcional)</label>
             <input id="link-descricao" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
           </div>
-          <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar'}</button>
+          <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
+            {salvando ? 'Salvando…' : editandoId ? 'Atualizar' : 'Salvar'}
+          </button>
         </form>
       )}
 
@@ -90,7 +116,12 @@ export default function BibliotecaLinks() {
                   </a>
                   {l.descricao && <div className="avisos-item-sub">{l.descricao}</div>}
                 </div>
-                <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Remover" onClick={() => desativarLink(l.id)}>✕</button>
+                <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                  {isAdmin && (
+                    <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Editar" onClick={() => abrirEdicao(l)}>✎</button>
+                  )}
+                  <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Remover" onClick={() => desativarLink(l.id)}>✕</button>
+                </div>
               </div>
             ))}
           </div>

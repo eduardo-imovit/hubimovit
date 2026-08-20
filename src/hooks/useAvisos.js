@@ -28,11 +28,17 @@ export function useAvisos() {
     await recarregar()
   }
 
+  async function atualizarAviso(id, aviso) {
+    const { error } = await supabase.from('avisos').update(aviso).eq('id', id)
+    if (error) throw error
+    await recarregar()
+  }
+
   async function desativarAviso(id) {
     const { error } = await supabase.from('avisos').update({ ativo: false }).eq('id', id)
     if (error) throw error
     await recarregar()
   }
 
-  return { avisos, carregando, erro, criarAviso, desativarAviso }
+  return { avisos, carregando, erro, criarAviso, atualizarAviso, desativarAviso }
 }

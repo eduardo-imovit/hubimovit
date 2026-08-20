@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { dataComemorativaOcorreEm } from '../../lib/calendario'
 import { hojeISO } from '../../lib/dateUtils'
+import { usePerfil } from '../../hooks/usePerfil'
 
 function diasNoIntervalo(inicioISO, fimISO) {
   const dias = []
@@ -13,9 +14,12 @@ function diasNoIntervalo(inicioISO, fimISO) {
   return dias
 }
 
-export default function DatasComemorativasFaixa({ datas, inicioISO, fimISO, onCriar, onRemover }) {
+export default function DatasComemorativasFaixa({ datas, inicioISO, fimISO, onCriar, onAtualizar, onRemover }) {
+  const { perfil } = usePerfil()
+  const isAdmin = perfil?.role === 'admin'
   const [mostrarForm, setMostrarForm] = useState(false)
   const [form, setForm] = useState({ nome: '', data: hojeISO(), recorrenteAnual: true })
+  const [editandoId, setEditandoId] = useState(null)
   const [salvando, setSalvando] = useState(false)
 
   const dias = diasNoIntervalo(inicioISO, fimISO)
@@ -29,12 +33,27 @@ export default function DatasComemorativasFaixa({ datas, inicioISO, fimISO, onCr
   }
   ocorrencias.sort((a, b) => a.ocorrenciaISO.localeCompare(b.ocorrenciaISO))
 
+  function abrirNovo() {
+    setForm({ nome: '', data: hojeISO(), recorrenteAnual: true })
+    setEditandoId(null)
+    setMostrarForm((v) => !v)
+  }
+
+  function abrirEdicao(dc) {
+    setForm({ nome: dc.nome, data: dc.data, recorrenteAnual: dc.recorrente_anual ?? true })
+    setEditandoId(dc.id)
+    setMostrarForm(true)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setSalvando(true)
     try {
-      await onCriar({ nome: form.nome, data: form.data, recorrente_anual: form.recorrenteAnual })
+      const dados = { nome: form.nome, data: form.data, recorrente_anual: form.recorrenteAnual }
+      if (editandoId) await onAtualizar(editandoId, dados)
+      else await onCriar(dados)
       setForm({ nome: '', data: hojeISO(), recorrenteAnual: true })
+      setEditandoId(null)
       setMostrarForm(false)
     } finally {
       setSalvando(false)
@@ -50,19 +69,30 @@ export default function DatasComemorativasFaixa({ datas, inicioISO, fimISO, onCr
               <span className="cal-allday-pill" key={`${o.id}-${o.ocorrenciaISO}`}>
                 {o.emoji ?? '🎉'} {o.nome} — {o.ocorrenciaISO.slice(8, 10)}/{o.ocorrenciaISO.slice(5, 7)}
                 {o.removivel !== false && (
-                  <button
-                    type="button"
-                    onClick={() => onRemover(o.id)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', marginLeft: 4, padding: 0 }}
-                  >
-                    ✕
-                  </button>
+                  <>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => abrirEdicao(o)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', marginLeft: 4, padding: 0 }}
+                      >
+                        ✎
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => onRemover(o.id)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', marginLeft: 4, padding: 0 }}
+                    >
+                      ✕
+                    </button>
+                  </>
                 )}
               </span>
             ))}
           </div>
         )}
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMostrarForm((v) => !v)}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={abrirNovo}>
           {mostrarForm ? 'Cancelar' : '+ Data comemorativa'}
         </button>
       </div>
@@ -87,7 +117,9 @@ export default function DatasComemorativasFaixa({ datas, inicioISO, fimISO, onCr
             />
             <label htmlFor="dc-recorrente" style={{ textTransform: 'none', letterSpacing: 0 }}>Repete todo ano</label>
           </div>
-          <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar'}</button>
+          <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
+            {salvando ? 'Salvando…' : editandoId ? 'Atualizar' : 'Salvar'}
+          </button>
         </form>
       )}
     </div>

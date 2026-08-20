@@ -28,11 +28,17 @@ export function useDatasComemorativas() {
     await recarregar()
   }
 
+  async function atualizarDataComemorativa(id, dc) {
+    const { error } = await supabase.from('datas_comemorativas').update(dc).eq('id', id)
+    if (error) throw error
+    await recarregar()
+  }
+
   async function desativarDataComemorativa(id) {
     const { error } = await supabase.from('datas_comemorativas').update({ ativo: false }).eq('id', id)
     if (error) throw error
     await recarregar()
   }
 
-  return { datas, carregando, erro, criarDataComemorativa, desativarDataComemorativa }
+  return { datas, carregando, erro, criarDataComemorativa, atualizarDataComemorativa, desativarDataComemorativa }
 }
