@@ -237,33 +237,51 @@ SELECT
   -- NULL quando nao ha atividade (aritmetica com NULL propaga NULL)
   (a.primeira_atividade::date - b.data_entrada) AS dias_ate_resposta,
   (a.primeira_atividade IS NOT NULL)            AS tem_atividade,
-  coalesce(a.qtd_atividades, 0)                 AS qtd_atividades
+  coalesce(a.qtd_atividades, 0)                 AS qtd_atividades,
+
+  -- 2026-05-15 = data da primeira atividade que existe no sistema (min(datahorainicio) em public.atividades).
+  -- Leads entrados antes disso nunca poderiam ter atividade sincronizada: "sem atividade" ali mede o
+  -- inicio da sincronizacao, nao a resposta do corretor. So confiavel a partir do corte.
+  (b.data_entrada >= DATE '2026-05-15')                                             AS periodo_confiavel,
+  CASE WHEN b.data_entrada >= DATE '2026-05-15'
+       THEN (a.primeira_atividade::date - b.data_entrada) END                      AS dias_ate_resposta_confiavel
 FROM public.vw_atendimentos_base b
 LEFT JOIN atv a ON a.codigoatendimento = b.codigo
 WHERE NOT b.is_ruido;
 
--- vw_cobertura_atividades: confiabilidade da metrica de tempo de resposta (so a fatia coberta).
--- Distribuicao muito assimetrica (media >> mediana): card deve mostrar mediana + faixa, nao a media.
+-- vw_cobertura_atividades: confiabilidade da metrica de tempo de resposta.
+-- SO considera periodo_confiavel = true (entrada >= 2026-05-15, data da 1a atividade que existe no
+-- sistema). Antes do corte, "sem atividade" mede inicio de sincronizacao, nao resposta do corretor
+-- -- misturar os dois periodos invalida a mediana (24d misturado vs 2,5d recente / 131d antigo).
+-- Distribuicao assimetrica mesmo dentro do periodo confiavel: card deve mostrar mediana + faixa, nao a media.
 CREATE OR REPLACE VIEW public.vw_cobertura_atividades AS
+WITH periodo AS (
+  SELECT * FROM public.vw_tempo_resposta WHERE periodo_confiavel
+),
+fora_periodo AS (
+  SELECT count(*) AS n FROM public.vw_tempo_resposta WHERE NOT periodo_confiavel
+)
 SELECT
-  count(*)                                                                        AS total_atendimentos,
-  count(*) FILTER (WHERE tem_atividade)                                          AS com_atividade,
-  round(100.0 * count(*) FILTER (WHERE tem_atividade) / NULLIF(count(*), 0), 1)   AS pct_cobertura,
-  round(avg(dias_ate_resposta) FILTER (WHERE tem_atividade), 1)                   AS dias_resposta_medio,
+  DATE '2026-05-15'                                                                AS data_corte,
+  (SELECT n FROM fora_periodo)                                                     AS atendimentos_fora_periodo,
+  count(*)                                                                         AS total_atendimentos_periodo,
+  count(*) FILTER (WHERE tem_atividade)                                           AS com_atividade,
+  round(100.0 * count(*) FILTER (WHERE tem_atividade) / NULLIF(count(*), 0), 1)    AS pct_cobertura,
+  round(avg(dias_ate_resposta_confiavel) FILTER (WHERE tem_atividade), 1)          AS dias_resposta_medio,
   round(
-    (percentile_cont(0.5) WITHIN GROUP (ORDER BY dias_ate_resposta) FILTER (WHERE tem_atividade))::numeric, 1
-  )                                                                                AS dias_resposta_mediana,
+    (percentile_cont(0.5) WITHIN GROUP (ORDER BY dias_ate_resposta_confiavel) FILTER (WHERE tem_atividade))::numeric, 1
+  )                                                                                 AS dias_resposta_mediana,
   round(
-    (percentile_cont(0.25) WITHIN GROUP (ORDER BY dias_ate_resposta) FILTER (WHERE tem_atividade))::numeric, 1
-  )                                                                                AS dias_resposta_p25,
+    (percentile_cont(0.25) WITHIN GROUP (ORDER BY dias_ate_resposta_confiavel) FILTER (WHERE tem_atividade))::numeric, 1
+  )                                                                                 AS dias_resposta_p25,
   round(
-    (percentile_cont(0.75) WITHIN GROUP (ORDER BY dias_ate_resposta) FILTER (WHERE tem_atividade))::numeric, 1
-  )                                                                                AS dias_resposta_p75,
-  round(100.0 * count(*) FILTER (WHERE tem_atividade AND dias_ate_resposta <= 7)
-        / NULLIF(count(*) FILTER (WHERE tem_atividade), 0), 1)                    AS pct_ate_7d,
-  round(100.0 * count(*) FILTER (WHERE tem_atividade AND dias_ate_resposta > 30)
-        / NULLIF(count(*) FILTER (WHERE tem_atividade), 0), 1)                    AS pct_acima_30d
-FROM public.vw_tempo_resposta;
+    (percentile_cont(0.75) WITHIN GROUP (ORDER BY dias_ate_resposta_confiavel) FILTER (WHERE tem_atividade))::numeric, 1
+  )                                                                                 AS dias_resposta_p75,
+  round(100.0 * count(*) FILTER (WHERE tem_atividade AND dias_ate_resposta_confiavel <= 7)
+        / NULLIF(count(*) FILTER (WHERE tem_atividade), 0), 1)                     AS pct_ate_7d,
+  round(100.0 * count(*) FILTER (WHERE tem_atividade AND dias_ate_resposta_confiavel > 30)
+        / NULLIF(count(*) FILTER (WHERE tem_atividade), 0), 1)                     AS pct_acima_30d
+FROM periodo;
 
 -- vw_descartes: em qual fase o lead foi descartado, por finalidade (alimenta grafico "onde os leads morrem").
 CREATE OR REPLACE VIEW public.vw_descartes AS
@@ -325,14 +343,16 @@ ORDER BY dias_parado DESC NULLS LAST
 LIMIT 10;
 
 -- Teste vw_tempo_resposta
-SELECT codigo, corretor, canal, finalidade, data_entrada, primeira_atividade, dias_ate_resposta, tem_atividade, qtd_atividades
+SELECT codigo, corretor, canal, finalidade, data_entrada, primeira_atividade, dias_ate_resposta,
+       tem_atividade, qtd_atividades, periodo_confiavel, dias_ate_resposta_confiavel
 FROM public.vw_tempo_resposta
 ORDER BY tem_atividade DESC, dias_ate_resposta
 LIMIT 10;
 
 -- Teste vw_cobertura_atividades
-SELECT total_atendimentos, com_atividade, pct_cobertura, dias_resposta_medio, dias_resposta_mediana,
-       dias_resposta_p25, dias_resposta_p75, pct_ate_7d, pct_acima_30d
+SELECT data_corte, atendimentos_fora_periodo, total_atendimentos_periodo, com_atividade, pct_cobertura,
+       dias_resposta_medio, dias_resposta_mediana, dias_resposta_p25, dias_resposta_p75,
+       pct_ate_7d, pct_acima_30d
 FROM public.vw_cobertura_atividades;
 
 -- Teste vw_descartes
