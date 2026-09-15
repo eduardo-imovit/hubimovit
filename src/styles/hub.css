@@ -320,6 +320,21 @@
   .dash-media-layout { grid-template-columns: 1fr; }
 }
 
+.dash-tendencia-layout {
+  display: grid;
+  grid-template-areas: "chart" "cards";
+  gap: var(--space-5);
+}
+.dash-tendencia-cards { grid-area: cards; display: flex; flex-direction: column; gap: var(--space-3); }
+.dash-tendencia-chart { grid-area: chart; min-width: 0; }
+@media (min-width: 901px) {
+  .dash-tendencia-layout {
+    grid-template-columns: 1fr 220px;
+    grid-template-areas: "chart cards";
+    align-items: start;
+  }
+}
+
 /* ------- DASHBOARD: MINI FUNIL ------- */
 .mini-funnel {
   display: flex;

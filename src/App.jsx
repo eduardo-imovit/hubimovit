@@ -9,6 +9,7 @@ import RelatorioAtividades from './pages/RelatorioAtividades'
 import DashboardVisaoGeral from './pages/DashboardVisaoGeral'
 import DashboardFunil from './pages/DashboardFunil'
 import DashboardCampanhas from './pages/DashboardCampanhas'
+import DashboardLeads from './pages/DashboardLeads'
 
 export default function App() {
   return (
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/dashboard" element={<ProtectedRoute somenteAdmin><DashboardVisaoGeral /></ProtectedRoute>} />
         <Route path="/dashboard/funil" element={<ProtectedRoute somenteAdmin><DashboardFunil /></ProtectedRoute>} />
         <Route path="/dashboard/campanhas" element={<ProtectedRoute somenteAdmin><DashboardCampanhas /></ProtectedRoute>} />
+        <Route path="/dashboard-leads" element={<ProtectedRoute somenteAdmin><DashboardLeads /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )
