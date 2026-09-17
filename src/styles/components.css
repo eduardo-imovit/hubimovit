@@ -643,9 +643,12 @@
   pointer-events: none;
 }
 .sky-card-tv-content {
-  position: absolute; inset: 0;
+  /* Sem position:absolute de propósito: assim o conteúdo define a altura
+     real do card (min-height do pai age como piso, não como teto) — com
+     absolute+inset:0 o card ficava travado no min-height e o topo do
+     texto era cortado quando o conteúdo precisava de mais espaço. */
   display: flex; flex-direction: column; justify-content: flex-end;
-  padding: 22px var(--space-4) var(--space-3);
+  padding: var(--space-3) var(--space-4);
   background: linear-gradient(to top, rgba(18,14,13,.6) 0%, rgba(18,14,13,0) 72%);
 }
 .sky-card-tv-value {
