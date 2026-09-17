@@ -616,8 +616,8 @@
   align-items: center;
   height: 136px; flex-shrink: 0;
   background: rgba(20,18,16,.42);
-  backdrop-filter: blur(18px) saturate(1.1);
   -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  backdrop-filter: blur(18px) saturate(1.1);
   border-bottom: 1px solid rgba(255,255,255,.08);
   padding: 0 var(--space-7);
   position: sticky; top: 0;
