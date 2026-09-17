@@ -1,8 +1,10 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import ProtectedRoute from './components/layout/ProtectedRoute'
+import NavbarTV from './components/layout/NavbarTV'
 import Login from './pages/Login'
 import RedefinirSenha from './pages/RedefinirSenha'
 import Home from './pages/Home'
+import TVDisplay from './pages/TVDisplay'
 import Kanban from './pages/Kanban'
 import DadosAtendimento from './pages/DadosAtendimento'
 import RelatorioAtividades from './pages/RelatorioAtividades'
@@ -18,6 +20,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/tv-display" element={<ProtectedRoute navbar={<NavbarTV />}><TVDisplay /></ProtectedRoute>} />
         <Route path="/kanban" element={<ProtectedRoute><Kanban /></ProtectedRoute>} />
         <Route path="/kanban/dados" element={<ProtectedRoute><DadosAtendimento /></ProtectedRoute>} />
         <Route path="/kanban/atividades" element={<ProtectedRoute><RelatorioAtividades /></ProtectedRoute>} />

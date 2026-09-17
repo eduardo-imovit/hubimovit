@@ -583,6 +583,145 @@
 .sidebar-footer-name { font-size: var(--text-xs); color: var(--branco); font-weight: var(--weight-medium); }
 .sidebar-footer-role { font-size: 10px; color: #888; }
 
+.weather-widget {
+  display: flex; align-items: center; gap: var(--space-2);
+  padding: 6px var(--space-3);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.weather-widget-icon { width: 22px; height: 22px; color: var(--coral); flex-shrink: 0; }
+.weather-widget-info { display: flex; flex-direction: column; line-height: 1.25; }
+.weather-widget-temp { font-size: var(--text-xs); font-weight: var(--weight-medium); color: var(--branco); }
+.weather-widget-desc { font-weight: 400; color: #aaa; margin-left: 4px; }
+.weather-widget-local { font-size: 10px; color: #777; }
+.weather-widget--erro { font-size: var(--text-xs); color: #777; }
+.weather-widget--erro .weather-widget-icon { width: 18px; height: 18px; color: #666; }
+.weather-widget--carregando { width: 120px; height: 30px; border-radius: var(--radius-sm); background: rgba(255,255,255,.04); }
+
+/* ============================================================
+   NAVBAR — MODO TV
+   ============================================================ */
+.navbar-tv {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 136px; flex-shrink: 0;
+  background: var(--grafite);
+  padding: 0 var(--space-7);
+  position: sticky; top: 0;
+  z-index: var(--z-sticky);
+}
+.navbar-tv-side { display: flex; align-items: center; min-width: 0; overflow: hidden; }
+.navbar-tv-side--end { justify-content: flex-end; }
+.navbar-tv-center { display: flex; justify-content: center; align-items: center; min-width: 0; flex-shrink: 0; }
+.navbar-tv-logo { height: 40px; width: auto; object-fit: contain; }
+.navbar-tv-cards { display: flex; align-items: center; gap: var(--space-3); }
+
+/* ---------- Cards "janela de céu" (clima) + card neutro (data/hora) ---------- */
+.sky-card-tv {
+  position: relative;
+  overflow: hidden;
+  width: 210px; min-height: 96px; flex-shrink: 0;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: var(--shadow-md);
+}
+.sky-card-tv--weather { width: 330px; }
+.sky-card-tv-icon-bg {
+  position: absolute; top: -12px; right: -12px;
+  width: 88px; height: 88px;
+  color: rgba(255,255,255,.3);
+  pointer-events: none;
+}
+.sky-card-tv-content {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: var(--space-3) var(--space-4);
+  background: linear-gradient(to top, rgba(18,14,13,.6) 0%, rgba(18,14,13,0) 72%);
+}
+.sky-card-tv-value {
+  font-family: var(--font-serif); font-weight: var(--weight-light);
+  font-size: var(--text-2xl); color: var(--branco); line-height: 1;
+  text-shadow: 0 1px 8px rgba(0,0,0,.4);
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 2px;
+}
+.sky-card-tv-desc { font-size: var(--text-xs); color: var(--branco); font-weight: var(--weight-medium); text-shadow: 0 1px 4px rgba(0,0,0,.35); line-height: 1.35; }
+.sky-card-tv-stats { display: flex; flex-wrap: wrap; gap: var(--space-1) 6px; margin-top: var(--space-2); }
+.sky-card-tv-stat {
+  display: flex; align-items: center; gap: 3px;
+  font-size: 10px; color: rgba(255,255,255,.9);
+  background: rgba(0,0,0,.3);
+  padding: 2px 7px; border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+.sky-card-tv-stat-icon { width: 11px; height: 11px; }
+.sky-card-tv--carregando { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.08); }
+
+/* Clima */
+.sky-clear-dia {
+  background:
+    radial-gradient(circle at 82% 16%, rgba(255,244,224,.7), rgba(255,244,224,0) 42%),
+    linear-gradient(155deg, #F5C4B3 0%, #E8593C 55%, #B93A18 100%);
+}
+.sky-clear-noite {
+  background:
+    radial-gradient(1.5px 1.5px at 20% 22%, rgba(255,255,255,.9), transparent),
+    radial-gradient(1px 1px at 52% 14%, rgba(255,255,255,.7), transparent),
+    radial-gradient(1.5px 1.5px at 74% 32%, rgba(255,255,255,.8), transparent),
+    radial-gradient(1px 1px at 34% 50%, rgba(255,255,255,.6), transparent),
+    radial-gradient(1px 1px at 90% 55%, rgba(255,255,255,.5), transparent),
+    radial-gradient(circle at 82% 16%, rgba(237,231,217,.3), rgba(237,231,217,0) 35%),
+    linear-gradient(155deg, #2B4A6B 0%, #1c3350 55%, #12202f 100%);
+}
+.sky-clouds-dia {
+  background:
+    radial-gradient(ellipse 62px 28px at 76% 24%, rgba(255,255,255,.5), transparent 70%),
+    radial-gradient(ellipse 48px 24px at 32% 58%, rgba(255,255,255,.32), transparent 70%),
+    linear-gradient(155deg, #C7C4BE 0%, #97948F 55%, #6b6966 100%);
+}
+.sky-clouds-noite {
+  background:
+    radial-gradient(ellipse 60px 28px at 76% 24%, rgba(255,255,255,.16), transparent 70%),
+    linear-gradient(155deg, #454d57 0%, #333a42 55%, #22262b 100%);
+}
+.sky-rain {
+  background:
+    repeating-linear-gradient(112deg, rgba(255,255,255,.14) 0 2px, transparent 2px 15px),
+    linear-gradient(155deg, #4a5f6e 0%, #324450 55%, #1f2d36 100%);
+}
+.sky-storm {
+  background:
+    repeating-linear-gradient(112deg, rgba(255,255,255,.1) 0 2px, transparent 2px 16px),
+    linear-gradient(155deg, #3c3552 0%, #262038 55%, #15111f 100%);
+}
+.sky-snow {
+  background:
+    radial-gradient(1.5px 1.5px at 24% 28%, rgba(255,255,255,.9), transparent),
+    radial-gradient(1.5px 1.5px at 55% 52%, rgba(255,255,255,.8), transparent),
+    radial-gradient(1.5px 1.5px at 76% 18%, rgba(255,255,255,.85), transparent),
+    radial-gradient(1.5px 1.5px at 40% 70%, rgba(255,255,255,.7), transparent),
+    linear-gradient(155deg, #F5F0E8 0%, #DCD5C4 55%, #B8AE97 100%);
+}
+.sky-mist { background: linear-gradient(155deg, #CFCAC2 0%, #ABA7A0 55%, #837F79 100%); }
+
+/* Data/hora — visual neutro (não é clima, não pode "opinar" sobre o tempo) */
+.sky-neutro { background: linear-gradient(155deg, #3d3d3d 0%, #2D2D2D 60%, #1e1e1e 100%); }
+
+@media (max-width: 1300px) {
+  .navbar-tv { padding: 0 var(--space-4); }
+  .navbar-tv-logo { height: 30px; }
+  .navbar-tv-cards { gap: var(--space-2); }
+  .sky-card-tv { width: 160px; min-height: 74px; }
+  .sky-card-tv--weather { width: 200px; }
+  .sky-card-tv-icon-bg { width: 60px; height: 60px; }
+  .sky-card-tv-content { padding: var(--space-2) var(--space-3); }
+  .sky-card-tv-value { font-size: var(--text-lg); }
+  .sky-card-tv-desc { font-size: 10px; }
+  .sky-card-tv-stats { display: none; }
+}
+
 /* ============================================================
    STAT CARD
    ============================================================ */

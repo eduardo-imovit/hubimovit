@@ -3,7 +3,7 @@ import { useSession } from '../../hooks/useSession'
 import { usePerfil } from '../../hooks/usePerfil'
 import AppShell from './AppShell'
 
-export default function ProtectedRoute({ children, somenteAdmin = false }) {
+export default function ProtectedRoute({ children, somenteAdmin = false, navbar }) {
   const { session, carregando: carregandoSessao } = useSession()
   const { perfil, carregando: carregandoPerfil } = usePerfil()
 
@@ -19,5 +19,5 @@ export default function ProtectedRoute({ children, somenteAdmin = false }) {
     return <Navigate to="/" replace />
   }
 
-  return <AppShell>{children}</AppShell>
+  return <AppShell navbar={navbar}>{children}</AppShell>
 }

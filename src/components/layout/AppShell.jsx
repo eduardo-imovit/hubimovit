@@ -1,9 +1,9 @@
 import Sidebar from './Sidebar'
 
-export default function AppShell({ children }) {
+export default function AppShell({ children, navbar }) {
   return (
     <div className="app-shell">
-      <Sidebar />
+      {navbar ?? <Sidebar />}
       <main className="app-main">{children}</main>
     </div>
   )

@@ -44,6 +44,11 @@ export function useWeather() {
         temperatura: Math.round(json.main.temp),
         descricao: json.weather[0].description,
         icone: json.weather[0].icon,
+        sensacao: Math.round(json.main.feels_like),
+        minima: Math.round(json.main.temp_min),
+        maxima: Math.round(json.main.temp_max),
+        umidade: json.main.humidity,
+        ventoKmh: Math.round(json.wind.speed * 3.6),
       }
       setClima(dados)
       setErro(false)
