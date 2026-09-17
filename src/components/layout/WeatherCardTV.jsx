@@ -33,8 +33,6 @@ export default function WeatherCardTV() {
         <span className="sky-card-tv-desc">{descricao} · Campinas, SP</span>
 
         <div className="sky-card-tv-stats">
-          <span className="sky-card-tv-stat">Sens. {clima.sensacao}°</span>
-          <span className="sky-card-tv-stat">{clima.minima}°/{clima.maxima}°</span>
           <span className="sky-card-tv-stat"><IconeGota className="sky-card-tv-stat-icon" />{clima.umidade}%</span>
           <span className="sky-card-tv-stat"><IconeVento className="sky-card-tv-stat-icon" />{clima.ventoKmh}km/h</span>
         </div>

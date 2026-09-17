@@ -645,7 +645,7 @@
 .sky-card-tv-content {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; justify-content: flex-end;
-  padding: var(--space-3) var(--space-4);
+  padding: 22px var(--space-4) var(--space-3);
   background: linear-gradient(to top, rgba(18,14,13,.6) 0%, rgba(18,14,13,0) 72%);
 }
 .sky-card-tv-value {
@@ -714,8 +714,18 @@
 }
 .sky-mist { background: linear-gradient(155deg, #CFCAC2 0%, #ABA7A0 55%, #837F79 100%); }
 
-/* Data/hora — visual neutro (não é clima, não pode "opinar" sobre o tempo) */
+/* Estado neutro (Spotify desconectado/erro) — não é clima, não pode "opinar" sobre o tempo */
 .sky-neutro { background: linear-gradient(155deg, #3d3d3d 0%, #2D2D2D 60%, #1e1e1e 100%); }
+
+/* Data/hora — texto direto na navbar, sem card */
+.datetime-plain-tv { display: flex; flex-direction: column; gap: 2px; }
+.datetime-plain-tv-hora {
+  font-family: var(--font-serif); font-weight: var(--weight-light);
+  font-size: var(--text-2xl); color: var(--branco); line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.datetime-plain-tv-dia { font-size: var(--text-sm); color: rgba(255,255,255,.85); font-weight: var(--weight-medium); }
+.datetime-plain-tv-data { font-size: var(--text-xs); color: rgba(255,255,255,.6); }
 
 /* Spotify */
 .sky-card-tv-sub { font-size: var(--text-xs); color: rgba(255,255,255,.78); text-shadow: 0 1px 4px rgba(0,0,0,.3); }
@@ -736,6 +746,9 @@
   .sky-card-tv-value { font-size: var(--text-lg); }
   .sky-card-tv-desc { font-size: 10px; }
   .sky-card-tv-stats { display: none; }
+  .datetime-plain-tv-hora { font-size: var(--text-lg); }
+  .datetime-plain-tv-dia { font-size: 11px; }
+  .datetime-plain-tv-data { font-size: 10px; }
 }
 
 /* ============================================================
