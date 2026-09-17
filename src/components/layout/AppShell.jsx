@@ -1,10 +1,10 @@
 import Navbar from './Navbar'
 
-export default function AppShell({ children, navbar }) {
+export default function AppShell({ children, navbar, semPadding }) {
   return (
     <div className="app-shell">
       {navbar ?? <Navbar />}
-      <main className="app-main">{children}</main>
+      <main className={semPadding ? 'app-main app-main--sem-padding' : 'app-main'}>{children}</main>
     </div>
   )
 }

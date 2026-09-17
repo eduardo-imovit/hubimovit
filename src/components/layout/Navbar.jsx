@@ -31,6 +31,7 @@ export default function Navbar() {
   const { session } = useSession()
   const { perfil } = usePerfil()
   const isAdmin = perfil?.role === 'admin'
+  const podeGerenciarBanners = perfil?.role === 'admin' || perfil?.role === 'editor'
   const email = session?.user?.email ?? ''
   const iniciais = email.slice(0, 2).toUpperCase()
 
@@ -68,6 +69,12 @@ export default function Navbar() {
             </div>
           </div>
         ))}
+
+        {podeGerenciarBanners && (
+          <NavLink to="/banners" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
+            Banners
+          </NavLink>
+        )}
 
         {isAdmin && (
           <NavLink to="/configuracoes" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>

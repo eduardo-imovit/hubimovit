@@ -3,7 +3,7 @@ import { useBanners, urlPublicaBanner } from '../../hooks/useBanners'
 
 const INTERVALO_MS = 6000
 
-export default function BannerCarrossel() {
+export default function BannerCarrossel({ variante = 'home', mostrarControles = true }) {
   const { banners, carregando } = useBanners()
   const [ativo, setAtivo] = useState(0)
 
@@ -37,12 +37,12 @@ export default function BannerCarrossel() {
   )
 
   return (
-    <div className="banner-carrossel">
+    <div className={variante === 'tv' ? 'banner-carrossel-tv-bg' : 'banner-carrossel'}>
       {banner.link_url ? (
         <a href={banner.link_url} target="_blank" rel="noreferrer" style={{ display: 'contents' }}>{conteudo}</a>
       ) : conteudo}
 
-      {banners.length > 1 && (
+      {mostrarControles && banners.length > 1 && (
         <>
           <button type="button" className="banner-arrow prev" onClick={() => setAtivo((a) => (a - 1 + banners.length) % banners.length)}>‹</button>
           <button type="button" className="banner-arrow next" onClick={() => setAtivo((a) => (a + 1) % banners.length)}>›</button>
