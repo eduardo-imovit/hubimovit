@@ -1,8 +1,4 @@
-import { useState } from 'react'
 import { useBibliotecaLinks } from '../../hooks/useBibliotecaLinks'
-import { usePerfil } from '../../hooks/usePerfil'
-
-const vazio = { titulo: '', url: '', categoria: '', descricao: '' }
 
 function agruparPorCategoria(links) {
   const mapa = new Map()
@@ -15,95 +11,23 @@ function agruparPorCategoria(links) {
 }
 
 export default function BibliotecaLinks() {
-  const { links, carregando, erro, criarLink, atualizarLink, desativarLink } = useBibliotecaLinks()
-  const { perfil } = usePerfil()
-  const isAdmin = perfil?.role === 'admin'
-  const [mostrarForm, setMostrarForm] = useState(false)
-  const [form, setForm] = useState(vazio)
-  const [editandoId, setEditandoId] = useState(null)
-  const [salvando, setSalvando] = useState(false)
-
-  function abrirNovo() {
-    setForm(vazio)
-    setEditandoId(null)
-    setMostrarForm((v) => !v)
-  }
-
-  function abrirEdicao(link) {
-    setForm({
-      titulo: link.titulo,
-      url: link.url,
-      categoria: link.categoria ?? '',
-      descricao: link.descricao ?? '',
-    })
-    setEditandoId(link.id)
-    setMostrarForm(true)
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault()
-    setSalvando(true)
-    try {
-      const dados = {
-        titulo: form.titulo,
-        url: form.url,
-        categoria: form.categoria || null,
-        descricao: form.descricao || null,
-      }
-      if (editandoId) await atualizarLink(editandoId, dados)
-      else await criarLink(dados)
-      setForm(vazio)
-      setEditandoId(null)
-      setMostrarForm(false)
-    } finally {
-      setSalvando(false)
-    }
-  }
-
+  const { links, carregando, erro } = useBibliotecaLinks()
   const grupos = agruparPorCategoria(links)
 
-  return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-3)' }}>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={abrirNovo}>
-          {mostrarForm ? 'Cancelar' : '+ Novo link'}
-        </button>
+  if (carregando) return <div className="hub-loading">Carregando…</div>
+  if (erro) return <div className="hub-error">Não foi possível carregar a biblioteca: {erro}</div>
+
+  if (grupos.length === 0) {
+    return (
+      <div className="empty">
+        <div className="empty-title">Nenhum link cadastrado</div>
+        <div className="empty-sub">Links do Drive, playbooks, processos e manuais aparecem aqui.</div>
       </div>
+    )
+  }
 
-      {mostrarForm && (
-        <form onSubmit={handleSubmit} className="card card-body" style={{ marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          <div className="field">
-            <label htmlFor="link-titulo">Título</label>
-            <input id="link-titulo" required value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} placeholder="Contratos de Locação" />
-          </div>
-          <div className="field">
-            <label htmlFor="link-url">Link do Drive</label>
-            <input id="link-url" type="url" required value={form.url} onChange={(e) => setForm({ ...form, url: e.target.value })} placeholder="https://drive.google.com/…" />
-          </div>
-          <div className="field">
-            <label htmlFor="link-categoria">Categoria</label>
-            <input id="link-categoria" value={form.categoria} onChange={(e) => setForm({ ...form, categoria: e.target.value })} placeholder="Ex: Contratos, Playbooks, Marketing" />
-          </div>
-          <div className="field">
-            <label htmlFor="link-descricao">Descrição (opcional)</label>
-            <input id="link-descricao" value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} />
-          </div>
-          <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
-            {salvando ? 'Salvando…' : editandoId ? 'Atualizar' : 'Salvar'}
-          </button>
-        </form>
-      )}
-
-      {carregando && <div className="hub-loading">Carregando…</div>}
-      {erro && <div className="hub-error">Não foi possível carregar a biblioteca: {erro}</div>}
-
-      {!carregando && !erro && grupos.length === 0 && (
-        <div className="empty">
-          <div className="empty-title">Nenhum link cadastrado</div>
-          <div className="empty-sub">Links do Drive, playbooks e processos aparecem aqui.</div>
-        </div>
-      )}
-
+  return (
+    <>
       {grupos.map(([categoria, itens]) => (
         <div key={categoria} style={{ marginBottom: 'var(--space-4)' }}>
           <div className="page-eyebrow" style={{ marginBottom: 'var(--space-2)' }}>{categoria}</div>
@@ -116,17 +40,11 @@ export default function BibliotecaLinks() {
                   </a>
                   {l.descricao && <div className="avisos-item-sub">{l.descricao}</div>}
                 </div>
-                <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
-                  {isAdmin && (
-                    <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Editar" onClick={() => abrirEdicao(l)}>✎</button>
-                  )}
-                  <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Remover" onClick={() => desativarLink(l.id)}>✕</button>
-                </div>
               </div>
             ))}
           </div>
         </div>
       ))}
-    </div>
+    </>
   )
 }

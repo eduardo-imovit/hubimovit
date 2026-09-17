@@ -1,0 +1,64 @@
+import { useState } from 'react'
+import AvisosAdmin from '../components/settings/AvisosAdmin'
+import BibliotecaLinksAdmin from '../components/settings/BibliotecaLinksAdmin'
+import BannersAdmin from '../components/settings/BannersAdmin'
+import PlantaoAdmin from '../components/settings/PlantaoAdmin'
+import FotografoAdmin from '../components/settings/FotografoAdmin'
+import DatasComemorativasAdmin from '../components/settings/DatasComemorativasAdmin'
+import UsuariosAdmin from '../components/settings/UsuariosAdmin'
+
+const ABAS = [
+  { id: 'avisos', label: 'Avisos & Links' },
+  { id: 'banners', label: 'Banners da Home' },
+  { id: 'plantao', label: 'Plantão' },
+  { id: 'fotografo', label: 'Agenda do Fotógrafo' },
+  { id: 'datas', label: 'Datas Comemorativas' },
+  { id: 'usuarios', label: 'Usuários & Acessos' },
+]
+
+export default function Configuracoes() {
+  const [aba, setAba] = useState('avisos')
+
+  return (
+    <div>
+      <header className="page-header">
+        <div>
+          <div className="page-eyebrow">Administração</div>
+          <div className="page-title">Configurações</div>
+          <div className="page-sub">Gerencie o conteúdo da Home, escalas e acessos do Hub.</div>
+        </div>
+      </header>
+
+      <div className="tabs" style={{ marginBottom: 'var(--space-6)' }}>
+        {ABAS.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            className={`tab${aba === a.id ? ' is-active' : ''}`}
+            onClick={() => setAba(a.id)}
+          >
+            {a.label}
+          </button>
+        ))}
+      </div>
+
+      {aba === 'avisos' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'var(--space-6)', alignItems: 'start' }}>
+          <section>
+            <div className="page-eyebrow">Avisos & Novidades</div>
+            <AvisosAdmin />
+          </section>
+          <section>
+            <div className="page-eyebrow">Links Úteis & Manuais</div>
+            <BibliotecaLinksAdmin />
+          </section>
+        </div>
+      )}
+      {aba === 'banners' && <BannersAdmin />}
+      {aba === 'plantao' && <PlantaoAdmin />}
+      {aba === 'fotografo' && <FotografoAdmin />}
+      {aba === 'datas' && <DatasComemorativasAdmin />}
+      {aba === 'usuarios' && <UsuariosAdmin />}
+    </div>
+  )
+}

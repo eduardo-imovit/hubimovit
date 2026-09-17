@@ -24,6 +24,24 @@ export const SITUACAO_COR = {
 
 export const FILTROS_VAZIOS = { situacao: '', finalidade: '', funil: '', corretor: '', midia: '', dataInicio: '', dataFim: '' }
 
+/** Padrão do Kanban: só atendimentos em aberto. */
+export const FILTROS_KANBAN_PADRAO = { ...FILTROS_VAZIOS, situacao: 'Em atendimento' }
+
+export const PERIODOS_FILTRO = [
+  { dias: 7, label: 'Últimos 7 dias' },
+  { dias: 14, label: 'Últimos 14 dias' },
+  { dias: 30, label: 'Últimos 30 dias' },
+  { dias: 60, label: 'Últimos 60 dias' },
+  { dias: 90, label: 'Últimos 90 dias' },
+]
+
+/** Data (YYYY-MM-DD) de N dias atrás, para os atalhos de período. */
+export function dataDiasAtras(dias) {
+  const d = new Date()
+  d.setDate(d.getDate() - dias)
+  return d.toISOString().slice(0, 10)
+}
+
 /** Aplica os filtros do Kanban/Dados de atendimento (situação, finalidade, funil, corretor, mídia, período de entrada). */
 export function filtrarAtendimentos(atendimentos, filtros) {
   return atendimentos.filter((a) => {

@@ -1,4 +1,23 @@
 @import "tailwindcss";
-@import "./styles/tokens.css";
-@import "./styles/components.css";
-@import "./styles/hub.css";
+/* CSS legada em @layer base para que os utilitários Tailwind (usados só no
+   Dashboard de Performance) vençam os seletores de elemento de hub.css. */
+@import "./styles/tokens.css" layer(base);
+@import "./styles/components.css" layer(base);
+@import "./styles/hub.css" layer(base);
+
+/* Cores utilitárias do Dashboard de Performance (Tailwind v4 @theme).
+   accent = família coral da marca · danger = vermelho semântico. */
+@theme {
+  --color-accent-50: #fde8e0;
+  --color-accent-500: #e8593c;
+  --color-accent-600: #d1452b;
+  --color-accent-700: #b93a18;
+
+  --color-danger-50: #fbe5e0;
+  --color-danger-500: #d1483a;
+  --color-danger-600: #c13e2c;
+  --color-danger-700: #9e2e1f;
+
+  --color-surface-1: #f8fafc;
+  --color-surface-2: #f1f5f9;
+}

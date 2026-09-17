@@ -1,4 +1,4 @@
-import { FILTROS_VAZIOS, SITUACOES } from '../../lib/atendimentos'
+import { dataDiasAtras, FILTROS_VAZIOS, PERIODOS_FILTRO, SITUACOES } from '../../lib/atendimentos'
 
 function opcoesPorFrequencia(valores) {
   const contagem = new Map()
@@ -9,13 +9,27 @@ function opcoesPorFrequencia(valores) {
   return [...contagem.entries()].sort((a, b) => b[1] - a[1]).map(([valor]) => valor)
 }
 
-export default function KanbanFiltros({ atendimentos, filtros, setFiltros }) {
+export default function KanbanFiltros({ atendimentos, filtros, setFiltros, valoresPadrao = FILTROS_VAZIOS }) {
   const corretores = opcoesPorFrequencia(atendimentos.map((a) => a.corretor))
   const midias = opcoesPorFrequencia(atendimentos.map((a) => a.midia))
 
   function set(campo, valor) {
     setFiltros((f) => ({ ...f, [campo]: valor }))
   }
+
+  function setPeriodo(dias) {
+    if (!dias) {
+      setFiltros((f) => ({ ...f, dataInicio: '', dataFim: '' }))
+      return
+    }
+    setFiltros((f) => ({ ...f, dataInicio: dataDiasAtras(Number(dias)), dataFim: '' }))
+  }
+
+  const periodoAtual = PERIODOS_FILTRO.find((p) => filtros.dataInicio === dataDiasAtras(p.dias) && !filtros.dataFim)?.dias ?? ''
+
+  const filtrosAlterados = Object.keys(FILTROS_VAZIOS).some(
+    (campo) => (filtros[campo] || '') !== (valoresPadrao[campo] || '')
+  )
 
   return (
     <div className="filters-bar">
@@ -52,14 +66,21 @@ export default function KanbanFiltros({ atendimentos, filtros, setFiltros }) {
         ))}
       </select>
 
+      <select value={periodoAtual} onChange={(e) => setPeriodo(e.target.value)}>
+        <option value="">Período: todos</option>
+        {PERIODOS_FILTRO.map((p) => (
+          <option key={p.dias} value={p.dias}>{p.label}</option>
+        ))}
+      </select>
+
       <input type="date" value={filtros.dataInicio} onChange={(e) => set('dataInicio', e.target.value)} title="Entrada a partir de" />
       <input type="date" value={filtros.dataFim} onChange={(e) => set('dataFim', e.target.value)} title="Entrada até" />
 
-      {(filtros.situacao || filtros.finalidade || filtros.funil || filtros.corretor || filtros.midia || filtros.dataInicio || filtros.dataFim) && (
+      {filtrosAlterados && (
         <button
           type="button"
           className="btn btn-ghost btn-sm"
-          onClick={() => setFiltros(FILTROS_VAZIOS)}
+          onClick={() => setFiltros(valoresPadrao)}
         >
           Limpar filtros
         </button>

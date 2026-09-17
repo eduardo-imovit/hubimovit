@@ -1,0 +1,92 @@
+import { NavLink } from 'react-router-dom'
+import { supabase } from '../../lib/supabaseClient'
+import { useSession } from '../../hooks/useSession'
+import { usePerfil } from '../../hooks/usePerfil'
+import WeatherWidget from './WeatherWidget'
+
+const linksAdmin = [
+  {
+    to: '/kanban',
+    label: 'Kanban',
+    children: [
+      { to: '/kanban', label: 'Quadro' },
+      { to: '/kanban/dados', label: 'Dados de Atendimento' },
+      { to: '/kanban/atividades', label: 'Relatório de Atividades' },
+    ],
+  },
+  {
+    to: '/dashboard',
+    label: 'Dashboard',
+    children: [
+      { to: '/dashboard', label: 'Visão Geral' },
+      { to: '/dashboard/funil', label: 'Funil' },
+      { to: '/dashboard/campanhas', label: 'Campanhas' },
+      { to: '/dashboard/performance', label: 'Performance' },
+      { to: '/dashboard-leads', label: 'Leads' },
+    ],
+  },
+]
+
+export default function Navbar() {
+  const { session } = useSession()
+  const { perfil } = usePerfil()
+  const isAdmin = perfil?.role === 'admin'
+  const email = session?.user?.email ?? ''
+  const iniciais = email.slice(0, 2).toUpperCase()
+
+  async function sair() {
+    await supabase.auth.signOut()
+  }
+
+  return (
+    <nav className="navbar">
+      <div className="navbar-brand">
+        <span className="navbar-logo">imovit</span>
+        <span className="navbar-tagline">Lares com a sua alma.</span>
+      </div>
+
+      <div className="navbar-links">
+        <NavLink to="/" end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
+          Home
+        </NavLink>
+
+        <NavLink to="/tv-display" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
+          TV Display
+        </NavLink>
+
+        {isAdmin && linksAdmin.map((link) => (
+          <div className="navbar-item" key={link.to}>
+            <NavLink to={link.to} end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
+              {link.label} <span className="navbar-caret">▾</span>
+            </NavLink>
+            <div className="navbar-dropdown">
+              {link.children.map((child) => (
+                <NavLink key={child.to} to={child.to} end className={({ isActive }) => (isActive ? 'is-active' : '')}>
+                  {child.label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {isAdmin && (
+          <NavLink to="/configuracoes" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
+            Configurações
+          </NavLink>
+        )}
+      </div>
+
+      <WeatherWidget />
+
+      <div className="navbar-footer">
+        <span className="avatar avatar-sm">{iniciais || '?'}</span>
+        <div style={{ minWidth: 0 }}>
+          <div className="navbar-footer-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{email}</div>
+          <button type="button" onClick={sair} className="navbar-footer-role" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            Sair
+          </button>
+        </div>
+      </div>
+    </nav>
+  )
+}

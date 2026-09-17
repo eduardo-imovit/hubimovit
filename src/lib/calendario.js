@@ -97,6 +97,28 @@ export function reunioesRecorrentesNoIntervalo(inicioISO, fimISO) {
   return eventos
 }
 
+/**
+ * Expande blocos semanais fixos do fotógrafo (dia_semana + hora_inicio/fim) em
+ * ocorrências dentro de um intervalo — ex.: um bloco "toda terça 12:00–14:00"
+ * gera uma ocorrência em cada terça do mês visível.
+ */
+export function blocosFotografoNoIntervalo(blocos, inicioISO, fimISO) {
+  const ocorrencias = []
+  const atual = new Date(`${inicioISO}T12:00:00`)
+  const fim = new Date(`${fimISO}T12:00:00`)
+  while (atual <= fim) {
+    const diaISO = atual.toLocaleDateString('en-CA')
+    const diaSemana = atual.getDay()
+    for (const b of blocos) {
+      if (b.dia_semana === diaSemana) {
+        ocorrencias.push({ ...b, ocorrenciaISO: diaISO })
+      }
+    }
+    atual.setDate(atual.getDate() + 1)
+  }
+  return ocorrencias
+}
+
 export function dataComemorativaOcorreEm(dataComemorativa, dataISO) {
   if (dataComemorativa.recorrente_anual) {
     const anoAlvo = Number(dataISO.slice(0, 4))

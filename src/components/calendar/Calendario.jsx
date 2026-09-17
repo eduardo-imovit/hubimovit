@@ -2,12 +2,13 @@ import { useMemo, useState } from 'react'
 import { useAvisos } from '../../hooks/useAvisos'
 import { useDatasComemorativas } from '../../hooks/useDatasComemorativas'
 import { useColaboradores } from '../../hooks/useColaboradores'
+import { useAgendamentosFotografo } from '../../hooks/useAgendamentosFotografo'
 import { diasDaSemana, formatarDataLonga, hojeISO, inicioDaSemanaISO } from '../../lib/dateUtils'
-import { dataComemorativaOcorreEm, diaAnterior, diaSeguinte, formatarMesAno, matrizDoMes, mesAnterior, mesSeguinte, reunioesRecorrentesNoIntervalo } from '../../lib/calendario'
+import { blocosFotografoNoIntervalo, dataComemorativaOcorreEm, diaAnterior, diaSeguinte, formatarMesAno, matrizDoMes, mesAnterior, mesSeguinte, reunioesRecorrentesNoIntervalo } from '../../lib/calendario'
 import CalendarioMes from './CalendarioMes'
 import CalendarioSemana from './CalendarioSemana'
 import CalendarioDia from './CalendarioDia'
-import DatasComemorativasFaixa from './DatasComemorativasFaixa'
+import AgendaDropdown from './AgendaDropdown'
 
 const VISOES = [
   { valor: 'dia', label: 'Dia' },
@@ -30,8 +31,9 @@ export default function Calendario() {
   }, [visao, dataFoco, diasDaSemanaAtual, semanas])
 
   const { avisos } = useAvisos()
-  const { datas: datasComemorativas, criarDataComemorativa, atualizarDataComemorativa, desativarDataComemorativa } = useDatasComemorativas()
+  const { datas: datasComemorativas } = useDatasComemorativas()
   const { colaboradores } = useColaboradores()
+  const { blocos: blocosFotografo } = useAgendamentosFotografo()
 
   const datasEquipe = useMemo(() => {
     const datas = []
@@ -53,6 +55,11 @@ export default function Calendario() {
     [inicioISO, fimISO],
   )
 
+  const ocorrenciasFotografo = useMemo(
+    () => blocosFotografoNoIntervalo(blocosFotografo, inicioISO, fimISO),
+    [blocosFotografo, inicioISO, fimISO],
+  )
+
   const eventosPorDia = useMemo(() => {
     const mapa = {}
     for (const r of reunioesRecorrentes) {
@@ -63,6 +70,17 @@ export default function Calendario() {
       if (!a.data_referencia) continue
       const item = { id: a.id, hora: `${a.data_referencia}T08:00:00`, titulo: a.titulo, sub: null, cor: 'var(--champagne)', tipo: 'aviso' }
       mapa[a.data_referencia] = mapa[a.data_referencia] ? [...mapa[a.data_referencia], item] : [item]
+    }
+    for (const f of ocorrenciasFotografo) {
+      const item = {
+        id: f.id,
+        hora: `${f.ocorrenciaISO}T${f.hora_inicio}`,
+        titulo: `📷 ${f.corretor_nome}`,
+        sub: `${f.hora_inicio.slice(0, 5)}–${f.hora_fim.slice(0, 5)}`,
+        cor: 'var(--ninho-cheio)',
+        tipo: 'fotografo',
+      }
+      mapa[f.ocorrenciaISO] = mapa[f.ocorrenciaISO] ? [...mapa[f.ocorrenciaISO], item] : [item]
     }
     let dia = new Date(`${inicioISO}T12:00:00`)
     const fim = new Date(`${fimISO}T12:00:00`)
@@ -80,7 +98,7 @@ export default function Calendario() {
       mapa[chave].sort((a, b) => a.hora.localeCompare(b.hora))
     }
     return mapa
-  }, [reunioesRecorrentes, avisos, datasFaixa, inicioISO, fimISO])
+  }, [reunioesRecorrentes, avisos, ocorrenciasFotografo, datasFaixa, inicioISO, fimISO])
 
   function navegar(direcao) {
     if (visao === 'dia') setDataFoco(direcao === -1 ? diaAnterior(dataFoco) : diaSeguinte(dataFoco))
@@ -117,13 +135,11 @@ export default function Calendario() {
         </div>
       </div>
 
-      <DatasComemorativasFaixa
-        datas={datasFaixa}
+      <AgendaDropdown
+        datasComemorativas={datasFaixa}
+        blocosFotografo={ocorrenciasFotografo}
         inicioISO={inicioISO}
         fimISO={fimISO}
-        onCriar={criarDataComemorativa}
-        onAtualizar={atualizarDataComemorativa}
-        onRemover={desativarDataComemorativa}
       />
 
       {visao === 'mes' && (

@@ -11,7 +11,9 @@ import RelatorioAtividades from './pages/RelatorioAtividades'
 import DashboardVisaoGeral from './pages/DashboardVisaoGeral'
 import DashboardFunil from './pages/DashboardFunil'
 import DashboardCampanhas from './pages/DashboardCampanhas'
+import DashboardPerformance from './pages/DashboardPerformance'
 import DashboardLeads from './pages/DashboardLeads'
+import Configuracoes from './pages/Configuracoes'
 
 export default function App() {
   return (
@@ -21,13 +23,15 @@ export default function App() {
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/tv-display" element={<ProtectedRoute navbar={<NavbarTV />}><TVDisplay /></ProtectedRoute>} />
-        <Route path="/kanban" element={<ProtectedRoute><Kanban /></ProtectedRoute>} />
-        <Route path="/kanban/dados" element={<ProtectedRoute><DadosAtendimento /></ProtectedRoute>} />
-        <Route path="/kanban/atividades" element={<ProtectedRoute><RelatorioAtividades /></ProtectedRoute>} />
+        <Route path="/kanban" element={<ProtectedRoute somenteAdmin><Kanban /></ProtectedRoute>} />
+        <Route path="/kanban/dados" element={<ProtectedRoute somenteAdmin><DadosAtendimento /></ProtectedRoute>} />
+        <Route path="/kanban/atividades" element={<ProtectedRoute somenteAdmin><RelatorioAtividades /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute somenteAdmin><DashboardVisaoGeral /></ProtectedRoute>} />
         <Route path="/dashboard/funil" element={<ProtectedRoute somenteAdmin><DashboardFunil /></ProtectedRoute>} />
         <Route path="/dashboard/campanhas" element={<ProtectedRoute somenteAdmin><DashboardCampanhas /></ProtectedRoute>} />
+        <Route path="/dashboard/performance" element={<ProtectedRoute somenteAdmin><DashboardPerformance /></ProtectedRoute>} />
         <Route path="/dashboard-leads" element={<ProtectedRoute somenteAdmin><DashboardLeads /></ProtectedRoute>} />
+        <Route path="/configuracoes" element={<ProtectedRoute somenteAdmin><Configuracoes /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )
