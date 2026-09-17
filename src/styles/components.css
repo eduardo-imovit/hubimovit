@@ -717,6 +717,14 @@
 /* Data/hora — visual neutro (não é clima, não pode "opinar" sobre o tempo) */
 .sky-neutro { background: linear-gradient(155deg, #3d3d3d 0%, #2D2D2D 60%, #1e1e1e 100%); }
 
+/* Spotify */
+.sky-card-tv-sub { font-size: var(--text-xs); color: rgba(255,255,255,.78); text-shadow: 0 1px 4px rgba(0,0,0,.3); }
+.spotify-card-tv-connect { border: none; cursor: pointer; text-align: left; padding: 0; font: inherit; }
+.spotify-card-tv-connect:hover .sky-card-tv-desc { text-decoration: underline; }
+.spotify-card-tv-progress { height: 3px; border-radius: var(--radius-full); background: rgba(255,255,255,.25); margin-top: var(--space-2); overflow: hidden; }
+.spotify-card-tv-progress-fill { height: 100%; background: var(--coral); border-radius: var(--radius-full); }
+.spotify-card-tv-tempos { display: flex; justify-content: space-between; font-size: 10px; color: rgba(255,255,255,.7); margin-top: 2px; }
+
 @media (max-width: 1300px) {
   .navbar-tv { padding: 0 var(--space-4); }
   .navbar-tv-logo { height: 30px; }

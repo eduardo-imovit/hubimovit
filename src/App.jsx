@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import RedefinirSenha from './pages/RedefinirSenha'
 import Home from './pages/Home'
 import TVDisplay from './pages/TVDisplay'
+import SpotifyCallback from './pages/SpotifyCallback'
 import Kanban from './pages/Kanban'
 import DadosAtendimento from './pages/DadosAtendimento'
 import RelatorioAtividades from './pages/RelatorioAtividades'
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/tv-display" element={<ProtectedRoute navbar={<NavbarTV />}><TVDisplay /></ProtectedRoute>} />
+        <Route path="/spotify-callback" element={<ProtectedRoute somenteAdmin><SpotifyCallback /></ProtectedRoute>} />
         <Route path="/kanban" element={<ProtectedRoute somenteAdmin><Kanban /></ProtectedRoute>} />
         <Route path="/kanban/dados" element={<ProtectedRoute somenteAdmin><DadosAtendimento /></ProtectedRoute>} />
         <Route path="/kanban/atividades" element={<ProtectedRoute somenteAdmin><RelatorioAtividades /></ProtectedRoute>} />
