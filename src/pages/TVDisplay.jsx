@@ -4,9 +4,7 @@ import AgendaFotografoSemanalTV from '../components/calendar/AgendaFotografoSema
 export default function TVDisplay() {
   return (
     <div className="tv-display-page">
-      <div className="tv-display-bg">
-        <BannerCarrossel variante="tv" mostrarControles={false} />
-      </div>
+      <BannerCarrossel variante="tv" />
       <div className="tv-display-grain" aria-hidden="true" />
 
       <div className="tv-display-conteudo">

@@ -116,5 +116,11 @@ export function useSpotifyPlayer() {
     }
   }, [])
 
-  return estado
+  const controles = {
+    alternarPlayPause: () => playerRef.current?.togglePlay(),
+    proximaFaixa: () => playerRef.current?.nextTrack(),
+    faixaAnterior: () => playerRef.current?.previousTrack(),
+  }
+
+  return { ...estado, controles }
 }

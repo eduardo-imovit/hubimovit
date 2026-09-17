@@ -37,7 +37,7 @@ export default function BannerCarrossel({ variante = 'home', mostrarControles = 
   )
 
   return (
-    <div className={variante === 'tv' ? 'banner-carrossel-tv-bg' : 'banner-carrossel'}>
+    <div className={variante === 'tv' ? 'banner-carrossel-tv' : 'banner-carrossel'}>
       {banner.link_url ? (
         <a href={banner.link_url} target="_blank" rel="noreferrer" style={{ display: 'contents' }}>{conteudo}</a>
       ) : conteudo}
