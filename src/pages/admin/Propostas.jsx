@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
-import { criarProposta } from '../../lib/esteira'
+import { criarProposta, decidirAprovacaoInterna } from '../../lib/esteira'
 
 const STATUS_LABEL = {
   aguardando_locatario: 'Aguardando locatário',
+  aguardando_aprovacao_interna: 'Em revisão interna',
   criada: 'Aguardando proprietário',
   aguardando_docs: 'Aprovada — aguardando docs',
   docs_em_analise: 'Aprovada — docs em análise',
@@ -57,6 +58,8 @@ export default function Propostas() {
           {mostrarForm ? 'Cancelar' : '+ Nova proposta'}
         </button>
       </header>
+
+      <RevisaoInterna propostas={propostas} onAtualizar={recarregar} />
 
       {mostrarForm && (
         <form onSubmit={handleSubmit} className="card card-body" style={{ marginBottom: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -127,6 +130,69 @@ export default function Propostas() {
           </table>
         </div>
       )}
+    </div>
+  )
+}
+
+function RevisaoInterna({ propostas, onAtualizar }) {
+  const pendentes = propostas.filter((p) => p.status_efetivo === 'aguardando_aprovacao_interna')
+  const [processandoId, setProcessandoId] = useState(null)
+  const [erro, setErro] = useState('')
+
+  if (pendentes.length === 0) return null
+
+  async function handleDecisao(proposta, decisao) {
+    setErro('')
+    let motivo
+    if (decisao === 'rejeitado') {
+      motivo = window.prompt('Motivo (o locatário vai ver esse texto pra corrigir e reenviar):')
+      if (!motivo) return
+    }
+    setProcessandoId(proposta.id)
+    try {
+      await decidirAprovacaoInterna({ proposta_id: proposta.id, decisao, motivo })
+      await onAtualizar()
+    } catch (err) {
+      setErro(err.message)
+    } finally {
+      setProcessandoId(null)
+    }
+  }
+
+  return (
+    <div className="card card-body" style={{ marginBottom: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      <div className="page-eyebrow">Aguardando revisão interna ({pendentes.length})</div>
+      {erro && <div className="login-error">{erro}</div>}
+      <div className="avisos-list">
+        {pendentes.map((p) => (
+          <div className="avisos-item" key={p.id}>
+            <div className="avisos-item-body">
+              <span className="avisos-item-title">{p.nome_cliente || p.email}</span>
+              <div className="avisos-item-sub">
+                {p.imovel_titulo || `Imóvel ${p.codigo_imovel}`} · proprietário: {p.proprietario_nome || '—'}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                disabled={processandoId === p.id}
+                onClick={() => handleDecisao(p, 'aprovado')}
+              >
+                Aprovar
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={processandoId === p.id}
+                onClick={() => handleDecisao(p, 'rejeitado')}
+              >
+                Pedir correção
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

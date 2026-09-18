@@ -14,10 +14,16 @@
 // Modelo de autorização por evento:
 //   nova_proposta            -- qualquer usuário interno logado (tem linha em perfis)
 //   confirmar_dados_locatario -- e-mail do JWT precisa bater com propostas_locacao.email
+//   decisao_interna          -- role gestao/adm (via perfis) -- aprova (segue pro
+//                                proprietário) ou rejeita (volta pro locatário corrigir)
 //   proprietario_aceitou     -- e-mail do JWT precisa bater com propostas_locacao.proprietario_email
 //   docs_enviados            -- e-mail do JWT precisa bater com propostas_locacao.email
 //   decisao_adm              -- role gestao/adm (via perfis)
 //   sincronizar_imoview      -- role gestao/adm (via perfis)
+//
+// Notificações por e-mail (Brevo) disparam inline em cada handler, sempre
+// APÓS a transição de status já ter sido persistida -- falha de envio nunca
+// derruba a operação principal (ver helper `notificar`).
 //
 // Como agora TODO chamador precisa estar logado (não existe mais fluxo
 // anônimo por token_link), o deploy usa verificação de JWT padrão -- sem
@@ -68,6 +74,12 @@ const eventoSchema = z.discriminatedUnion('evento', [
     tel: z.string().min(1),
     tipo_pessoa: z.enum(['Física', 'Jurídica']),
     tem_conjuge: z.boolean(),
+  }),
+  z.object({
+    evento: z.literal('decisao_interna'),
+    proposta_id: z.string().uuid(),
+    decisao: z.enum(['aprovado', 'rejeitado']),
+    motivo: z.string().optional(),
   }),
   z.object({
     evento: z.literal('proprietario_aceitou'),
@@ -182,6 +194,57 @@ async function exigirEmailProposta(
 }
 
 // -----------------------------------------------------------------------------
+// Notificações por e-mail (Brevo) -- disparadas inline em cada handler,
+// sempre depois da transição de status já ter sido persistida. Falha de
+// envio só loga, nunca derruba a operação principal.
+// -----------------------------------------------------------------------------
+
+const APP_URL = Deno.env.get('APP_URL') ?? 'http://localhost:5175'
+const REMETENTE = { name: 'Hub Imovit', email: 'relacionamento@imovit.com.br' }
+const DESTINATARIOS_REVISAO_INTERNA = ['gabriel@imovit.com.br', 'daniele@imovit.com.br']
+const LINK_PORTAL = `${APP_URL}/portal/entrar`
+const LINK_PROPOSTAS = `${APP_URL}/admin/propostas`
+const LINK_ESTEIRAS = `${APP_URL}/admin/esteiras`
+
+function escapeHtml(texto: string | null | undefined): string {
+  if (!texto) return ''
+  return texto.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function emailHtml(titulo: string, mensagemHtml: string, linkTexto: string, linkUrl: string) {
+  return `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+    <h2>${escapeHtml(titulo)}</h2>
+    <p>${mensagemHtml}</p>
+    <p><a href="${linkUrl}" style="display:inline-block;background:#c86b4a;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">${escapeHtml(linkTexto)}</a></p>
+  </div>`
+}
+
+async function notificar(destinatarios: string[], assunto: string, corpoHtml: string) {
+  const brevoApiKey = Deno.env.get('BREVO_API_KEY')
+  if (!brevoApiKey) {
+    console.error('[esteira-locacao] BREVO_API_KEY não configurada -- notificação não enviada:', assunto)
+    return
+  }
+  try {
+    const resposta = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'api-key': brevoApiKey },
+      body: JSON.stringify({
+        sender: REMETENTE,
+        to: destinatarios.map((email) => ({ email })),
+        subject: assunto,
+        htmlContent: corpoHtml,
+      }),
+    })
+    if (!resposta.ok) {
+      console.error('[esteira-locacao] Brevo retornou', resposta.status, await resposta.text())
+    }
+  } catch (err) {
+    console.error('[esteira-locacao] erro ao notificar via Brevo:', err)
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Handlers — um por evento, espelhando 1:1 os passos da esteira
 // -----------------------------------------------------------------------------
 
@@ -196,6 +259,18 @@ async function handleNovaProposta(evento: Extract<Evento, { evento: 'nova_propos
     p_ator: atorEmail,
   })
   if (error) throw error
+
+  await notificar(
+    [data.email],
+    'Proposta de locação criada',
+    emailHtml(
+      'Você tem uma proposta de locação',
+      `Uma proposta de locação foi criada em seu nome${data.imovel_titulo ? ` para <strong>${escapeHtml(data.imovel_titulo)}</strong>` : ''}. Acesse com este e-mail para continuar.`,
+      'Acessar minha proposta',
+      LINK_PORTAL
+    )
+  )
+
   return { proposta: data }
 }
 
@@ -209,6 +284,54 @@ async function handleConfirmarDadosLocatario(evento: Extract<Evento, { evento: '
     p_ator: 'locatario',
   })
   if (error) throw error
+
+  await notificar(
+    DESTINATARIOS_REVISAO_INTERNA,
+    'Nova proposta aguardando revisão interna',
+    emailHtml(
+      'Proposta aguardando revisão',
+      `${escapeHtml(data.nome_cliente)} completou os dados da proposta${data.imovel_titulo ? ` para <strong>${escapeHtml(data.imovel_titulo)}</strong>` : ''}. Revise antes de acionar o proprietário.`,
+      'Revisar proposta',
+      LINK_PROPOSTAS
+    )
+  )
+
+  return { proposta: data }
+}
+
+async function handleDecisaoInterna(evento: Extract<Evento, { evento: 'decisao_interna' }>, adminEmail: string) {
+  const { data, error } = await supabase.rpc('decidir_aprovacao_interna', {
+    p_proposta_id: evento.proposta_id,
+    p_decisao: evento.decisao,
+    p_ator: adminEmail,
+    p_motivo: evento.motivo ?? null,
+  })
+  if (error) throw error
+
+  if (evento.decisao === 'aprovado' && data.proprietario_email) {
+    await notificar(
+      [data.proprietario_email],
+      'Proposta de locação aguardando sua aprovação',
+      emailHtml(
+        'Uma proposta chegou pro seu imóvel',
+        `Um novo locatário fez uma proposta${data.imovel_titulo ? ` para <strong>${escapeHtml(data.imovel_titulo)}</strong>` : ''}. Acesse pra aprovar ou rejeitar.`,
+        'Ver proposta',
+        LINK_PORTAL
+      )
+    )
+  } else if (evento.decisao === 'rejeitado') {
+    await notificar(
+      [data.email],
+      'Revise os dados da sua proposta',
+      emailHtml(
+        'Precisamos que você revise alguns dados',
+        `Nossa equipe pediu um ajuste na sua proposta${evento.motivo ? `: <em>${escapeHtml(evento.motivo)}</em>` : '.'} Acesse pra corrigir e reenviar.`,
+        'Corrigir meus dados',
+        LINK_PORTAL
+      )
+    )
+  }
+
   return { proposta: data }
 }
 
@@ -225,6 +348,17 @@ async function handleProprietarioAceitou(evento: Extract<Evento, { evento: 'prop
     .or(`tipo_pessoa.eq.${data.tipo_pessoa},tipo_pessoa.eq.Ambos`)
     .or(`exige_conjuge.eq.false${data.tem_conjuge ? ',exige_conjuge.eq.true' : ''}`)
   if (erroChecklist) throw erroChecklist
+
+  await notificar(
+    [data.email],
+    'Proprietário aprovou — envie seus documentos',
+    emailHtml(
+      'Proposta aprovada pelo proprietário',
+      'O proprietário aprovou sua proposta. Agora é só enviar os documentos pra seguirmos com o processo.',
+      'Enviar documentos',
+      LINK_PORTAL
+    )
+  )
 
   return { proposta: data, checklist }
 }
@@ -249,6 +383,19 @@ async function handleDocsEnviados(evento: Extract<Evento, { evento: 'docs_enviad
     .single()
   if (erroProposta) throw erroProposta
 
+  if (proposta.status === 'docs_em_analise') {
+    await notificar(
+      DESTINATARIOS_REVISAO_INTERNA,
+      'Documentos enviados — aguardando revisão',
+      emailHtml(
+        'Documentos pra revisar',
+        `${escapeHtml(proposta.nome_cliente)} enviou todos os documentos${proposta.imovel_titulo ? ` da proposta de <strong>${escapeHtml(proposta.imovel_titulo)}</strong>` : ''}. Já pode revisar.`,
+        'Revisar documentos',
+        LINK_ESTEIRAS
+      )
+    )
+  }
+
   return { documentos: resultados, proposta }
 }
 
@@ -260,6 +407,47 @@ async function handleDecisaoAdm(evento: Extract<Evento, { evento: 'decisao_adm' 
     p_feedback: evento.feedback ?? null,
   })
   if (error) throw error
+
+  const { data: proposta } = await supabase
+    .from('propostas_locacao')
+    .select('*')
+    .eq('id', data.proposta_id)
+    .single()
+
+  if (proposta && evento.decisao === 'rejeitado') {
+    await notificar(
+      [proposta.email],
+      'Documento reprovado — reenvie',
+      emailHtml(
+        'Um documento precisa ser reenviado',
+        `Um dos documentos que você enviou foi reprovado${evento.feedback ? `: <em>${escapeHtml(evento.feedback)}</em>` : '.'} Acesse pra reenviar.`,
+        'Reenviar documento',
+        LINK_PORTAL
+      )
+    )
+  } else if (proposta && proposta.status === 'docs_aprovados') {
+    await notificar(
+      [proposta.email],
+      'Todos os documentos aprovados',
+      emailHtml(
+        'Documentação aprovada',
+        'Todos os seus documentos foram aprovados. Estamos finalizando o processo.',
+        'Ver status',
+        LINK_PORTAL
+      )
+    )
+    await notificar(
+      DESTINATARIOS_REVISAO_INTERNA,
+      'Proposta pronta pra sincronizar no Imoview',
+      emailHtml(
+        'Documentação completa',
+        `A proposta de ${escapeHtml(proposta.nome_cliente)}${proposta.imovel_titulo ? ` (${escapeHtml(proposta.imovel_titulo)})` : ''} teve todos os documentos aprovados e está pronta pra ser lançada no Imoview.`,
+        'Ver proposta',
+        LINK_ESTEIRAS
+      )
+    )
+  }
+
   return { documento: data }
 }
 
@@ -288,6 +476,20 @@ async function handleSincronizarImoview(evento: Extract<Evento, { evento: 'sincr
     p_ator: adminEmail,
   })
   if (error) throw error
+
+  const destinatarios = [data.email, data.proprietario_email].filter((e): e is string => !!e)
+  if (destinatarios.length) {
+    await notificar(
+      destinatarios,
+      'Processo de locação concluído',
+      emailHtml(
+        'Processo concluído',
+        `O processo de locação${data.imovel_titulo ? ` de <strong>${escapeHtml(data.imovel_titulo)}</strong>` : ''} foi concluído. Obrigado por usar o Hub Imovit.`,
+        'Ver detalhes',
+        LINK_PORTAL
+      )
+    )
+  }
 
   return { proposta: data }
 }
@@ -373,6 +575,10 @@ Deno.serve(async (req) => {
       case 'confirmar_dados_locatario': {
         await exigirEmailProposta(req, evento.proposta_id, 'email')
         return jsonResponse(await handleConfirmarDadosLocatario(evento))
+      }
+      case 'decisao_interna': {
+        const adminEmail = await exigirAdmin(req)
+        return jsonResponse(await handleDecisaoInterna(evento, adminEmail))
       }
       case 'proprietario_aceitou': {
         await exigirEmailProposta(req, evento.proposta_id, 'proprietario_email')

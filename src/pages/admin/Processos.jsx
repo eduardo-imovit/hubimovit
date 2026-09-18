@@ -4,6 +4,7 @@ import { useHistoricoProposta } from '../../hooks/useHistoricoProposta'
 
 const STATUS_LABEL = {
   aguardando_locatario: 'Aguardando locatário',
+  aguardando_aprovacao_interna: 'Em revisão interna',
   criada: 'Aguardando proprietário',
   aguardando_docs: 'Aguardando documentos',
   docs_em_analise: 'Docs em análise',

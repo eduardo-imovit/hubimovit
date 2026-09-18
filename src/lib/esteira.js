@@ -26,6 +26,7 @@ async function chamarEsteira(evento, dados) {
 
 export const criarProposta = (dados) => chamarEsteira('nova_proposta', dados)
 export const confirmarDadosLocatario = (dados) => chamarEsteira('confirmar_dados_locatario', dados)
+export const decidirAprovacaoInterna = (dados) => chamarEsteira('decisao_interna', dados)
 export const proprietarioAceitou = (proposta_id) => chamarEsteira('proprietario_aceitou', { proposta_id })
 export const registrarDocumentosEnviados = (proposta_id, documentos) =>
   chamarEsteira('docs_enviados', { proposta_id, documentos })

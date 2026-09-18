@@ -9,6 +9,7 @@ import PortalShell from '../../components/portal/PortalShell'
 
 const STATUS_LABEL = {
   aguardando_locatario: 'Aguardando seus dados',
+  aguardando_aprovacao_interna: 'Em análise pela nossa equipe',
   criada: 'Aguardando aprovação do proprietário',
   aguardando_docs: 'Aguardando envio de documentos',
   docs_em_analise: 'Documentos em análise',
