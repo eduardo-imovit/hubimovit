@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useBanners, urlPublicaBanner } from '../../hooks/useBanners'
+import { useBanners, urlPublicaBanner, ehVideoBanner } from '../../hooks/useBanners'
 
 const vazio = { titulo: '', subtitulo: '', link_url: '', ordem: 0 }
 
@@ -73,8 +73,8 @@ export default function BannersAdmin() {
             <input id="banner-ordem" type="number" value={form.ordem} onChange={(e) => setForm({ ...form, ordem: e.target.value })} />
           </div>
           <div className="field">
-            <label htmlFor="banner-imagem">Imagem</label>
-            <input id="banner-imagem" type="file" accept="image/*" required onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} />
+            <label htmlFor="banner-imagem">Imagem ou vídeo</label>
+            <input id="banner-imagem" type="file" accept="image/*,video/*" required onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} />
           </div>
           <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
             {salvando ? 'Enviando…' : 'Salvar'}
@@ -95,7 +95,11 @@ export default function BannersAdmin() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 'var(--space-4)' }}>
         {banners.map((b) => (
           <div className="card" key={b.id}>
-            <img src={urlPublicaBanner(b.imagem_path)} alt={b.titulo} style={{ width: '100%', height: 120, objectFit: 'cover' }} />
+            {ehVideoBanner(b.imagem_path) ? (
+              <video src={urlPublicaBanner(b.imagem_path)} muted style={{ width: '100%', height: 120, objectFit: 'cover' }} />
+            ) : (
+              <img src={urlPublicaBanner(b.imagem_path)} alt={b.titulo} style={{ width: '100%', height: 120, objectFit: 'cover' }} />
+            )}
             <div className="card-body">
               <div className="avisos-item-title">{b.titulo}</div>
               {b.subtitulo && <div className="avisos-item-sub">{b.subtitulo}</div>}

@@ -58,3 +58,10 @@ export function urlPublicaBanner(path) {
   const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
   return data.publicUrl
 }
+
+const EXTENSOES_VIDEO = ['mp4', 'webm', 'mov', 'm4v']
+
+export function ehVideoBanner(path) {
+  const extensao = path?.split('.').pop()?.toLowerCase()
+  return EXTENSOES_VIDEO.includes(extensao)
+}
