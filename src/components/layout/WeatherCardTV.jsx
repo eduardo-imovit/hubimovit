@@ -11,21 +11,21 @@ export default function WeatherCardTV() {
   if (!clima) {
     if (erro) {
       return (
-        <div className="sky-card-tv sky-card-tv--weather sky-mist">
+        <div className="sky-card-tv sky-card-tv--weather sky-card-tv--temperatura sky-mist">
           <div className="sky-card-tv-content">
             <span className="sky-card-tv-desc">Clima indisponível</span>
           </div>
         </div>
       )
     }
-    return <div className="sky-card-tv sky-card-tv--weather sky-card-tv--carregando" aria-hidden="true" />
+    return <div className="sky-card-tv sky-card-tv--weather sky-card-tv--temperatura sky-card-tv--carregando" aria-hidden="true" />
   }
 
   const { classeFundo, Icone } = condicaoDoIcone(clima.icone)
   const descricao = capitalizar(clima.descricao)
 
   return (
-    <div className={`sky-card-tv sky-card-tv--weather ${classeFundo}`}>
+    <div className={`sky-card-tv sky-card-tv--weather sky-card-tv--temperatura ${classeFundo}`}>
       <Icone className="sky-card-tv-icon-bg" />
 
       <div className="sky-card-tv-content">

@@ -647,9 +647,13 @@
   box-shadow: var(--shadow-md);
 }
 .sky-card-tv--weather { width: 300px; }
+/* Card de temperatura: +25% sobre o tamanho base do sky-card-tv--weather (so ele, nao mexe no Spotify) */
+.sky-card-tv--weather.sky-card-tv--temperatura { width: 375px; min-height: 85px; }
+.sky-card-tv--temperatura .sky-card-tv-content { padding: 10px 15px; }
+.sky-card-tv--temperatura .sky-card-tv-desc { font-size: 14px; }
 .sky-card-tv-icon-bg {
-  position: absolute; top: -12px; right: -12px;
-  width: 88px; height: 88px;
+  position: absolute; top: -15px; right: -15px;
+  width: 110px; height: 110px;
   color: rgba(255,255,255,.3);
   pointer-events: none;
 }
@@ -664,21 +668,22 @@
 }
 .sky-card-tv-value {
   font-family: var(--font-serif); font-weight: var(--weight-light);
-  font-size: var(--text-2xl); color: var(--branco); line-height: 1;
+  font-size: 43px; /* text-2xl (34px) + 25% */
+  color: var(--branco); line-height: 1;
   text-shadow: 0 1px 8px rgba(0,0,0,.4);
   font-variant-numeric: tabular-nums;
   margin-bottom: 2px;
 }
 .sky-card-tv-desc { font-size: var(--text-xs); color: var(--branco); font-weight: var(--weight-medium); text-shadow: 0 1px 4px rgba(0,0,0,.35); line-height: 1.35; }
-.sky-card-tv-stats { display: flex; flex-wrap: wrap; gap: var(--space-1) 6px; margin-top: var(--space-2); }
+.sky-card-tv-stats { display: flex; flex-wrap: wrap; gap: 5px 8px; margin-top: 10px; }
 .sky-card-tv-stat {
-  display: flex; align-items: center; gap: 3px;
-  font-size: 10px; color: rgba(255,255,255,.9);
+  display: flex; align-items: center; gap: 4px;
+  font-size: 13px; color: rgba(255,255,255,.9);
   background: rgba(0,0,0,.3);
-  padding: 2px 7px; border-radius: var(--radius-full);
+  padding: 3px 9px; border-radius: var(--radius-full);
   white-space: nowrap;
 }
-.sky-card-tv-stat-icon { width: 11px; height: 11px; }
+.sky-card-tv-stat-icon { width: 14px; height: 14px; }
 .sky-card-tv--carregando { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.08); }
 
 /* Clima */
@@ -735,15 +740,20 @@
 .datetime-plain-tv { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1px; }
 .datetime-plain-tv-hora {
   font-family: var(--font-serif); font-weight: var(--weight-light);
-  font-size: var(--text-3xl); color: var(--branco); line-height: 1;
+  font-size: 58px; /* text-3xl (48px) + 20% */
+  color: var(--branco); line-height: 1;
   font-variant-numeric: tabular-nums;
   text-shadow: 0 1px 10px rgba(0,0,0,.55), 0 1px 3px rgba(0,0,0,.6);
 }
 .datetime-plain-tv-dia {
-  font-size: var(--text-sm); color: rgba(255,255,255,.9); font-weight: var(--weight-medium); margin-top: 2px;
+  font-size: 16px; /* text-sm (13px) + 20% */
+  color: rgba(255,255,255,.9); font-weight: var(--weight-medium); margin-top: 2px;
   text-shadow: 0 1px 6px rgba(0,0,0,.55);
 }
-.datetime-plain-tv-data { font-size: var(--text-xs); color: rgba(255,255,255,.75); text-shadow: 0 1px 6px rgba(0,0,0,.55); }
+.datetime-plain-tv-data {
+  font-size: 13px; /* text-xs (11px) + 20% */
+  color: rgba(255,255,255,.75); text-shadow: 0 1px 6px rgba(0,0,0,.55);
+}
 
 /* Spotify */
 .sky-card-tv-sub { font-size: var(--text-xs); color: rgba(255,255,255,.78); text-shadow: 0 1px 4px rgba(0,0,0,.3); }
@@ -776,16 +786,19 @@ button.spotify-card-tv-controle-principal:hover { background: rgba(255,255,255,.
   .navbar-tv-cards { gap: var(--space-2); }
   .sky-card-tv { width: 160px; min-height: 74px; }
   .sky-card-tv--weather { width: 200px; }
-  .sky-card-tv-icon-bg { width: 60px; height: 60px; }
+  .sky-card-tv--weather.sky-card-tv--temperatura { width: 250px; min-height: 93px; } /* 200/74 + 25% */
+  .sky-card-tv-icon-bg { width: 75px; height: 75px; } /* 60px + 25% */
   .sky-card-tv-content { padding: var(--space-2) var(--space-3); }
-  .sky-card-tv-value { font-size: var(--text-lg); }
+  .sky-card-tv--temperatura .sky-card-tv-content { padding: 10px 15px; }
+  .sky-card-tv-value { font-size: 25px; } /* text-lg (20px) + 25% */
   .sky-card-tv-desc { font-size: 10px; }
-  .sky-card-tv-stats { gap: 2px 4px; margin-top: 4px; }
-  .sky-card-tv-stat { font-size: 9px; padding: 1px 5px; }
-  .sky-card-tv-stat-icon { width: 9px; height: 9px; }
-  .datetime-plain-tv-hora { font-size: var(--text-lg); }
-  .datetime-plain-tv-dia { font-size: 11px; }
-  .datetime-plain-tv-data { font-size: 10px; }
+  .sky-card-tv--temperatura .sky-card-tv-desc { font-size: 13px; } /* 10px + 25% */
+  .sky-card-tv-stats { gap: 3px 5px; margin-top: 5px; }
+  .sky-card-tv-stat { font-size: 11px; padding: 1px 6px; }
+  .sky-card-tv-stat-icon { width: 11px; height: 11px; }
+  .datetime-plain-tv-hora { font-size: 24px; } /* text-lg (20px) + 20% */
+  .datetime-plain-tv-dia { font-size: 13px; } /* 11px + 20% */
+  .datetime-plain-tv-data { font-size: 12px; } /* 10px + 20% */
   .tv-footer { grid-template-columns: 1fr; }
   .tv-footer-col--clima { border-right: none; border-bottom: 1px solid rgba(255,255,255,.08); }
 }
