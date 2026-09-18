@@ -4,6 +4,7 @@ import { useColaboradores } from '../../hooks/useColaboradores'
 import { diasDaSemana, formatarDiaCurto, hojeISO, inicioDaSemanaISO } from '../../lib/dateUtils'
 
 const TURNO_LABEL = { manha: 'Manhã', tarde: 'Tarde', dia_inteiro: 'Dia inteiro' }
+const STATUS_LABEL = { agendado: 'Agendado', cancelado: 'Cancelado' }
 
 function semanaMais(dataISO, semanas) {
   const d = new Date(`${dataISO}T12:00:00`)
@@ -17,12 +18,32 @@ export default function PlantaoAdmin() {
   const fimSemana = dias[6]
   const hoje = hojeISO()
 
-  const { plantoes, carregando, erro, criarPlantao, atualizarStatus } = usePlantao(semanaBase, fimSemana)
+  const { plantoes, carregando, erro, criarPlantao, atualizarPlantao } = usePlantao(semanaBase, fimSemana)
   const { colaboradores } = useColaboradores()
 
+  const vazio = { corretor_id: '', data: hoje, turno: 'dia_inteiro', observacao: '', status: 'agendado' }
   const [mostrarForm, setMostrarForm] = useState(false)
-  const [form, setForm] = useState({ corretor_id: '', data: hoje, turno: 'dia_inteiro', observacao: '' })
+  const [form, setForm] = useState(vazio)
+  const [editandoId, setEditandoId] = useState(null)
   const [salvando, setSalvando] = useState(false)
+
+  function abrirNovo() {
+    setForm({ ...vazio, data: form.data })
+    setEditandoId(null)
+    setMostrarForm((v) => !v)
+  }
+
+  function abrirEdicao(p) {
+    setForm({
+      corretor_id: String(p.corretor_id),
+      data: p.data,
+      turno: p.turno,
+      observacao: p.observacao ?? '',
+      status: p.status,
+    })
+    setEditandoId(p.id)
+    setMostrarForm(true)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -30,15 +51,19 @@ export default function PlantaoAdmin() {
     if (!corretor) return
     setSalvando(true)
     try {
-      await criarPlantao({
+      const dados = {
         corretor_id: corretor.id_corretor_crm,
         corretor_nome: corretor.nome_completo,
         data: form.data,
         turno: form.turno,
         observacao: form.observacao || null,
-      })
+        status: form.status,
+      }
+      if (editandoId) await atualizarPlantao(editandoId, dados)
+      else await criarPlantao(dados)
       setMostrarForm(false)
-      setForm({ corretor_id: '', data: form.data, turno: 'dia_inteiro', observacao: '' })
+      setEditandoId(null)
+      setForm({ ...vazio, data: form.data })
     } finally {
       setSalvando(false)
     }
@@ -55,7 +80,7 @@ export default function PlantaoAdmin() {
           <span className="cal-nav-title">{formatarDiaCurto(dias[0])} — {formatarDiaCurto(dias[6])}</span>
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSemanaBase(inicioDaSemanaISO())}>Semana atual</button>
         </div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMostrarForm((v) => !v)}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={abrirNovo}>
           {mostrarForm ? 'Cancelar' : '+ Escalar corretor'}
         </button>
       </div>
@@ -100,8 +125,18 @@ export default function PlantaoAdmin() {
             <label htmlFor="plantao-obs">Observação (opcional)</label>
             <input id="plantao-obs" value={form.observacao} onChange={(e) => setForm({ ...form, observacao: e.target.value })} />
           </div>
+          {editandoId && (
+            <div className="field">
+              <label htmlFor="plantao-status">Status</label>
+              <select id="plantao-status" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+                {Object.entries(STATUS_LABEL).map(([valor, label]) => (
+                  <option key={valor} value={valor}>{label}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
-            {salvando ? 'Salvando…' : 'Salvar'}
+            {salvando ? 'Salvando…' : editandoId ? 'Atualizar' : 'Salvar'}
           </button>
         </form>
       )}
@@ -121,8 +156,8 @@ export default function PlantaoAdmin() {
                   type="button"
                   key={p.id}
                   className={`plantao-slot is-${p.status}`}
-                  onClick={() => atualizarStatus(p.id, p.status === 'cancelado' ? 'agendado' : 'cancelado')}
-                  title="Clique para cancelar/reagendar"
+                  onClick={() => abrirEdicao(p)}
+                  title="Clique para editar"
                 >
                   {p.corretor_nome.split(' ')[0]} · {TURNO_LABEL[p.turno]}
                 </button>

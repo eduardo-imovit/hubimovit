@@ -35,5 +35,11 @@ export function usePlantao(inicioISO, fimISO) {
     await recarregar()
   }
 
-  return { plantoes, carregando, erro, criarPlantao, atualizarStatus }
+  async function atualizarPlantao(id, plantao) {
+    const { error } = await supabase.from('plantao').update(plantao).eq('id', id)
+    if (error) throw error
+    await recarregar()
+  }
+
+  return { plantoes, carregando, erro, criarPlantao, atualizarStatus, atualizarPlantao }
 }

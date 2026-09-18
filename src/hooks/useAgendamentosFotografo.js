@@ -30,11 +30,17 @@ export function useAgendamentosFotografo() {
     await recarregar()
   }
 
+  async function atualizarBloco(id, bloco) {
+    const { error } = await supabase.from('agendamentos_fotografo').update(bloco).eq('id', id)
+    if (error) throw error
+    await recarregar()
+  }
+
   async function removerBloco(id) {
     const { error } = await supabase.from('agendamentos_fotografo').update({ ativo: false }).eq('id', id)
     if (error) throw error
     await recarregar()
   }
 
-  return { blocos, carregando, erro, criarBloco, removerBloco }
+  return { blocos, carregando, erro, criarBloco, atualizarBloco, removerBloco }
 }

@@ -4,39 +4,56 @@ import { useBanners, urlPublicaBanner, ehVideoBanner } from '../../hooks/useBann
 const vazio = { titulo: '', subtitulo: '', link_url: '', ordem: 0 }
 
 export default function BannersAdmin() {
-  const { banners, carregando, erro, enviarImagem, criarBanner, removerBanner } = useBanners()
+  const { banners, carregando, erro, enviarImagem, criarBanner, atualizarBanner, removerBanner } = useBanners()
   const [mostrarForm, setMostrarForm] = useState(false)
   const [form, setForm] = useState(vazio)
   const [arquivo, setArquivo] = useState(null)
+  const [editandoId, setEditandoId] = useState(null)
   const [salvando, setSalvando] = useState(false)
   const [erroForm, setErroForm] = useState('')
 
   function abrirNovo() {
     setForm(vazio)
     setArquivo(null)
+    setEditandoId(null)
     setErroForm('')
     setMostrarForm((v) => !v)
   }
 
+  function abrirEdicao(b) {
+    setForm({
+      titulo: b.titulo,
+      subtitulo: b.subtitulo ?? '',
+      link_url: b.link_url ?? '',
+      ordem: b.ordem,
+    })
+    setArquivo(null)
+    setEditandoId(b.id)
+    setErroForm('')
+    setMostrarForm(true)
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!arquivo) {
+    if (!editandoId && !arquivo) {
       setErroForm('Selecione uma imagem para o banner.')
       return
     }
     setErroForm('')
     setSalvando(true)
     try {
-      const path = await enviarImagem(arquivo)
-      await criarBanner({
+      const dados = {
         titulo: form.titulo,
         subtitulo: form.subtitulo || null,
         link_url: form.link_url || null,
         ordem: Number(form.ordem) || 0,
-        imagem_path: path,
-      })
+      }
+      if (arquivo) dados.imagem_path = await enviarImagem(arquivo)
+      if (editandoId) await atualizarBanner(editandoId, dados)
+      else await criarBanner(dados)
       setForm(vazio)
       setArquivo(null)
+      setEditandoId(null)
       setMostrarForm(false)
     } catch (err) {
       setErroForm(err.message)
@@ -73,11 +90,11 @@ export default function BannersAdmin() {
             <input id="banner-ordem" type="number" value={form.ordem} onChange={(e) => setForm({ ...form, ordem: e.target.value })} />
           </div>
           <div className="field">
-            <label htmlFor="banner-imagem">Imagem ou vídeo</label>
-            <input id="banner-imagem" type="file" accept="image/*,video/*" required onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} />
+            <label htmlFor="banner-imagem">{editandoId ? 'Trocar imagem ou vídeo (opcional)' : 'Imagem ou vídeo'}</label>
+            <input id="banner-imagem" type="file" accept="image/*,video/*" required={!editandoId} onChange={(e) => setArquivo(e.target.files?.[0] ?? null)} />
           </div>
           <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
-            {salvando ? 'Enviando…' : 'Salvar'}
+            {salvando ? 'Enviando…' : editandoId ? 'Atualizar' : 'Salvar'}
           </button>
         </form>
       )}
@@ -104,7 +121,8 @@ export default function BannersAdmin() {
               <div className="avisos-item-title">{b.titulo}</div>
               {b.subtitulo && <div className="avisos-item-sub">{b.subtitulo}</div>}
               <div className="avisos-item-sub">Ordem {b.ordem}</div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-1)', marginTop: 'var(--space-2)' }}>
+                <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Editar" onClick={() => abrirEdicao(b)}>✎</button>
                 <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Remover" onClick={() => removerBanner(b.id, b.imagem_path)}>✕</button>
               </div>
             </div>

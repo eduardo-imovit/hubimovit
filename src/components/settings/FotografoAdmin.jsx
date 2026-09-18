@@ -7,13 +7,34 @@ const DIA_SEMANA_LABEL = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'S
 const vazio = { corretor_id: '', dia_semana: '1', hora_inicio: '12:00', hora_fim: '14:00', observacao: '' }
 
 export default function FotografoAdmin() {
-  const { blocos, carregando, erro, criarBloco, removerBloco } = useAgendamentosFotografo()
+  const { blocos, carregando, erro, criarBloco, atualizarBloco, removerBloco } = useAgendamentosFotografo()
   const { colaboradores } = useColaboradores()
 
   const [mostrarForm, setMostrarForm] = useState(false)
   const [form, setForm] = useState(vazio)
+  const [editandoId, setEditandoId] = useState(null)
   const [salvando, setSalvando] = useState(false)
   const [erroForm, setErroForm] = useState('')
+
+  function abrirNovo() {
+    setForm(vazio)
+    setEditandoId(null)
+    setErroForm('')
+    setMostrarForm((v) => !v)
+  }
+
+  function abrirEdicao(bloco) {
+    setForm({
+      corretor_id: String(bloco.corretor_id),
+      dia_semana: String(bloco.dia_semana),
+      hora_inicio: bloco.hora_inicio.slice(0, 5),
+      hora_fim: bloco.hora_fim.slice(0, 5),
+      observacao: bloco.observacao ?? '',
+    })
+    setEditandoId(bloco.id)
+    setErroForm('')
+    setMostrarForm(true)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -26,7 +47,7 @@ export default function FotografoAdmin() {
     setErroForm('')
     setSalvando(true)
     try {
-      await criarBloco({
+      const dados = {
         corretor_id: corretor.id_corretor_crm,
         corretor_nome: corretor.nome_completo,
         corretor_email: corretor.email_oficial ?? '',
@@ -34,8 +55,11 @@ export default function FotografoAdmin() {
         hora_inicio: form.hora_inicio,
         hora_fim: form.hora_fim,
         observacao: form.observacao || null,
-      })
+      }
+      if (editandoId) await atualizarBloco(editandoId, dados)
+      else await criarBloco(dados)
       setForm(vazio)
+      setEditandoId(null)
       setMostrarForm(false)
     } catch (err) {
       setErroForm(err.message)
@@ -47,7 +71,7 @@ export default function FotografoAdmin() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-3)' }}>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMostrarForm((v) => !v)}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={abrirNovo}>
           {mostrarForm ? 'Cancelar' : '+ Novo bloco fixo'}
         </button>
       </div>
@@ -87,7 +111,7 @@ export default function FotografoAdmin() {
             <input id="foto-obs" value={form.observacao} onChange={(e) => setForm({ ...form, observacao: e.target.value })} />
           </div>
           <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
-            {salvando ? 'Salvando…' : 'Salvar'}
+            {salvando ? 'Salvando…' : editandoId ? 'Atualizar' : 'Salvar'}
           </button>
         </form>
       )}
@@ -114,7 +138,10 @@ export default function FotografoAdmin() {
                 {b.observacao ? ` · ${b.observacao}` : ''}
               </div>
             </div>
-            <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Remover" onClick={() => removerBloco(b.id)}>✕</button>
+            <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+              <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Editar" onClick={() => abrirEdicao(b)}>✎</button>
+              <button type="button" className="btn-icon btn-icon-sm tt" data-tt="Remover" onClick={() => removerBloco(b.id)}>✕</button>
+            </div>
           </div>
         ))}
       </div>
