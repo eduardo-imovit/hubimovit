@@ -3,11 +3,11 @@ import { useSession } from '../../hooks/useSession'
 import { usePerfil } from '../../hooks/usePerfil'
 import AppShell from './AppShell'
 
-export default function ProtectedRoute({ children, somenteAdmin = false, papeis, navbar, semPadding }) {
+export default function ProtectedRoute({ children, papeis, navbar, semPadding, semScroll }) {
   const { session, carregando: carregandoSessao } = useSession()
   const { perfil, carregando: carregandoPerfil } = usePerfil()
 
-  const exigeChecagemPerfil = somenteAdmin || !!papeis
+  const exigeChecagemPerfil = !!papeis
 
   if (carregandoSessao || (session && exigeChecagemPerfil && carregandoPerfil)) {
     return <div className="hub-loading">Carregando…</div>
@@ -17,13 +17,9 @@ export default function ProtectedRoute({ children, somenteAdmin = false, papeis,
     return <Navigate to="/login" replace />
   }
 
-  if (somenteAdmin && perfil?.role !== 'admin') {
-    return <Navigate to="/" replace />
-  }
-
   if (papeis && !papeis.includes(perfil?.role)) {
     return <Navigate to="/" replace />
   }
 
-  return <AppShell navbar={navbar} semPadding={semPadding}>{children}</AppShell>
+  return <AppShell navbar={navbar} semPadding={semPadding} semScroll={semScroll}>{children}</AppShell>
 }

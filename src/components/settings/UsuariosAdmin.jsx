@@ -3,7 +3,7 @@ import { usePerfis } from '../../hooks/usePerfis'
 import { useSession } from '../../hooks/useSession'
 import { supabase } from '../../lib/supabaseClient'
 
-const ROLE_LABEL = { admin: 'Admin', editor: 'Editor', corretor: 'Usuário' }
+const ROLE_LABEL = { gestao: 'Gestão', adm: 'Adm', user: 'Usuário', tvaccess: 'Acesso TV' }
 
 export default function UsuariosAdmin() {
   const { perfis, carregando, erro, atualizarRole } = usePerfis()

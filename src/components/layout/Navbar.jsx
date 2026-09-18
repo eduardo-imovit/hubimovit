@@ -4,7 +4,7 @@ import { useSession } from '../../hooks/useSession'
 import { usePerfil } from '../../hooks/usePerfil'
 import WeatherWidget from './WeatherWidget'
 
-const linksAdmin = [
+const linksOperacao = [
   {
     to: '/kanban',
     label: 'Kanban',
@@ -14,6 +14,9 @@ const linksAdmin = [
       { to: '/kanban/atividades', label: 'Relatório de Atividades' },
     ],
   },
+]
+
+const linksGestao = [
   {
     to: '/dashboard',
     label: 'Dashboard',
@@ -30,8 +33,10 @@ const linksAdmin = [
 export default function Navbar() {
   const { session } = useSession()
   const { perfil } = usePerfil()
-  const isAdmin = perfil?.role === 'admin'
-  const podeGerenciarBanners = perfil?.role === 'admin' || perfil?.role === 'editor'
+  const ehGestao = perfil?.role === 'gestao'
+  const ehAdmOuGestao = perfil?.role === 'gestao' || perfil?.role === 'adm'
+  const podeGerenciarBanners = ehAdmOuGestao
+  const podeVerTV = !!perfil?.role && perfil.role !== 'user'
   const email = session?.user?.email ?? ''
   const iniciais = email.slice(0, 2).toUpperCase()
 
@@ -51,11 +56,28 @@ export default function Navbar() {
           Home
         </NavLink>
 
-        <NavLink to="/tv-display" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
-          TV Display
-        </NavLink>
+        {podeVerTV && (
+          <NavLink to="/tv-display" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
+            TV Display
+          </NavLink>
+        )}
 
-        {isAdmin && linksAdmin.map((link) => (
+        {ehAdmOuGestao && linksOperacao.map((link) => (
+          <div className="navbar-item" key={link.to}>
+            <NavLink to={link.to} end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
+              {link.label} <span className="navbar-caret">▾</span>
+            </NavLink>
+            <div className="navbar-dropdown">
+              {link.children.map((child) => (
+                <NavLink key={child.to} to={child.to} end className={({ isActive }) => (isActive ? 'is-active' : '')}>
+                  {child.label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {ehGestao && linksGestao.map((link) => (
           <div className="navbar-item" key={link.to}>
             <NavLink to={link.to} end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
               {link.label} <span className="navbar-caret">▾</span>
@@ -76,7 +98,7 @@ export default function Navbar() {
           </NavLink>
         )}
 
-        {isAdmin && (
+        {ehAdmOuGestao && (
           <NavLink to="/configuracoes" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
             Configurações
           </NavLink>

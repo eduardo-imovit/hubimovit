@@ -6,6 +6,7 @@ import PlantaoAdmin from '../components/settings/PlantaoAdmin'
 import FotografoAdmin from '../components/settings/FotografoAdmin'
 import DatasComemorativasAdmin from '../components/settings/DatasComemorativasAdmin'
 import UsuariosAdmin from '../components/settings/UsuariosAdmin'
+import { usePerfil } from '../hooks/usePerfil'
 
 const ABAS = [
   { id: 'avisos', label: 'Avisos & Links' },
@@ -13,10 +14,13 @@ const ABAS = [
   { id: 'plantao', label: 'Plantão' },
   { id: 'fotografo', label: 'Agenda do Fotógrafo' },
   { id: 'datas', label: 'Datas Comemorativas' },
-  { id: 'usuarios', label: 'Usuários & Acessos' },
+  { id: 'usuarios', label: 'Usuários & Acessos', somenteGestao: true },
 ]
 
 export default function Configuracoes() {
+  const { perfil } = usePerfil()
+  const ehGestao = perfil?.role === 'gestao'
+  const abasVisiveis = ABAS.filter((a) => !a.somenteGestao || ehGestao)
   const [aba, setAba] = useState('avisos')
 
   return (
@@ -30,7 +34,7 @@ export default function Configuracoes() {
       </header>
 
       <div className="tabs" style={{ marginBottom: 'var(--space-6)' }}>
-        {ABAS.map((a) => (
+        {abasVisiveis.map((a) => (
           <button
             key={a.id}
             type="button"

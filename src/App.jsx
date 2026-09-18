@@ -24,18 +24,18 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/tv-display" element={<ProtectedRoute navbar={<NavbarTV />} semPadding><TVDisplay /></ProtectedRoute>} />
-        <Route path="/spotify-callback" element={<ProtectedRoute somenteAdmin><SpotifyCallback /></ProtectedRoute>} />
-        <Route path="/banners" element={<ProtectedRoute papeis={['admin', 'editor']}><GerenciarBanners /></ProtectedRoute>} />
-        <Route path="/kanban" element={<ProtectedRoute somenteAdmin><Kanban /></ProtectedRoute>} />
-        <Route path="/kanban/dados" element={<ProtectedRoute somenteAdmin><DadosAtendimento /></ProtectedRoute>} />
-        <Route path="/kanban/atividades" element={<ProtectedRoute somenteAdmin><RelatorioAtividades /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute somenteAdmin><DashboardVisaoGeral /></ProtectedRoute>} />
-        <Route path="/dashboard/funil" element={<ProtectedRoute somenteAdmin><DashboardFunil /></ProtectedRoute>} />
-        <Route path="/dashboard/campanhas" element={<ProtectedRoute somenteAdmin><DashboardCampanhas /></ProtectedRoute>} />
-        <Route path="/dashboard/performance" element={<ProtectedRoute somenteAdmin><DashboardPerformance /></ProtectedRoute>} />
-        <Route path="/dashboard-leads" element={<ProtectedRoute somenteAdmin><DashboardLeads /></ProtectedRoute>} />
-        <Route path="/configuracoes" element={<ProtectedRoute somenteAdmin><Configuracoes /></ProtectedRoute>} />
+        <Route path="/tv-display" element={<ProtectedRoute papeis={['gestao', 'adm', 'tvaccess']} navbar={<NavbarTV />} semPadding semScroll><TVDisplay /></ProtectedRoute>} />
+        <Route path="/spotify-callback" element={<ProtectedRoute papeis={['gestao']}><SpotifyCallback /></ProtectedRoute>} />
+        <Route path="/banners" element={<ProtectedRoute papeis={['gestao', 'adm']}><GerenciarBanners /></ProtectedRoute>} />
+        <Route path="/kanban" element={<ProtectedRoute papeis={['gestao', 'adm']}><Kanban /></ProtectedRoute>} />
+        <Route path="/kanban/dados" element={<ProtectedRoute papeis={['gestao', 'adm']}><DadosAtendimento /></ProtectedRoute>} />
+        <Route path="/kanban/atividades" element={<ProtectedRoute papeis={['gestao', 'adm']}><RelatorioAtividades /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute papeis={['gestao']}><DashboardVisaoGeral /></ProtectedRoute>} />
+        <Route path="/dashboard/funil" element={<ProtectedRoute papeis={['gestao']}><DashboardFunil /></ProtectedRoute>} />
+        <Route path="/dashboard/campanhas" element={<ProtectedRoute papeis={['gestao']}><DashboardCampanhas /></ProtectedRoute>} />
+        <Route path="/dashboard/performance" element={<ProtectedRoute papeis={['gestao']}><DashboardPerformance /></ProtectedRoute>} />
+        <Route path="/dashboard-leads" element={<ProtectedRoute papeis={['gestao']}><DashboardLeads /></ProtectedRoute>} />
+        <Route path="/configuracoes" element={<ProtectedRoute papeis={['gestao', 'adm']}><Configuracoes /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )

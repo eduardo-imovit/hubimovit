@@ -1,4 +1,6 @@
+import { Navigate } from 'react-router-dom'
 import { useSession } from '../hooks/useSession'
+import { usePerfil } from '../hooks/usePerfil'
 import { formatarDataLonga, saudacao } from '../lib/dateUtils'
 import Calendario from '../components/calendar/Calendario'
 import AvisosFeed from '../components/home/AvisosFeed'
@@ -8,8 +10,14 @@ import BannerCarrossel from '../components/home/BannerCarrossel'
 
 export default function Home() {
   const { session } = useSession()
+  const { perfil } = usePerfil()
   const nome = session?.user?.email?.split('@')[0] ?? ''
   const primeiroNome = nome.charAt(0).toUpperCase() + nome.slice(1)
+
+  // Conta de acesso da TV: nunca fica na Home, vai direto pra tela de exibição.
+  if (perfil?.role === 'tvaccess') {
+    return <Navigate to="/tv-display" replace />
+  }
 
   return (
     <div>
