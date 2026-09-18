@@ -1,11 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useBanners, urlPublicaBanner, ehVideoBanner } from '../../hooks/useBanners'
 
 const INTERVALO_MS = 15000
 
+// O atributo `autoplay` as vezes eh avaliado pelo navegador antes do React
+// terminar de setar `muted` (que ele aplica como propriedade JS, nao como
+// atributo HTML) -- a 1a tentativa de autoplay e rejeitada (so toca sozinho
+// se ja estiver mudo) e o video fica parado pra sempre. Forca play() na mao
+// assim que o primeiro frame estiver pronto, ja garantindo mudo antes.
+function tocarVideo(e) {
+  const video = e.currentTarget
+  video.muted = true
+  video.play().catch(() => {})
+}
+
 export default function BannerCarrossel({ variante = 'home', mostrarControles = true }) {
   const { banners, carregando } = useBanners()
   const [ativo, setAtivo] = useState(0)
+  const containerRef = useRef(null)
 
   useEffect(() => {
     if (banners.length < 2) return
@@ -17,6 +29,14 @@ export default function BannerCarrossel({ variante = 'home', mostrarControles = 
     if (ativo >= banners.length) setAtivo(0)
   }, [banners.length, ativo])
 
+  // O Chrome pausa video autoplay fora de tela por economia de energia --
+  // quando o slide vira o ativo, garante que o video dele volte a tocar
+  // (senao fica congelado no frame de quando foi pausado em segundo plano).
+  useEffect(() => {
+    const video = containerRef.current?.querySelector('.banner-slide.is-active video')
+    video?.play().catch(() => {})
+  }, [ativo])
+
   if (carregando || banners.length === 0) return null
 
   const ehTV = variante === 'tv'
@@ -26,7 +46,7 @@ export default function BannerCarrossel({ variante = 'home', mostrarControles = 
       {banners.map((b, i) => (
         <div className={`banner-slide${i === ativo ? ' is-active' : ''}`} key={b.id}>
           {ehVideoBanner(b.imagem_path) ? (
-            <video src={urlPublicaBanner(b.imagem_path)} autoPlay muted loop playsInline />
+            <video src={urlPublicaBanner(b.imagem_path)} autoPlay muted loop playsInline onLoadedData={tocarVideo} />
           ) : (
             <img src={urlPublicaBanner(b.imagem_path)} alt={b.titulo} />
           )}
@@ -42,7 +62,7 @@ export default function BannerCarrossel({ variante = 'home', mostrarControles = 
   )
 
   return (
-    <div className={ehTV ? 'banner-carrossel-tv' : 'banner-carrossel'}>
+    <div ref={containerRef} className={ehTV ? 'banner-carrossel-tv' : 'banner-carrossel'}>
       {!ehTV && banner.link_url ? (
         <a href={banner.link_url} target="_blank" rel="noreferrer" style={{ display: 'contents' }}>{conteudo}</a>
       ) : conteudo}
