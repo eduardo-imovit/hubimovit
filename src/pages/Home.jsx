@@ -10,13 +10,20 @@ import BannerCarrossel from '../components/home/BannerCarrossel'
 
 export default function Home() {
   const { session } = useSession()
-  const { perfil } = usePerfil()
+  const { perfil, carregando: carregandoPerfil } = usePerfil()
   const nome = session?.user?.email?.split('@')[0] ?? ''
   const primeiroNome = nome.charAt(0).toUpperCase() + nome.slice(1)
 
   // Conta de acesso da TV: nunca fica na Home, vai direto pra tela de exibição.
   if (perfil?.role === 'tvaccess') {
     return <Navigate to="/tv-display" replace />
+  }
+
+  // Sessão autenticada sem linha em `perfis` = cliente externo da esteira de
+  // locação (locatário/proprietário, logado via magic link) -- nunca deve
+  // cair na Home interna, mesmo que a rota "/" não exija nenhum papel.
+  if (session && !carregandoPerfil && !perfil) {
+    return <Navigate to="/portal" replace />
   }
 
   return (

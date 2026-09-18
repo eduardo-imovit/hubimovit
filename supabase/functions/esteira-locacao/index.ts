@@ -1,34 +1,32 @@
 // =============================================================================
 // Esteira de locação — orquestrador (Supabase Edge Function)
 //
-// Adaptado ao schema real do projeto (tabelas propostas_locacao,
-// documentos_tipos_obrigatorios, documentos_enviados, status_historico),
-// que já existia antes desta função — ver migration
-// 20260821140000_esteira_locacao_ajustes.sql para as colunas/funções/triggers
-// adicionadas em cima do que já estava lá.
-//
-// Toda a lógica de estado mora no banco. Esta função só faz três coisas:
+// Reescrita pra trazer a esteira pro Hub com login real (magic link) de
+// locatário e proprietário, em vez do modelo antigo de token_link anônimo.
+// Toda a lógica de estado continua morando no banco (ver migrations
+// 20260821140000_esteira_locacao_ajustes.sql, 20260918150000_esteira_locacao_hub.sql
+// e 20260918151500_esteira_documento_via_storage.sql). Esta função só:
 //   1. valida o formato do payload recebido;
-//   2. despacha pro RPC certo, de acordo com o campo `evento`;
-//   3. no caso de sincronização, chama a API do Imoview e só então confirma
-//      no banco (SQL não fala com APIs externas).
+//   2. confere a identidade de quem chamou (JWT) contra a proposta -- nunca
+//      confia em nada que o cliente diga sobre quem ele é;
+//   3. despacha pro RPC certo, de acordo com o campo `evento`.
 //
-// Por que `evento` explícito em vez de inferir a ação pelos campos
-// presentes: inferir por "quais campos vieram preenchidos" é frágil (um
-// campo extra enviado por engano muda o comportamento) e dificulta validar
-// o payload com um schema. Um discriminador explícito é a forma correta.
+// Modelo de autorização por evento:
+//   nova_proposta            -- qualquer usuário interno logado (tem linha em perfis)
+//   confirmar_dados_locatario -- e-mail do JWT precisa bater com propostas_locacao.email
+//   proprietario_aceitou     -- e-mail do JWT precisa bater com propostas_locacao.proprietario_email
+//   docs_enviados            -- e-mail do JWT precisa bater com propostas_locacao.email
+//   decisao_adm              -- role gestao/adm (via perfis)
+//   sincronizar_imoview      -- role gestao/adm (via perfis)
 //
-// 'nova_proposta'/'docs_enviados'/'proprietario_aceitou' são chamados por
-// cliente/proprietário sem sessão Supabase (o cliente chega pelo token_link,
-// não por login) — por isso o deploy precisa da flag --no-verify-jwt (senão
-// o Supabase bloqueia toda chamada sem JWT antes de chegar aqui). A
-// autorização de 'decisao_adm' e 'sincronizar_imoview' (as ações sensíveis)
-// é feita à mão dentro da função, via exigirAdmin().
+// Como agora TODO chamador precisa estar logado (não existe mais fluxo
+// anônimo por token_link), o deploy usa verificação de JWT padrão -- sem
+// --no-verify-jwt.
 //
-// Deploy: supabase functions deploy esteira-locacao --no-verify-jwt
+// Deploy: supabase functions deploy esteira-locacao
 // Env necessárias no projeto: SUPABASE_URL, SUPABASE_ANON_KEY,
-// SUPABASE_SERVICE_ROLE_KEY, IMOVIEW_API_KEY (header "chave" — ver
-// documentação oficial em api.imoview.com.br, seção Lead/IncluirLead).
+// SUPABASE_SERVICE_ROLE_KEY. IMOVIEW_API_KEY não é usada nesta fase (ver
+// nota em handleSincronizarImoview).
 // =============================================================================
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
@@ -53,19 +51,23 @@ const CORS_HEADERS = {
 // Schemas de entrada — um por evento, união discriminada por `evento`
 // -----------------------------------------------------------------------------
 
-const clienteDadosSchema = z.object({
-  nome_cliente: z.string().min(1),
-  email: z.string().email(),
-  tel: z.string().optional(),
-  codigo_imovel: z.number().int().positive(),
-  tipo_pessoa: z.enum(['Física', 'Jurídica']),
-  tem_conjuge: z.boolean(),
-})
-
 const eventoSchema = z.discriminatedUnion('evento', [
   z.object({
     evento: z.literal('nova_proposta'),
-    cliente: clienteDadosSchema,
+    email: z.string().email(),
+    codigo_imovel: z.number().int().positive(),
+    proprietario_nome: z.string().min(1),
+    proprietario_email: z.string().email(),
+    imovel_titulo: z.string().optional(),
+    imovel_endereco: z.string().optional(),
+  }),
+  z.object({
+    evento: z.literal('confirmar_dados_locatario'),
+    proposta_id: z.string().uuid(),
+    nome: z.string().min(1),
+    tel: z.string().min(1),
+    tipo_pessoa: z.enum(['Física', 'Jurídica']),
+    tem_conjuge: z.boolean(),
   }),
   z.object({
     evento: z.literal('proprietario_aceitou'),
@@ -77,7 +79,7 @@ const eventoSchema = z.discriminatedUnion('evento', [
     documentos: z.array(
       z.object({
         documento_codigo: z.number().int().positive(),
-        url_gdrive: z.string().url(),
+        arquivo_path: z.string().min(1),
       })
     ).min(1),
   }),
@@ -95,17 +97,18 @@ const eventoSchema = z.discriminatedUnion('evento', [
 
 type Evento = z.infer<typeof eventoSchema>
 
-// evento -> exige que quem chamou seja admin (verificado por JWT, não por
-// campo enviado no corpo — nunca confiar em "ator" vindo do cliente)
-const EVENTOS_ADMIN = new Set<Evento['evento']>(['decisao_adm', 'sincronizar_imoview'])
-
 class HttpError extends Error {
   constructor(public status: number, message: string) {
     super(message)
   }
 }
 
-async function exigirAdmin(req: Request): Promise<string> {
+// -----------------------------------------------------------------------------
+// Identidade — nunca confiar em nada que venha no corpo da requisição sobre
+// "quem é" o chamador; sempre extrair do JWT validado pelo Supabase Auth.
+// -----------------------------------------------------------------------------
+
+async function obterChamador(req: Request): Promise<{ id: string; email: string }> {
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) {
     throw new HttpError(401, 'Requisição sem token de autenticação')
@@ -120,43 +123,93 @@ async function exigirAdmin(req: Request): Promise<string> {
     global: { headers: { Authorization: authHeader } },
   })
 
-  const { data: { user }, error: erroAuth } = await supabaseComoChamador.auth.getUser()
-  if (erroAuth || !user) {
+  const { data: { user }, error } = await supabaseComoChamador.auth.getUser()
+  if (error || !user?.email) {
     throw new HttpError(401, 'Token inválido ou expirado')
   }
 
-  const { data: perfil, error: erroPerfil } = await supabase
+  return { id: user.id, email: user.email }
+}
+
+async function exigirAdmin(req: Request): Promise<string> {
+  const chamador = await obterChamador(req)
+  const { data: perfil, error } = await supabase
     .from('perfis')
     .select('role, email')
-    .eq('id', user.id)
+    .eq('id', chamador.id)
     .single()
-  if (erroPerfil || perfil?.role !== 'admin') {
-    throw new HttpError(403, 'Ação restrita a administradores')
+  if (error || !perfil || (perfil.role !== 'gestao' && perfil.role !== 'adm')) {
+    throw new HttpError(403, 'Ação restrita à equipe interna (gestão/adm)')
   }
-
   // status_historico.ator é texto livre — guarda o e-mail (mais legível que
   // o uuid pra quem for auditar depois).
   return perfil.email
+}
+
+async function exigirUsuarioInterno(req: Request): Promise<string> {
+  const chamador = await obterChamador(req)
+  const { data: perfil, error } = await supabase
+    .from('perfis')
+    .select('email')
+    .eq('id', chamador.id)
+    .single()
+  if (error || !perfil) {
+    throw new HttpError(403, 'Ação restrita a usuários internos')
+  }
+  return perfil.email
+}
+
+/** Confere se o e-mail do JWT bate com `email` ou `proprietario_email` da proposta. */
+async function exigirEmailProposta(
+  req: Request,
+  propostaId: string,
+  campo: 'email' | 'proprietario_email'
+): Promise<string> {
+  const chamador = await obterChamador(req)
+  const { data: proposta, error } = await supabase
+    .from('propostas_locacao')
+    .select(campo)
+    .eq('id', propostaId)
+    .single()
+  if (error || !proposta) {
+    throw new HttpError(404, `Proposta ${propostaId} não encontrada`)
+  }
+  const emailEsperado = (proposta as Record<string, string | null>)[campo]
+  if (!emailEsperado || emailEsperado.toLowerCase() !== chamador.email.toLowerCase()) {
+    throw new HttpError(403, 'Você não tem acesso a esta proposta')
+  }
+  return chamador.email
 }
 
 // -----------------------------------------------------------------------------
 // Handlers — um por evento, espelhando 1:1 os passos da esteira
 // -----------------------------------------------------------------------------
 
-async function handleNovaProposta(evento: Extract<Evento, { evento: 'nova_proposta' }>) {
-  const { data, error } = await supabase.rpc('upsert_proposta_locacao', {
-    p_nome_cliente: evento.cliente.nome_cliente,
-    p_email: evento.cliente.email,
-    p_tel: evento.cliente.tel ?? null,
-    p_codigo_imovel: evento.cliente.codigo_imovel,
-    p_tipo_pessoa: evento.cliente.tipo_pessoa,
-    p_tem_conjuge: evento.cliente.tem_conjuge,
-    p_ator: 'cliente',
+async function handleNovaProposta(evento: Extract<Evento, { evento: 'nova_proposta' }>, atorEmail: string) {
+  const { data, error } = await supabase.rpc('criar_proposta_locacao', {
+    p_email: evento.email,
+    p_codigo_imovel: evento.codigo_imovel,
+    p_proprietario_nome: evento.proprietario_nome,
+    p_proprietario_email: evento.proprietario_email,
+    p_imovel_titulo: evento.imovel_titulo ?? null,
+    p_imovel_endereco: evento.imovel_endereco ?? null,
+    p_ator: atorEmail,
   })
   if (error) throw error
-  // token_link é o link que o cliente usa daqui pra frente — não expor mais
-  // do que o necessário pra quem chamou este evento (ex: um formulário público).
-  return { proposta_id: data.id, status: data.status, token_link: data.token_link, link_expira_em: data.link_expira_em }
+  return { proposta: data }
+}
+
+async function handleConfirmarDadosLocatario(evento: Extract<Evento, { evento: 'confirmar_dados_locatario' }>) {
+  const { data, error } = await supabase.rpc('confirmar_dados_locatario', {
+    p_proposta_id: evento.proposta_id,
+    p_nome: evento.nome,
+    p_tel: evento.tel,
+    p_tipo_pessoa: evento.tipo_pessoa,
+    p_tem_conjuge: evento.tem_conjuge,
+    p_ator: 'locatario',
+  })
+  if (error) throw error
+  return { proposta: data }
 }
 
 async function handleProprietarioAceitou(evento: Extract<Evento, { evento: 'proprietario_aceitou' }>) {
@@ -179,10 +232,10 @@ async function handleProprietarioAceitou(evento: Extract<Evento, { evento: 'prop
 async function handleDocsEnviados(evento: Extract<Evento, { evento: 'docs_enviados' }>) {
   const resultados = []
   for (const doc of evento.documentos) {
-    const { data, error } = await supabase.rpc('registrar_documento_enviado', {
+    const { data, error } = await supabase.rpc('registrar_documento_enviado_arquivo', {
       p_proposta_id: evento.proposta_id,
       p_documento_codigo: doc.documento_codigo,
-      p_url_gdrive: doc.url_gdrive,
+      p_arquivo_path: doc.arquivo_path,
       p_ator: 'cliente',
     })
     if (error) throw error
@@ -222,7 +275,13 @@ async function handleSincronizarImoview(evento: Extract<Evento, { evento: 'sincr
     throw new Error(`Proposta ${evento.proposta_id} está em status "${proposta.status}", esperado "docs_aprovados"`)
   }
 
-  await sincronizarComImoview(proposta)
+  // Integração real com o Imoview (função sincronizarComImoview, mais abaixo)
+  // fica DESLIGADA nesta fase -- o Eduardo pediu explicitamente pra não
+  // automatizar esse passo ainda ("Imoview só entra no fim da linha, nossa
+  // equipe faz manualmente"). O botão de "marcar como sincronizada" no
+  // painel interno só confirma que a equipe já lançou os dados por fora.
+  // Quando decidirem automatizar, é só descomentar a linha abaixo.
+  // await sincronizarComImoview(proposta)
 
   const { data, error } = await supabase.rpc('marcar_sincronizado_imoview', {
     p_proposta_id: evento.proposta_id,
@@ -234,15 +293,8 @@ async function handleSincronizarImoview(evento: Extract<Evento, { evento: 'sincr
 }
 
 // Integração conforme o OpenAPI oficial do Imoview (POST /Lead/IncluirLead,
-// schema LeadIncluir): endpoint de captação externa, autenticado só com o
-// header `chave` (sem sessão App_ValidarAcesso). `finalidade: '1'` = aluguel,
-// fixo porque esta esteira é só de locação. A resposta do Imoview só traz
-// `mensagem` — não existe id de lead pra guardar de volta.
-//
-// `midia` é obrigatório pro Imoview e a tabela real não tem essa coluna —
-// uso um valor fixo identificando a origem. Se isso importar pra atribuição
-// de campanha no Imoview, precisa virar uma coluna real em propostas_locacao
-// (mesma ressalva que já tinha feito antes: não inventar dado de marketing).
+// schema LeadIncluir) -- pronta pra quando a equipe decidir automatizar o
+// passo final, mas NÃO é chamada hoje (ver handleSincronizarImoview acima).
 const MIDIA_ORIGEM_PADRAO = 'Hub Imovit - Esteira de Locação'
 
 interface ImoviewLeadResponse {
@@ -250,7 +302,7 @@ interface ImoviewLeadResponse {
 }
 
 async function sincronizarComImoview(proposta: {
-  nome_cliente: string
+  nome_cliente: string | null
   email: string
   tel: string | null
   codigo_imovel: number
@@ -312,19 +364,32 @@ Deno.serve(async (req) => {
 
   try {
     const evento = parsed.data
-    const adminEmail = EVENTOS_ADMIN.has(evento.evento) ? await exigirAdmin(req) : null
 
     switch (evento.evento) {
-      case 'nova_proposta':
-        return jsonResponse(await handleNovaProposta(evento))
-      case 'proprietario_aceitou':
+      case 'nova_proposta': {
+        const atorEmail = await exigirUsuarioInterno(req)
+        return jsonResponse(await handleNovaProposta(evento, atorEmail))
+      }
+      case 'confirmar_dados_locatario': {
+        await exigirEmailProposta(req, evento.proposta_id, 'email')
+        return jsonResponse(await handleConfirmarDadosLocatario(evento))
+      }
+      case 'proprietario_aceitou': {
+        await exigirEmailProposta(req, evento.proposta_id, 'proprietario_email')
         return jsonResponse(await handleProprietarioAceitou(evento))
-      case 'docs_enviados':
+      }
+      case 'docs_enviados': {
+        await exigirEmailProposta(req, evento.proposta_id, 'email')
         return jsonResponse(await handleDocsEnviados(evento))
-      case 'decisao_adm':
-        return jsonResponse(await handleDecisaoAdm(evento, adminEmail!))
-      case 'sincronizar_imoview':
-        return jsonResponse(await handleSincronizarImoview(evento, adminEmail!))
+      }
+      case 'decisao_adm': {
+        const adminEmail = await exigirAdmin(req)
+        return jsonResponse(await handleDecisaoAdm(evento, adminEmail))
+      }
+      case 'sincronizar_imoview': {
+        const adminEmail = await exigirAdmin(req)
+        return jsonResponse(await handleSincronizarImoview(evento, adminEmail))
+      }
     }
   } catch (error) {
     if (error instanceof HttpError) {

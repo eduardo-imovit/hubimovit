@@ -130,6 +130,12 @@ export default function Navbar() {
         )}
 
         {ehAdmOuGestao && (
+          <NavLink to="/esteira" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
+            Esteira
+          </NavLink>
+        )}
+
+        {ehAdmOuGestao && (
           <NavLink to="/configuracoes" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
             Configurações
           </NavLink>
