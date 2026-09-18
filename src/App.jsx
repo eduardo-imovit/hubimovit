@@ -16,7 +16,9 @@ import DashboardCampanhas from './pages/DashboardCampanhas'
 import DashboardPerformance from './pages/DashboardPerformance'
 import DashboardLeads from './pages/DashboardLeads'
 import Configuracoes from './pages/Configuracoes'
-import Esteira from './pages/Esteira'
+import Propostas from './pages/admin/Propostas'
+import Esteiras from './pages/admin/Esteiras'
+import Processos from './pages/admin/Processos'
 import PortalLogin from './pages/portal/PortalLogin'
 import PortalStatus from './pages/portal/PortalStatus'
 
@@ -39,7 +41,9 @@ export default function App() {
         <Route path="/dashboard/performance" element={<ProtectedRoute papeis={['gestao']}><DashboardPerformance /></ProtectedRoute>} />
         <Route path="/dashboard/leads" element={<ProtectedRoute papeis={['gestao']}><DashboardLeads /></ProtectedRoute>} />
         <Route path="/configuracoes" element={<ProtectedRoute papeis={['gestao', 'adm']}><Configuracoes /></ProtectedRoute>} />
-        <Route path="/esteira" element={<ProtectedRoute papeis={['gestao', 'adm']}><Esteira /></ProtectedRoute>} />
+        <Route path="/admin/propostas" element={<ProtectedRoute papeis={['gestao', 'adm']}><Propostas /></ProtectedRoute>} />
+        <Route path="/admin/esteiras" element={<ProtectedRoute papeis={['gestao', 'adm']}><Esteiras /></ProtectedRoute>} />
+        <Route path="/admin/processos" element={<ProtectedRoute papeis={['gestao', 'adm']}><Processos /></ProtectedRoute>} />
         <Route path="/portal/entrar" element={<PortalLogin />} />
         <Route path="/portal" element={<PortalStatus />} />
       </Routes>

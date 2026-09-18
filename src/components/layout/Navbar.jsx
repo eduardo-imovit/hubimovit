@@ -16,6 +16,18 @@ const linksOperacao = [
   },
 ]
 
+const linksAdmin = [
+  {
+    to: '/admin/propostas',
+    label: 'Admin',
+    children: [
+      { to: '/admin/propostas', label: 'Propostas' },
+      { to: '/admin/esteiras', label: 'Esteiras' },
+      { to: '/admin/processos', label: 'Processos' },
+    ],
+  },
+]
+
 const linksGestao = [
   {
     to: '/dashboard',
@@ -129,11 +141,20 @@ export default function Navbar() {
           </NavLink>
         )}
 
-        {ehAdmOuGestao && (
-          <NavLink to="/esteira" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
-            Esteira
-          </NavLink>
-        )}
+        {ehAdmOuGestao && linksAdmin.map((link) => (
+          <div className="navbar-item" key={link.to}>
+            <NavLink to={link.to} end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
+              {link.label} <span className="navbar-caret">▾</span>
+            </NavLink>
+            <div className="navbar-dropdown">
+              {link.children.map((child) => (
+                <NavLink key={child.to} to={child.to} end className={({ isActive }) => (isActive ? 'is-active' : '')}>
+                  {child.label}
+                </NavLink>
+              ))}
+            </div>
+          </div>
+        ))}
 
         {ehAdmOuGestao && (
           <NavLink to="/configuracoes" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
