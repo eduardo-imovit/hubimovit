@@ -488,7 +488,7 @@
   flex-shrink: 0;
 }
 
-/* ------- FOOTER: relogio+clima (col 1) e agenda do fotografo (col 2) ------- */
+/* ------- FOOTER: clima (col 1) e agenda do fotografo (col 2) ------- */
 .tv-footer {
   position: relative;
   z-index: 2;
@@ -499,10 +499,10 @@
   border-top: 1px solid rgba(255,255,255,.08);
 }
 .tv-footer-col { min-width: 0; }
-.tv-footer-col--relogio-clima {
+.tv-footer-col--clima {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  justify-content: center;
   padding: var(--space-3) var(--space-6);
   border-right: 1px solid rgba(255,255,255,.08);
 }

@@ -1,5 +1,6 @@
 import logoImovitLares from '../../assets/logo-imovit-lares-champagne.png'
 import SpotifyCardTV from './SpotifyCardTV'
+import DateTimeCardTV from './DateTimeCardTV'
 
 export default function NavbarTV() {
   return (
@@ -13,7 +14,9 @@ export default function NavbarTV() {
         />
       </div>
 
-      <div className="navbar-tv-center" />
+      <div className="navbar-tv-center">
+        <DateTimeCardTV />
+      </div>
 
       <div className="navbar-tv-side navbar-tv-side--end">
         <SpotifyCardTV />
