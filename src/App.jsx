@@ -34,7 +34,7 @@ export default function App() {
         <Route path="/dashboard/funil" element={<ProtectedRoute papeis={['gestao']}><DashboardFunil /></ProtectedRoute>} />
         <Route path="/dashboard/campanhas" element={<ProtectedRoute papeis={['gestao']}><DashboardCampanhas /></ProtectedRoute>} />
         <Route path="/dashboard/performance" element={<ProtectedRoute papeis={['gestao']}><DashboardPerformance /></ProtectedRoute>} />
-        <Route path="/dashboard-leads" element={<ProtectedRoute papeis={['gestao']}><DashboardLeads /></ProtectedRoute>} />
+        <Route path="/dashboard/leads" element={<ProtectedRoute papeis={['gestao']}><DashboardLeads /></ProtectedRoute>} />
         <Route path="/configuracoes" element={<ProtectedRoute papeis={['gestao', 'adm']}><Configuracoes /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>

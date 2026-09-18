@@ -19,16 +19,49 @@ const linksOperacao = [
 const linksGestao = [
   {
     to: '/dashboard',
-    label: 'Dashboard',
+    label: 'Dash',
     children: [
-      { to: '/dashboard', label: 'Visão Geral' },
+      {
+        label: 'Negócio',
+        children: [
+          { to: '/dashboard', label: 'Visão Geral' },
+          { to: '/dashboard/leads', label: 'Leads' },
+        ],
+      },
+      {
+        label: 'Performance',
+        children: [
+          { to: '/dashboard/performance', label: 'Performance' },
+          { to: '/dashboard/campanhas', label: 'Campanhas' },
+        ],
+      },
       { to: '/dashboard/funil', label: 'Funil' },
-      { to: '/dashboard/campanhas', label: 'Campanhas' },
-      { to: '/dashboard/performance', label: 'Performance' },
-      { to: '/dashboard-leads', label: 'Leads' },
     ],
   },
 ]
+
+/** Item de dropdown: link direto (sem children) ou submenu-flyout (com children). */
+function ItemMenu({ item }) {
+  if (!item.children) {
+    return (
+      <NavLink to={item.to} end className={({ isActive }) => (isActive ? 'is-active' : '')}>
+        {item.label}
+      </NavLink>
+    )
+  }
+  return (
+    <div className="navbar-subitem">
+      <span className="navbar-subitem-label">
+        {item.label} <span className="navbar-caret navbar-caret--flyout">▸</span>
+      </span>
+      <div className="navbar-flyout">
+        {item.children.map((child) => (
+          <ItemMenu key={child.to ?? child.label} item={child} />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function Navbar() {
   const { session } = useSession()
@@ -84,9 +117,7 @@ export default function Navbar() {
             </NavLink>
             <div className="navbar-dropdown">
               {link.children.map((child) => (
-                <NavLink key={child.to} to={child.to} end className={({ isActive }) => (isActive ? 'is-active' : '')}>
-                  {child.label}
-                </NavLink>
+                <ItemMenu key={child.to ?? child.label} item={child} />
               ))}
             </div>
           </div>
