@@ -2,17 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useBanners, urlPublicaBanner, ehVideoBanner } from '../../hooks/useBanners'
 
 const INTERVALO_MS = 15000
-
-// O atributo `autoplay` as vezes eh avaliado pelo navegador antes do React
-// terminar de setar `muted` (que ele aplica como propriedade JS, nao como
-// atributo HTML) -- a 1a tentativa de autoplay e rejeitada (so toca sozinho
-// se ja estiver mudo) e o video fica parado pra sempre. Forca play() na mao
-// assim que o primeiro frame estiver pronto, ja garantindo mudo antes.
-function tocarVideo(e) {
-  const video = e.currentTarget
-  video.muted = true
-  video.play().catch(() => {})
-}
+const WATCHDOG_VIDEO_MS = 1000
 
 export default function BannerCarrossel({ variante = 'home', mostrarControles = true }) {
   const { banners, carregando } = useBanners()
@@ -29,13 +19,23 @@ export default function BannerCarrossel({ variante = 'home', mostrarControles = 
     if (ativo >= banners.length) setAtivo(0)
   }, [banners.length, ativo])
 
-  // O Chrome pausa video autoplay fora de tela por economia de energia --
-  // quando o slide vira o ativo, garante que o video dele volte a tocar
-  // (senao fica congelado no frame de quando foi pausado em segundo plano).
+  // O atributo `autoplay` sozinho nao e confiavel aqui: o React seta `muted`
+  // como propriedade (nao atributo HTML), entao a 1a tentativa automatica do
+  // navegador as vezes e avaliada antes disso e fica rejeitada pra sempre; o
+  // Chrome tambem pausa video fora de tela por economia de energia e nao
+  // retoma sozinho quando o slide vira o ativo. Em vez de depender de um
+  // unico evento (que pode nao disparar a tempo), um watchdog confere
+  // periodicamente e forca o play() do video ativo sempre que estiver pausado.
   useEffect(() => {
-    const video = containerRef.current?.querySelector('.banner-slide.is-active video')
-    video?.play().catch(() => {})
-  }, [ativo])
+    const id = setInterval(() => {
+      const video = containerRef.current?.querySelector('.banner-slide.is-active video')
+      if (video?.paused) {
+        video.muted = true
+        video.play().catch(() => {})
+      }
+    }, WATCHDOG_VIDEO_MS)
+    return () => clearInterval(id)
+  }, [])
 
   if (carregando || banners.length === 0) return null
 
@@ -46,7 +46,7 @@ export default function BannerCarrossel({ variante = 'home', mostrarControles = 
       {banners.map((b, i) => (
         <div className={`banner-slide${i === ativo ? ' is-active' : ''}`} key={b.id}>
           {ehVideoBanner(b.imagem_path) ? (
-            <video src={urlPublicaBanner(b.imagem_path)} autoPlay muted loop playsInline onLoadedData={tocarVideo} />
+            <video src={urlPublicaBanner(b.imagem_path)} autoPlay muted loop playsInline />
           ) : (
             <img src={urlPublicaBanner(b.imagem_path)} alt={b.titulo} />
           )}

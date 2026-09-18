@@ -474,6 +474,13 @@
   min-height: 0;
   background: var(--grafite);
 }
+/* Setas maiores na TV -- alvo de 36px e pequeno demais numa tela grande */
+.banner-carrossel-tv .banner-arrow {
+  width: 56px; height: 56px;
+  font-size: var(--text-2xl);
+}
+.banner-carrossel-tv .banner-arrow.prev { left: var(--space-5); }
+.banner-carrossel-tv .banner-arrow.next { right: var(--space-5); }
 /* Granulado sutil por cima de tudo, pra tirar a sensacao de gradiente/foto "chapada" */
 .tv-display-grain {
   position: fixed; inset: 0; z-index: 1; pointer-events: none;
