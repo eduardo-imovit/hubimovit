@@ -1,11 +1,9 @@
 import { useAgendamentosFotografo } from '../../hooks/useAgendamentosFotografo'
 
-// dia_semana segue Date.getDay(): 0=Domingo...6=Sabado. Só dias úteis aqui.
+// dia_semana segue Date.getDay(): 0=Domingo...6=Sabado. So os dias com agenda do fotografo.
 const DIAS_UTEIS = [
-  { dia: 1, nome: 'Segunda' },
   { dia: 2, nome: 'Terça' },
   { dia: 3, nome: 'Quarta' },
-  { dia: 4, nome: 'Quinta' },
   { dia: 5, nome: 'Sexta' },
 ]
 

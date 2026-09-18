@@ -1,5 +1,5 @@
 import BannerCarrossel from '../components/home/BannerCarrossel'
-import AgendaFotografoSemanalTV from '../components/calendar/AgendaFotografoSemanalTV'
+import TVDisplayFooter from '../components/layout/TVDisplayFooter'
 
 export default function TVDisplay() {
   return (
@@ -8,7 +8,7 @@ export default function TVDisplay() {
       <div className="tv-display-grain" aria-hidden="true" />
 
       <div className="tv-display-conteudo">
-        <AgendaFotografoSemanalTV />
+        <TVDisplayFooter />
       </div>
     </div>
   )

@@ -614,17 +614,27 @@
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  height: 136px; flex-shrink: 0;
-  background: var(--grafite);
-  border-bottom: 1px solid rgba(255,255,255,.08);
+  height: 136px;
   padding: 0 var(--space-7);
-  position: sticky; top: 0;
+  position: fixed; top: 0; left: 0; right: 0;
   z-index: var(--z-sticky);
 }
 .navbar-tv-side { display: flex; align-items: center; min-width: 0; overflow: hidden; }
 .navbar-tv-side--end { justify-content: flex-end; }
 .navbar-tv-center { display: flex; justify-content: center; align-items: center; min-width: 0; flex-shrink: 0; }
-.navbar-tv-logo { height: 46px; width: auto; object-fit: contain; }
+.navbar-tv-logo {
+  display: block;
+  flex-shrink: 0;
+  height: 63px; /* 46px + 20% + 15% */
+  aspect-ratio: 8001 / 1834;
+  background-color: var(--champagne);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-position: left center;
+  mask-position: left center;
+}
 .navbar-tv-cards { display: flex; align-items: center; gap: var(--space-6); }
 
 /* ---------- Cards "janela de céu" (clima) + card neutro (data/hora) ---------- */
@@ -722,13 +732,13 @@
 .sky-neutro { background: linear-gradient(155deg, #3d3d3d 0%, #2D2D2D 60%, #1e1e1e 100%); }
 
 /* Data/hora — texto direto na navbar, sem card */
-.datetime-plain-tv { display: flex; flex-direction: column; gap: 2px; }
+.datetime-plain-tv { display: flex; flex-direction: column; gap: 1px; }
 .datetime-plain-tv-hora {
   font-family: var(--font-serif); font-weight: var(--weight-light);
-  font-size: var(--text-2xl); color: var(--branco); line-height: 1;
+  font-size: var(--text-3xl); color: var(--branco); line-height: 1;
   font-variant-numeric: tabular-nums;
 }
-.datetime-plain-tv-dia { font-size: var(--text-sm); color: rgba(255,255,255,.85); font-weight: var(--weight-medium); }
+.datetime-plain-tv-dia { font-size: var(--text-sm); color: rgba(255,255,255,.85); font-weight: var(--weight-medium); margin-top: 2px; }
 .datetime-plain-tv-data { font-size: var(--text-xs); color: rgba(255,255,255,.6); }
 
 /* Spotify */
@@ -758,7 +768,7 @@ button.spotify-card-tv-controle-principal:hover { background: rgba(255,255,255,.
 
 @media (max-width: 1300px) {
   .navbar-tv { padding: 0 var(--space-4); }
-  .navbar-tv-logo { height: 35px; }
+  .navbar-tv-logo { height: 48px; }
   .navbar-tv-cards { gap: var(--space-2); }
   .sky-card-tv { width: 160px; min-height: 74px; }
   .sky-card-tv--weather { width: 200px; }
@@ -770,6 +780,8 @@ button.spotify-card-tv-controle-principal:hover { background: rgba(255,255,255,.
   .datetime-plain-tv-hora { font-size: var(--text-lg); }
   .datetime-plain-tv-dia { font-size: 11px; }
   .datetime-plain-tv-data { font-size: 10px; }
+  .tv-footer { grid-template-columns: 1fr; }
+  .tv-footer-col--relogio-clima { border-right: none; border-bottom: 1px solid rgba(255,255,255,.08); }
 }
 
 /* ============================================================

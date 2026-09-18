@@ -10,6 +10,10 @@
   min-height: 100vh;
   background: var(--creme);
 }
+.app-shell--sem-scroll {
+  height: 100vh;
+  overflow: hidden;
+}
 .app-main {
   flex: 1;
   min-width: 0;
@@ -414,7 +418,7 @@
   transition: opacity var(--duration-poetic) var(--ease-soft);
 }
 .banner-slide.is-active { opacity: 1; z-index: 1; }
-.banner-slide img { width: 100%; height: 100%; object-fit: cover; }
+.banner-slide img, .banner-slide video { width: 100%; height: 100%; object-fit: cover; }
 .banner-slide-caption {
   position: absolute; left: 0; right: 0; bottom: 0;
   padding: var(--space-6);
@@ -466,16 +470,10 @@
   position: relative;
   overflow: hidden;
   width: 100%;
-  height: 58vh;
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
   background: var(--grafite);
 }
-.banner-carrossel-tv .banner-slide::after {
-  content: '';
-  position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(15,13,12,.15) 0%, rgba(15,13,12,.05) 45%, rgba(15,13,12,.65) 100%);
-}
-
 /* Granulado sutil por cima de tudo, pra tirar a sensacao de gradiente/foto "chapada" */
 .tv-display-grain {
   position: fixed; inset: 0; z-index: 1; pointer-events: none;
@@ -487,11 +485,26 @@
 .tv-display-conteudo {
   position: relative;
   z-index: 2;
-  flex: 1;
-  min-height: 0;
+  flex-shrink: 0;
+}
+
+/* ------- FOOTER: relogio+clima (col 1) e agenda do fotografo (col 2) ------- */
+.tv-footer {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: stretch;
+  background: var(--grafite);
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.tv-footer-col { min-width: 0; }
+.tv-footer-col--relogio-clima {
   display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-7);
+  border-right: 1px solid rgba(255,255,255,.08);
 }
 
 .agenda-fotografo-tv {
@@ -510,7 +523,7 @@
 }
 .agenda-fotografo-tv-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-3);
 }
 .agenda-fotografo-tv-dia {
