@@ -4,18 +4,6 @@ import { useSession } from '../../hooks/useSession'
 import { usePerfil } from '../../hooks/usePerfil'
 import WeatherWidget from './WeatherWidget'
 
-const linksOperacao = [
-  {
-    to: '/kanban',
-    label: 'Kanban',
-    children: [
-      { to: '/kanban', label: 'Quadro' },
-      { to: '/kanban/dados', label: 'Dados de Atendimento' },
-      { to: '/kanban/atividades', label: 'Relatório de Atividades' },
-    ],
-  },
-]
-
 const linksAdmin = [
   {
     to: '/admin/propostas',
@@ -28,11 +16,21 @@ const linksAdmin = [
   },
 ]
 
-const linksGestao = [
-  {
-    to: '/dashboard',
-    label: 'Dash',
-    children: [
+/** Dash reúne Kanban (adm/gestao) e KPIs (só gestao) num único item de navbar. */
+function buildLinksDash(ehGestao) {
+  const children = [
+    {
+      label: 'Kanban',
+      children: [
+        { to: '/kanban', label: 'Quadro' },
+        { to: '/kanban/dados', label: 'Dados de Atendimento' },
+        { to: '/kanban/atividades', label: 'Relatório de Atividades' },
+      ],
+    },
+  ]
+
+  if (ehGestao) {
+    children.push(
       {
         label: 'Negócio',
         children: [
@@ -48,9 +46,11 @@ const linksGestao = [
         ],
       },
       { to: '/dashboard/funil', label: 'Funil' },
-    ],
-  },
-]
+    )
+  }
+
+  return [{ to: ehGestao ? '/dashboard' : '/kanban', label: 'Dash', children }]
+}
 
 /** Item de dropdown: link direto (sem children) ou submenu-flyout (com children). */
 function ItemMenu({ item }) {
@@ -80,8 +80,8 @@ export default function Navbar() {
   const { perfil } = usePerfil()
   const ehGestao = perfil?.role === 'gestao'
   const ehAdmOuGestao = perfil?.role === 'gestao' || perfil?.role === 'adm'
-  const podeGerenciarBanners = ehAdmOuGestao
   const podeVerTV = !!perfil?.role && perfil.role !== 'user'
+  const linksDash = buildLinksDash(ehGestao)
   const email = session?.user?.email ?? ''
   const iniciais = email.slice(0, 2).toUpperCase()
 
@@ -107,22 +107,7 @@ export default function Navbar() {
           </NavLink>
         )}
 
-        {ehAdmOuGestao && linksOperacao.map((link) => (
-          <div className="navbar-item" key={link.to}>
-            <NavLink to={link.to} end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
-              {link.label} <span className="navbar-caret">▾</span>
-            </NavLink>
-            <div className="navbar-dropdown">
-              {link.children.map((child) => (
-                <NavLink key={child.to} to={child.to} end className={({ isActive }) => (isActive ? 'is-active' : '')}>
-                  {child.label}
-                </NavLink>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {ehGestao && linksGestao.map((link) => (
+        {ehAdmOuGestao && linksDash.map((link) => (
           <div className="navbar-item" key={link.to}>
             <NavLink to={link.to} end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
               {link.label} <span className="navbar-caret">▾</span>
@@ -134,12 +119,6 @@ export default function Navbar() {
             </div>
           </div>
         ))}
-
-        {podeGerenciarBanners && (
-          <NavLink to="/banners" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
-            Banners
-          </NavLink>
-        )}
 
         {ehAdmOuGestao && linksAdmin.map((link) => (
           <div className="navbar-item" key={link.to}>

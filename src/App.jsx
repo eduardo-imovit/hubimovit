@@ -6,7 +6,6 @@ import RedefinirSenha from './pages/RedefinirSenha'
 import Home from './pages/Home'
 import TVDisplay from './pages/TVDisplay'
 import SpotifyCallback from './pages/SpotifyCallback'
-import GerenciarBanners from './pages/GerenciarBanners'
 import Kanban from './pages/Kanban'
 import DadosAtendimento from './pages/DadosAtendimento'
 import RelatorioAtividades from './pages/RelatorioAtividades'
@@ -31,7 +30,6 @@ export default function App() {
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/tv-display" element={<ProtectedRoute papeis={['gestao', 'adm', 'tvaccess']} navbar={<NavbarTV />} semPadding semScroll><TVDisplay /></ProtectedRoute>} />
         <Route path="/spotify-callback" element={<ProtectedRoute papeis={['gestao']}><SpotifyCallback /></ProtectedRoute>} />
-        <Route path="/banners" element={<ProtectedRoute papeis={['gestao', 'adm']}><GerenciarBanners /></ProtectedRoute>} />
         <Route path="/kanban" element={<ProtectedRoute papeis={['gestao', 'adm']}><Kanban /></ProtectedRoute>} />
         <Route path="/kanban/dados" element={<ProtectedRoute papeis={['gestao', 'adm']}><DadosAtendimento /></ProtectedRoute>} />
         <Route path="/kanban/atividades" element={<ProtectedRoute papeis={['gestao', 'adm']}><RelatorioAtividades /></ProtectedRoute>} />
