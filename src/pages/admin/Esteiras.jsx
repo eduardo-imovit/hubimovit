@@ -1,8 +1,13 @@
 import { useState } from 'react'
+import JSZip from 'jszip'
 import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
 import { useDocumentosEsteira } from '../../hooks/useDocumentosEsteira'
 import { supabase } from '../../lib/supabaseClient'
 import { decidirDocumento, marcarSincronizada } from '../../lib/esteira'
+
+function sanitizarNomeArquivo(nome) {
+  return nome.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-')
+}
 
 const STATUS_LABEL = {
   aguardando_docs: 'Aguardando documentos',
@@ -82,7 +87,8 @@ export default function Esteiras() {
 function ChecklistEsteira({ proposta, onAtualizar }) {
   const { checklist, carregando, recarregar } = useDocumentosEsteira(proposta)
   const [processandoId, setProcessandoId] = useState(null)
-  const [sincronizando, setSincronizando] = useState(false)
+  const [finalizando, setFinalizando] = useState(false)
+  const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false)
   const [erro, setErro] = useState('')
 
   async function handleDecisao(documentoId, decisao) {
@@ -99,16 +105,41 @@ function ChecklistEsteira({ proposta, onAtualizar }) {
     }
   }
 
-  async function handleSincronizar() {
+  const documentosEnviados = checklist.filter((doc) => doc.envio?.arquivo_path)
+
+  async function handleFinalizar() {
     setErro('')
-    setSincronizando(true)
+    setFinalizando(true)
     try {
+      if (documentosEnviados.length > 0) {
+        const zip = new JSZip()
+        for (const doc of documentosEnviados) {
+          const { data, error: erroUrl } = await supabase.storage
+            .from('esteira-documentos')
+            .createSignedUrl(doc.envio.arquivo_path, 300)
+          if (erroUrl || !data) continue
+          const resposta = await fetch(data.signedUrl)
+          const blob = await resposta.blob()
+          const extensao = doc.envio.arquivo_path.split('.').pop()
+          zip.file(`${sanitizarNomeArquivo(doc.nome)}.${extensao}`, blob)
+        }
+        const conteudo = await zip.generateAsync({ type: 'blob' })
+        const url = URL.createObjectURL(conteudo)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `documentos-${sanitizarNomeArquivo(proposta.nome_cliente || proposta.email)}.zip`
+        document.body.appendChild(link)
+        link.click()
+        link.remove()
+        URL.revokeObjectURL(url)
+      }
       await marcarSincronizada(proposta.id)
+      setMostrarConfirmacao(false)
       await onAtualizar()
     } catch (err) {
       setErro(err.message)
     } finally {
-      setSincronizando(false)
+      setFinalizando(false)
     }
   }
 
@@ -166,9 +197,37 @@ function ChecklistEsteira({ proposta, onAtualizar }) {
       )}
 
       {proposta.status_efetivo === 'docs_aprovados' && (
-        <button type="button" className="btn btn-primary btn-sm" disabled={sincronizando} onClick={handleSincronizar}>
-          {sincronizando ? 'Marcando…' : 'Marcar como sincronizada (depois de lançar no Imoview)'}
+        <button type="button" className="btn btn-primary btn-sm" onClick={() => setMostrarConfirmacao(true)}>
+          Finalizar processo
         </button>
+      )}
+
+      {mostrarConfirmacao && (
+        <div className="modal-overlay" onClick={() => !finalizando && setMostrarConfirmacao(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">Finalizar processo?</div>
+              <button type="button" className="modal-close" disabled={finalizando} onClick={() => setMostrarConfirmacao(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>Isso vai, nessa ordem:</p>
+              <ol style={{ paddingLeft: 'var(--space-5)', margin: 'var(--space-2) 0' }}>
+                <li>Baixar um .zip com os {documentosEnviados.length} documento(s) enviados pra este computador</li>
+                <li>Marcar o processo como sincronizado (confirme antes que já lançou no Imoview)</li>
+                <li>Apagar os documentos do Storage do Supabase pra liberar espaço</li>
+              </ol>
+              <p><strong>Não tem como desfazer</strong> — garanta que o .zip baixou certo antes de fechar esta tela.</p>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-ghost btn-sm" disabled={finalizando} onClick={() => setMostrarConfirmacao(false)}>
+                Cancelar
+              </button>
+              <button type="button" className="btn btn-primary btn-sm" disabled={finalizando} onClick={handleFinalizar}>
+                {finalizando ? 'Finalizando…' : 'Baixar tudo e finalizar'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

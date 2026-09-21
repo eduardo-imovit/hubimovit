@@ -4,13 +4,13 @@ import { usePortalAcesso } from '../../hooks/usePortalAcesso'
 import { useHistoricoProposta } from '../../hooks/useHistoricoProposta'
 import { useDocumentosEsteira } from '../../hooks/useDocumentosEsteira'
 import { supabase } from '../../lib/supabaseClient'
-import { confirmarDadosLocatario, proprietarioAceitou, registrarDocumentosEnviados } from '../../lib/esteira'
+import { confirmarDadosLocatario, completarCadastro, registrarDocumentosEnviados } from '../../lib/esteira'
 import PortalShell from '../../components/portal/PortalShell'
 
 const STATUS_LABEL = {
   aguardando_locatario: 'Aguardando seus dados',
   aguardando_aprovacao_interna: 'Em análise pela nossa equipe',
-  criada: 'Aguardando aprovação do proprietário',
+  criada: 'Aguardando liberação da esteira',
   aguardando_docs: 'Aguardando envio de documentos',
   docs_em_analise: 'Documentos em análise',
   docs_aprovados: 'Documentos aprovados — finalizando',
@@ -122,10 +122,10 @@ function AcaoDaVez({ proposta, onAtualizar }) {
     return <FormConfirmarDados proposta={proposta} onAtualizar={onAtualizar} />
   }
   if (proposta.meuPapel === 'locatario' && ['aguardando_docs', 'docs_em_analise'].includes(proposta.status)) {
+    if (!proposta.tipo_pessoa) {
+      return <FormCadastro proposta={proposta} onAtualizar={onAtualizar} />
+    }
     return <ChecklistDocumentos proposta={proposta} onAtualizar={onAtualizar} />
-  }
-  if (proposta.meuPapel === 'proprietario' && proposta.status === 'criada') {
-    return <AprovarProprietario proposta={proposta} onAtualizar={onAtualizar} />
   }
   return (
     <div className="stat-sub is-muted">
@@ -137,7 +137,12 @@ function AcaoDaVez({ proposta, onAtualizar }) {
 }
 
 function FormConfirmarDados({ proposta, onAtualizar }) {
-  const [form, setForm] = useState({ nome: '', tel: '', tipo_pessoa: 'Física', tem_conjuge: false })
+  const [form, setForm] = useState({
+    nome: proposta.nome_cliente || '',
+    tel: '',
+    valor_oferta: proposta.valor != null ? String(proposta.valor) : '',
+    observacoes: '',
+  })
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -146,7 +151,13 @@ function FormConfirmarDados({ proposta, onAtualizar }) {
     setErro('')
     setSalvando(true)
     try {
-      await confirmarDadosLocatario({ proposta_id: proposta.id, ...form })
+      await confirmarDadosLocatario({
+        proposta_id: proposta.id,
+        nome: form.nome,
+        tel: form.tel,
+        valor_oferta: form.valor_oferta ? Number(form.valor_oferta) : undefined,
+        observacoes: form.observacoes || undefined,
+      })
       await onAtualizar()
     } catch (err) {
       setErro(err.message)
@@ -157,35 +168,28 @@ function FormConfirmarDados({ proposta, onAtualizar }) {
 
   return (
     <form onSubmit={handleSubmit} className="card card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-      <div className="page-eyebrow">Complete seus dados pra seguir com a proposta</div>
+      <div className="page-eyebrow">Confirme seus dados pra seguir com a proposta</div>
       {erro && <div className="login-error">{erro}</div>}
       <div className="field">
         <label htmlFor="pf-nome">Nome completo</label>
         <input id="pf-nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
       </div>
       <div className="field">
+        <label htmlFor="pf-email">E-mail</label>
+        <input id="pf-email" value={proposta.email} disabled />
+      </div>
+      <div className="field">
         <label htmlFor="pf-tel">Telefone</label>
         <input id="pf-tel" required value={form.tel} onChange={(e) => setForm({ ...form, tel: e.target.value })} placeholder="(19) 99999-9999" />
       </div>
       <div className="field">
-        <label htmlFor="pf-tipo">Tipo de pessoa</label>
-        <select id="pf-tipo" value={form.tipo_pessoa} onChange={(e) => setForm({ ...form, tipo_pessoa: e.target.value })}>
-          <option value="Física">Física</option>
-          <option value="Jurídica">Jurídica</option>
-        </select>
+        <label htmlFor="pf-valor-oferta">Valor da oferta (R$)</label>
+        <input id="pf-valor-oferta" type="number" step="0.01" value={form.valor_oferta} onChange={(e) => setForm({ ...form, valor_oferta: e.target.value })} />
       </div>
-      {form.tipo_pessoa === 'Física' && (
-        <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 'var(--space-2)' }}>
-          <input
-            id="pf-conjuge"
-            type="checkbox"
-            checked={form.tem_conjuge}
-            onChange={(e) => setForm({ ...form, tem_conjuge: e.target.checked })}
-            style={{ width: 'auto' }}
-          />
-          <label htmlFor="pf-conjuge" style={{ textTransform: 'none', letterSpacing: 0 }}>Tenho cônjuge (vai precisar dos documentos dele também)</label>
-        </div>
-      )}
+      <div className="field">
+        <label htmlFor="pf-observacoes">Observações (opcional)</label>
+        <textarea id="pf-observacoes" rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
+      </div>
       <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
         {salvando ? 'Enviando…' : 'Confirmar e continuar'}
       </button>
@@ -193,32 +197,141 @@ function FormConfirmarDados({ proposta, onAtualizar }) {
   )
 }
 
-function AprovarProprietario({ proposta, onAtualizar }) {
-  const [processando, setProcessando] = useState(false)
+const TIPO_RENDA_OPCOES = ['CLT', 'Autônomo(a)', 'Empresário(a)', 'Aposentado(a)/Pensionista', 'Outro']
+
+function FormCadastro({ proposta, onAtualizar }) {
+  const [form, setForm] = useState({
+    tipo_pessoa: 'Física',
+    tem_conjuge: false,
+    profissao: '',
+    cargo: '',
+    tipo_renda: TIPO_RENDA_OPCOES[0],
+    renda_pessoal: '',
+    renda_familiar: '',
+    nome_empresa: '',
+    conjuge_nome: '',
+    conjuge_email: '',
+    conjuge_profissao: '',
+    conjuge_renda: '',
+  })
+  const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
-  async function handleAprovar() {
+  const ehFisica = form.tipo_pessoa === 'Física'
+  const precisaConjuge = ehFisica && form.tem_conjuge
+
+  async function handleSubmit(e) {
+    e.preventDefault()
     setErro('')
-    setProcessando(true)
+    setSalvando(true)
     try {
-      await proprietarioAceitou(proposta.id)
+      await completarCadastro({
+        proposta_id: proposta.id,
+        tipo_pessoa: form.tipo_pessoa,
+        tem_conjuge: form.tem_conjuge,
+        profissao: ehFisica ? form.profissao || undefined : undefined,
+        cargo: ehFisica ? form.cargo || undefined : undefined,
+        tipo_renda: ehFisica ? form.tipo_renda || undefined : undefined,
+        renda_pessoal: ehFisica && form.renda_pessoal ? Number(form.renda_pessoal) : undefined,
+        renda_familiar: ehFisica && form.renda_familiar ? Number(form.renda_familiar) : undefined,
+        nome_empresa: ehFisica ? form.nome_empresa || undefined : undefined,
+        conjuge_nome: precisaConjuge ? form.conjuge_nome || undefined : undefined,
+        conjuge_email: precisaConjuge ? form.conjuge_email || undefined : undefined,
+        conjuge_profissao: precisaConjuge ? form.conjuge_profissao || undefined : undefined,
+        conjuge_renda: precisaConjuge && form.conjuge_renda ? Number(form.conjuge_renda) : undefined,
+      })
       await onAtualizar()
     } catch (err) {
       setErro(err.message)
     } finally {
-      setProcessando(false)
+      setSalvando(false)
     }
   }
 
   return (
-    <div className="card card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-      <div className="page-eyebrow">Aprovação da proposta</div>
-      <div>Um novo locatário fez uma proposta pro seu imóvel. Aprovando, o processo segue pra etapa de documentação.</div>
+    <form onSubmit={handleSubmit} className="card card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      <div className="page-eyebrow">Proposta aprovada — complete seu cadastro pra liberar os documentos</div>
       {erro && <div className="login-error">{erro}</div>}
-      <button type="button" className="btn btn-primary btn-sm" disabled={processando} onClick={handleAprovar}>
-        {processando ? 'Aprovando…' : 'Aprovar proposta'}
+      <div className="field">
+        <label htmlFor="fc-tipo">Tipo de pessoa</label>
+        <select id="fc-tipo" value={form.tipo_pessoa} onChange={(e) => setForm({ ...form, tipo_pessoa: e.target.value })}>
+          <option value="Física">Física</option>
+          <option value="Jurídica">Jurídica</option>
+        </select>
+      </div>
+      {ehFisica && (
+        <>
+          <div className="field">
+            <label htmlFor="fc-profissao">Profissão</label>
+            <input id="fc-profissao" required value={form.profissao} onChange={(e) => setForm({ ...form, profissao: e.target.value })} />
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+            <div className="field" style={{ flex: 1 }}>
+              <label htmlFor="fc-cargo">Cargo</label>
+              <input id="fc-cargo" required value={form.cargo} onChange={(e) => setForm({ ...form, cargo: e.target.value })} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label htmlFor="fc-tipo-renda">Tipo de renda</label>
+              <select id="fc-tipo-renda" value={form.tipo_renda} onChange={(e) => setForm({ ...form, tipo_renda: e.target.value })}>
+                {TIPO_RENDA_OPCOES.map((op) => <option key={op} value={op}>{op}</option>)}
+              </select>
+            </div>
+          </div>
+          {form.tipo_renda !== 'Aposentado(a)/Pensionista' && (
+            <div className="field">
+              <label htmlFor="fc-empresa">Empresa onde trabalha</label>
+              <input id="fc-empresa" value={form.nome_empresa} onChange={(e) => setForm({ ...form, nome_empresa: e.target.value })} />
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+            <div className="field" style={{ flex: 1 }}>
+              <label htmlFor="fc-renda-pessoal">Renda pessoal (R$)</label>
+              <input id="fc-renda-pessoal" type="number" step="0.01" required value={form.renda_pessoal} onChange={(e) => setForm({ ...form, renda_pessoal: e.target.value })} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label htmlFor="fc-renda-familiar">Renda familiar (R$)</label>
+              <input id="fc-renda-familiar" type="number" step="0.01" value={form.renda_familiar} onChange={(e) => setForm({ ...form, renda_familiar: e.target.value })} />
+            </div>
+          </div>
+          <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <input
+              id="fc-conjuge"
+              type="checkbox"
+              checked={form.tem_conjuge}
+              onChange={(e) => setForm({ ...form, tem_conjuge: e.target.checked })}
+              style={{ width: 'auto' }}
+            />
+            <label htmlFor="fc-conjuge" style={{ textTransform: 'none', letterSpacing: 0 }}>Tenho cônjuge (vai precisar dos documentos dele também)</label>
+          </div>
+        </>
+      )}
+      {precisaConjuge && (
+        <div className="card card-body" style={{ background: 'var(--gray-50)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <div className="page-eyebrow">Dados do cônjuge</div>
+          <div className="field">
+            <label htmlFor="fc-conjuge-nome">Nome completo</label>
+            <input id="fc-conjuge-nome" required value={form.conjuge_nome} onChange={(e) => setForm({ ...form, conjuge_nome: e.target.value })} />
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+            <div className="field" style={{ flex: 1 }}>
+              <label htmlFor="fc-conjuge-email">E-mail</label>
+              <input id="fc-conjuge-email" type="email" required value={form.conjuge_email} onChange={(e) => setForm({ ...form, conjuge_email: e.target.value })} />
+            </div>
+            <div className="field" style={{ flex: 1 }}>
+              <label htmlFor="fc-conjuge-profissao">Profissão</label>
+              <input id="fc-conjuge-profissao" required value={form.conjuge_profissao} onChange={(e) => setForm({ ...form, conjuge_profissao: e.target.value })} />
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="fc-conjuge-renda">Renda do cônjuge (R$)</label>
+            <input id="fc-conjuge-renda" type="number" step="0.01" required value={form.conjuge_renda} onChange={(e) => setForm({ ...form, conjuge_renda: e.target.value })} />
+          </div>
+        </div>
+      )}
+      <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
+        {salvando ? 'Enviando…' : 'Salvar cadastro e continuar'}
       </button>
-    </div>
+    </form>
   )
 }
 

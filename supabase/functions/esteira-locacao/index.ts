@@ -2,10 +2,12 @@
 // Esteira de locação — orquestrador (Supabase Edge Function)
 //
 // Reescrita pra trazer a esteira pro Hub com login real (magic link) de
-// locatário e proprietário, em vez do modelo antigo de token_link anônimo.
-// Toda a lógica de estado continua morando no banco (ver migrations
-// 20260821140000_esteira_locacao_ajustes.sql, 20260918150000_esteira_locacao_hub.sql
-// e 20260918151500_esteira_documento_via_storage.sql). Esta função só:
+// locatário, em vez do modelo antigo de token_link anônimo. Proprietário
+// NÃO é mais ator do sistema (decisão da Parte 1, 2026-09-21) -- o gestor de
+// locação faz a ponte com ele fora do Hub. Toda a lógica de estado continua
+// morando no banco (ver migrations 20260821140000_esteira_locacao_ajustes.sql,
+// 20260918150000_esteira_locacao_hub.sql, 20260918151500_esteira_documento_via_storage.sql
+// e 20260921170000_esteira_v2_corretor_cliente.sql). Esta função só:
 //   1. valida o formato do payload recebido;
 //   2. confere a identidade de quem chamou (JWT) contra a proposta -- nunca
 //      confia em nada que o cliente diga sobre quem ele é;
@@ -13,10 +15,14 @@
 //
 // Modelo de autorização por evento:
 //   nova_proposta            -- qualquer usuário interno logado (tem linha em perfis)
-//   confirmar_dados_locatario -- e-mail do JWT precisa bater com propostas_locacao.email
-//   decisao_interna          -- role gestao/adm (via perfis) -- aprova (segue pro
-//                                proprietário) ou rejeita (volta pro locatário corrigir)
-//   proprietario_aceitou     -- e-mail do JWT precisa bater com propostas_locacao.proprietario_email
+//   confirmar_dados_locatario -- Form de Proposta (perfil) -- e-mail do JWT precisa bater
+//                                com propostas_locacao.email
+//   completar_cadastro       -- Form de Cadastro (tipo de pessoa/renda/cônjuge), liberado
+//                                depois da aprovação interna -- mesma checagem de e-mail
+//   descartar_proposta       -- role gestao/adm (via perfis) -- descarte definitivo
+//                                (teste, desistência, duplicada), sem notificação
+//   decisao_interna          -- role gestao/adm (via perfis) -- aprova (segue direto
+//                                pra aguardando_docs) ou rejeita (volta pro locatário corrigir)
 //   docs_enviados            -- e-mail do JWT precisa bater com propostas_locacao.email
 //   decisao_adm              -- role gestao/adm (via perfis)
 //   sincronizar_imoview      -- role gestao/adm (via perfis)
@@ -60,10 +66,10 @@ const CORS_HEADERS = {
 const eventoSchema = z.discriminatedUnion('evento', [
   z.object({
     evento: z.literal('nova_proposta'),
+    nome_cliente: z.string().min(1),
     email: z.string().email(),
     codigo_imovel: z.number().int().positive(),
-    proprietario_nome: z.string().min(1),
-    proprietario_email: z.string().email(),
+    valor: z.number().positive(),
     imovel_titulo: z.string().optional(),
     imovel_endereco: z.string().optional(),
   }),
@@ -72,18 +78,35 @@ const eventoSchema = z.discriminatedUnion('evento', [
     proposta_id: z.string().uuid(),
     nome: z.string().min(1),
     tel: z.string().min(1),
+    valor_oferta: z.number().positive().optional(),
+    observacoes: z.string().optional(),
+  }),
+  z.object({
+    evento: z.literal('completar_cadastro'),
+    proposta_id: z.string().uuid(),
     tipo_pessoa: z.enum(['Física', 'Jurídica']),
     tem_conjuge: z.boolean(),
+    profissao: z.string().optional(),
+    cargo: z.string().optional(),
+    tipo_renda: z.string().optional(),
+    renda_pessoal: z.number().positive().optional(),
+    renda_familiar: z.number().positive().optional(),
+    nome_empresa: z.string().optional(),
+    conjuge_nome: z.string().optional(),
+    conjuge_email: z.string().email().optional(),
+    conjuge_profissao: z.string().optional(),
+    conjuge_renda: z.number().positive().optional(),
+  }),
+  z.object({
+    evento: z.literal('descartar_proposta'),
+    proposta_id: z.string().uuid(),
+    motivo: z.string().min(1),
   }),
   z.object({
     evento: z.literal('decisao_interna'),
     proposta_id: z.string().uuid(),
     decisao: z.enum(['aprovado', 'rejeitado']),
     motivo: z.string().optional(),
-  }),
-  z.object({
-    evento: z.literal('proprietario_aceitou'),
-    proposta_id: z.string().uuid(),
   }),
   z.object({
     evento: z.literal('docs_enviados'),
@@ -250,10 +273,10 @@ async function notificar(destinatarios: string[], assunto: string, corpoHtml: st
 
 async function handleNovaProposta(evento: Extract<Evento, { evento: 'nova_proposta' }>, atorEmail: string) {
   const { data, error } = await supabase.rpc('criar_proposta_locacao', {
+    p_nome_cliente: evento.nome_cliente,
     p_email: evento.email,
     p_codigo_imovel: evento.codigo_imovel,
-    p_proprietario_nome: evento.proprietario_nome,
-    p_proprietario_email: evento.proprietario_email,
+    p_valor: evento.valor,
     p_imovel_titulo: evento.imovel_titulo ?? null,
     p_imovel_endereco: evento.imovel_endereco ?? null,
     p_ator: atorEmail,
@@ -279,8 +302,8 @@ async function handleConfirmarDadosLocatario(evento: Extract<Evento, { evento: '
     p_proposta_id: evento.proposta_id,
     p_nome: evento.nome,
     p_tel: evento.tel,
-    p_tipo_pessoa: evento.tipo_pessoa,
-    p_tem_conjuge: evento.tem_conjuge,
+    p_valor_oferta: evento.valor_oferta ?? null,
+    p_observacoes: evento.observacoes ?? null,
     p_ator: 'locatario',
   })
   if (error) throw error
@@ -290,11 +313,44 @@ async function handleConfirmarDadosLocatario(evento: Extract<Evento, { evento: '
     'Nova proposta aguardando revisão interna',
     emailHtml(
       'Proposta aguardando revisão',
-      `${escapeHtml(data.nome_cliente)} completou os dados da proposta${data.imovel_titulo ? ` para <strong>${escapeHtml(data.imovel_titulo)}</strong>` : ''}. Revise antes de acionar o proprietário.`,
+      `${escapeHtml(data.nome_cliente)} completou os dados da proposta${data.imovel_titulo ? ` para <strong>${escapeHtml(data.imovel_titulo)}</strong>` : ''}. Revise antes de liberar a esteira de documentos.`,
       'Revisar proposta',
       LINK_PROPOSTAS
     )
   )
+
+  return { proposta: data }
+}
+
+async function handleCompletarCadastro(evento: Extract<Evento, { evento: 'completar_cadastro' }>) {
+  const { data, error } = await supabase.rpc('completar_cadastro_locatario', {
+    p_proposta_id: evento.proposta_id,
+    p_tipo_pessoa: evento.tipo_pessoa,
+    p_tem_conjuge: evento.tem_conjuge,
+    p_profissao: evento.profissao ?? null,
+    p_cargo: evento.cargo ?? null,
+    p_tipo_renda: evento.tipo_renda ?? null,
+    p_renda_pessoal: evento.renda_pessoal ?? null,
+    p_renda_familiar: evento.renda_familiar ?? null,
+    p_nome_empresa: evento.nome_empresa ?? null,
+    p_conjuge_nome: evento.conjuge_nome ?? null,
+    p_conjuge_email: evento.conjuge_email ?? null,
+    p_conjuge_profissao: evento.conjuge_profissao ?? null,
+    p_conjuge_renda: evento.conjuge_renda ?? null,
+    p_ator: 'locatario',
+  })
+  if (error) throw error
+
+  return { proposta: data }
+}
+
+async function handleDescartarProposta(evento: Extract<Evento, { evento: 'descartar_proposta' }>, adminEmail: string) {
+  const { data, error } = await supabase.rpc('descartar_proposta_locacao', {
+    p_proposta_id: evento.proposta_id,
+    p_motivo: evento.motivo,
+    p_ator: adminEmail,
+  })
+  if (error) throw error
 
   return { proposta: data }
 }
@@ -308,18 +364,21 @@ async function handleDecisaoInterna(evento: Extract<Evento, { evento: 'decisao_i
   })
   if (error) throw error
 
-  if (evento.decisao === 'aprovado' && data.proprietario_email) {
+  if (evento.decisao === 'aprovado') {
+    // Sem proprietário no sistema (ver decisão da Parte 1, 2026-09-21) --
+    // aprovado aqui já pula direto pra aguardando_docs, então o locatário é
+    // avisado pra enviar os documentos, não mais o proprietário.
     await notificar(
-      [data.proprietario_email],
-      'Proposta de locação aguardando sua aprovação',
+      [data.email],
+      'Proposta aprovada — envie seus documentos',
       emailHtml(
-        'Uma proposta chegou pro seu imóvel',
-        `Um novo locatário fez uma proposta${data.imovel_titulo ? ` para <strong>${escapeHtml(data.imovel_titulo)}</strong>` : ''}. Acesse pra aprovar ou rejeitar.`,
-        'Ver proposta',
+        'Proposta aprovada',
+        'Sua proposta foi aprovada pela nossa equipe. Agora é só enviar os documentos pra seguirmos com o processo.',
+        'Enviar documentos',
         LINK_PORTAL
       )
     )
-  } else if (evento.decisao === 'rejeitado') {
+  } else {
     await notificar(
       [data.email],
       'Revise os dados da sua proposta',
@@ -333,34 +392,6 @@ async function handleDecisaoInterna(evento: Extract<Evento, { evento: 'decisao_i
   }
 
   return { proposta: data }
-}
-
-async function handleProprietarioAceitou(evento: Extract<Evento, { evento: 'proprietario_aceitou' }>) {
-  const { data, error } = await supabase.rpc('aceitar_proprietario', {
-    p_proposta_id: evento.proposta_id,
-    p_ator: 'proprietario',
-  })
-  if (error) throw error
-
-  const { data: checklist, error: erroChecklist } = await supabase
-    .from('documentos_tipos_obrigatorios')
-    .select('codigo, nome, descricao')
-    .or(`tipo_pessoa.eq.${data.tipo_pessoa},tipo_pessoa.eq.Ambos`)
-    .or(`exige_conjuge.eq.false${data.tem_conjuge ? ',exige_conjuge.eq.true' : ''}`)
-  if (erroChecklist) throw erroChecklist
-
-  await notificar(
-    [data.email],
-    'Proprietário aprovou — envie seus documentos',
-    emailHtml(
-      'Proposta aprovada pelo proprietário',
-      'O proprietário aprovou sua proposta. Agora é só enviar os documentos pra seguirmos com o processo.',
-      'Enviar documentos',
-      LINK_PORTAL
-    )
-  )
-
-  return { proposta: data, checklist }
 }
 
 async function handleDocsEnviados(evento: Extract<Evento, { evento: 'docs_enviados' }>) {
@@ -477,6 +508,20 @@ async function handleSincronizarImoview(evento: Extract<Evento, { evento: 'sincr
   })
   if (error) throw error
 
+  // Libera espaço no Storage -- os documentos já foram baixados em .zip pelo
+  // admin antes de chegar aqui (ver ChecklistEsteira no front). Falha na
+  // limpeza não derruba o fluxo -- a sincronização em si já foi persistida.
+  try {
+    const { data: arquivos } = await supabase.storage.from('esteira-documentos').list(evento.proposta_id)
+    if (arquivos && arquivos.length > 0) {
+      const paths = arquivos.map((arquivo) => `${evento.proposta_id}/${arquivo.name}`)
+      const { error: erroRemocao } = await supabase.storage.from('esteira-documentos').remove(paths)
+      if (erroRemocao) console.error('[esteira-locacao] erro ao limpar Storage:', erroRemocao)
+    }
+  } catch (err) {
+    console.error('[esteira-locacao] erro ao limpar Storage:', err)
+  }
+
   const destinatarios = [data.email, data.proprietario_email].filter((e): e is string => !!e)
   if (destinatarios.length) {
     await notificar(
@@ -576,13 +621,17 @@ Deno.serve(async (req) => {
         await exigirEmailProposta(req, evento.proposta_id, 'email')
         return jsonResponse(await handleConfirmarDadosLocatario(evento))
       }
+      case 'completar_cadastro': {
+        await exigirEmailProposta(req, evento.proposta_id, 'email')
+        return jsonResponse(await handleCompletarCadastro(evento))
+      }
+      case 'descartar_proposta': {
+        const adminEmail = await exigirAdmin(req)
+        return jsonResponse(await handleDescartarProposta(evento, adminEmail))
+      }
       case 'decisao_interna': {
         const adminEmail = await exigirAdmin(req)
         return jsonResponse(await handleDecisaoInterna(evento, adminEmail))
-      }
-      case 'proprietario_aceitou': {
-        await exigirEmailProposta(req, evento.proposta_id, 'proprietario_email')
-        return jsonResponse(await handleProprietarioAceitou(evento))
       }
       case 'docs_enviados': {
         await exigirEmailProposta(req, evento.proposta_id, 'email')

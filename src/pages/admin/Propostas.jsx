@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
-import { criarProposta, decidirAprovacaoInterna } from '../../lib/esteira'
+import { criarProposta, decidirAprovacaoInterna, descartarProposta } from '../../lib/esteira'
 
 const STATUS_LABEL = {
   aguardando_locatario: 'Aguardando locatário',
   aguardando_aprovacao_interna: 'Em revisão interna',
-  criada: 'Aguardando proprietário',
+  criada: 'Aguardando liberação da esteira',
   aguardando_docs: 'Aprovada — aguardando docs',
   docs_em_analise: 'Aprovada — docs em análise',
   docs_aprovados: 'Aprovada — docs aprovados',
@@ -14,7 +14,7 @@ const STATUS_LABEL = {
   expirada: 'Expirada',
 }
 
-const vazio = { email: '', codigo_imovel: '', proprietario_nome: '', proprietario_email: '', imovel_titulo: '', imovel_endereco: '' }
+const vazio = { nome_cliente: '', email: '', codigo_imovel: '', valor: '', imovel_titulo: '', imovel_endereco: '' }
 
 export default function Propostas() {
   const { propostas, carregando, erro, recarregar } = usePropostasLocacao()
@@ -22,6 +22,21 @@ export default function Propostas() {
   const [form, setForm] = useState(vazio)
   const [salvando, setSalvando] = useState(false)
   const [erroForm, setErroForm] = useState('')
+  const [descartandoId, setDescartandoId] = useState(null)
+
+  async function handleDescartar(proposta) {
+    const motivo = window.prompt('Motivo do descarte (ex.: teste, desistência, duplicada):')
+    if (!motivo) return
+    setDescartandoId(proposta.id)
+    try {
+      await descartarProposta({ proposta_id: proposta.id, motivo })
+      await recarregar()
+    } catch (err) {
+      window.alert(err.message)
+    } finally {
+      setDescartandoId(null)
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -29,10 +44,10 @@ export default function Propostas() {
     setSalvando(true)
     try {
       await criarProposta({
+        nome_cliente: form.nome_cliente,
         email: form.email,
         codigo_imovel: Number(form.codigo_imovel),
-        proprietario_nome: form.proprietario_nome,
-        proprietario_email: form.proprietario_email,
+        valor: Number(form.valor),
         imovel_titulo: form.imovel_titulo || undefined,
         imovel_endereco: form.imovel_endereco || undefined,
       })
@@ -65,21 +80,21 @@ export default function Propostas() {
         <form onSubmit={handleSubmit} className="card card-body" style={{ marginBottom: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
           {erroForm && <div className="login-error">{erroForm}</div>}
           <div className="field">
+            <label htmlFor="pp-nome">Nome do locatário</label>
+            <input id="pp-nome" required value={form.nome_cliente} onChange={(e) => setForm({ ...form, nome_cliente: e.target.value })} />
+          </div>
+          <div className="field">
             <label htmlFor="pp-email">E-mail do locatário</label>
             <input id="pp-email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
-          <div className="field">
-            <label htmlFor="pp-imovel">Código do imóvel</label>
-            <input id="pp-imovel" type="number" required value={form.codigo_imovel} onChange={(e) => setForm({ ...form, codigo_imovel: e.target.value })} />
-          </div>
           <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
             <div className="field" style={{ flex: 1 }}>
-              <label htmlFor="pp-prop-nome">Nome do proprietário</label>
-              <input id="pp-prop-nome" required value={form.proprietario_nome} onChange={(e) => setForm({ ...form, proprietario_nome: e.target.value })} />
+              <label htmlFor="pp-imovel">Código do imóvel</label>
+              <input id="pp-imovel" type="number" required value={form.codigo_imovel} onChange={(e) => setForm({ ...form, codigo_imovel: e.target.value })} />
             </div>
             <div className="field" style={{ flex: 1 }}>
-              <label htmlFor="pp-prop-email">E-mail do proprietário</label>
-              <input id="pp-prop-email" type="email" required value={form.proprietario_email} onChange={(e) => setForm({ ...form, proprietario_email: e.target.value })} />
+              <label htmlFor="pp-valor">Valor (R$)</label>
+              <input id="pp-valor" type="number" step="0.01" required value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} />
             </div>
           </div>
           <div className="field">
@@ -113,17 +128,30 @@ export default function Propostas() {
               <tr>
                 <th>Locatário</th>
                 <th>Imóvel</th>
-                <th>Proprietário</th>
+                <th>Valor</th>
                 <th>Status</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {propostas.map((p) => (
                 <tr key={p.id}>
-                  <td>{p.email}</td>
+                  <td>{p.nome_cliente || p.email}</td>
                   <td>{p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}</td>
-                  <td>{p.proprietario_nome || '—'}</td>
+                  <td>{p.valor != null ? `R$ ${Number(p.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}</td>
                   <td>{STATUS_LABEL[p.status_efetivo] ?? p.status_efetivo}</td>
+                  <td>
+                    {!['rejeitada', 'expirada'].includes(p.status_efetivo) && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        disabled={descartandoId === p.id}
+                        onClick={() => handleDescartar(p)}
+                      >
+                        {descartandoId === p.id ? 'Descartando…' : 'Descartar'}
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -169,7 +197,8 @@ function RevisaoInterna({ propostas, onAtualizar }) {
             <div className="avisos-item-body">
               <span className="avisos-item-title">{p.nome_cliente || p.email}</span>
               <div className="avisos-item-sub">
-                {p.imovel_titulo || `Imóvel ${p.codigo_imovel}`} · proprietário: {p.proprietario_nome || '—'}
+                {p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}
+                {p.valor_oferta != null ? ` · oferta: R$ ${Number(p.valor_oferta).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : ''}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 'var(--space-1)' }}>

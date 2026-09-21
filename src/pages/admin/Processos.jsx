@@ -5,7 +5,7 @@ import { useHistoricoProposta } from '../../hooks/useHistoricoProposta'
 const STATUS_LABEL = {
   aguardando_locatario: 'Aguardando locatário',
   aguardando_aprovacao_interna: 'Em revisão interna',
-  criada: 'Aguardando proprietário',
+  criada: 'Aguardando liberação da esteira',
   aguardando_docs: 'Aguardando documentos',
   docs_em_analise: 'Docs em análise',
   docs_aprovados: 'Docs aprovados',
@@ -59,7 +59,7 @@ export default function Processos() {
               <tr>
                 <th>Locatário</th>
                 <th>Imóvel</th>
-                <th>Proprietário</th>
+                <th>Valor</th>
                 <th>Status</th>
                 <th></th>
               </tr>
@@ -69,7 +69,7 @@ export default function Processos() {
                 <tr key={p.id}>
                   <td>{p.nome_cliente || p.email}</td>
                   <td>{p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}</td>
-                  <td>{p.proprietario_nome || '—'}</td>
+                  <td>{p.valor != null ? `R$ ${Number(p.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}</td>
                   <td>{STATUS_LABEL[statusEfetivo(p)] ?? statusEfetivo(p)}</td>
                   <td>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPropostaSelecionadaId(p.id)}>
