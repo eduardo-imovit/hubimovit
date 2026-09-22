@@ -10,6 +10,7 @@ import { StatusBadge, DocStatusBadge } from '../../components/esteira/StatusBadg
 import StepProgress from '../../components/esteira/StepProgress'
 import CurrencyInput from '../../components/esteira/CurrencyInput'
 import PortalShell from '../../components/portal/PortalShell'
+import DefinirSenha from '../../components/portal/DefinirSenha'
 
 function formatarDataCurta(iso) {
   return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -50,6 +51,7 @@ export default function PortalStatus() {
 
   return (
     <PortalShell>
+      <DefinirSenha session={session} />
       {propostas.length > 1 && (
         <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-5)', flexWrap: 'wrap' }}>
           {propostas.map((p) => (
