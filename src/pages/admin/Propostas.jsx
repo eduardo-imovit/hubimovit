@@ -5,6 +5,7 @@ import { formatarPrazo } from '../../lib/esteiraLabels'
 import { StatusBadge } from '../../components/esteira/StatusBadge'
 import ReasonModal from '../../components/esteira/ReasonModal'
 import ModalPortal from '../../components/esteira/ModalPortal'
+import CurrencyInput from '../../components/esteira/CurrencyInput'
 
 const vazio = { nome_cliente: '', email: '', codigo_imovel: '', valor: '', imovel_titulo: '', imovel_endereco: '' }
 
@@ -88,7 +89,7 @@ export default function Propostas() {
             </div>
             <div className="field" style={{ flex: 1 }}>
               <label htmlFor="pp-valor">Valor (R$)</label>
-              <input id="pp-valor" type="number" step="0.01" required value={form.valor} onChange={(e) => setForm({ ...form, valor: e.target.value })} />
+              <CurrencyInput id="pp-valor" required value={form.valor} onChange={(valor) => setForm({ ...form, valor })} />
             </div>
           </div>
           <div className="field">

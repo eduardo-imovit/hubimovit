@@ -8,6 +8,7 @@ import { confirmarDadosLocatario, completarCadastro, registrarDocumentosEnviados
 import { STATUS_LABEL, STATUS_VARIANT, formatarPrazo } from '../../lib/esteiraLabels'
 import { StatusBadge, DocStatusBadge } from '../../components/esteira/StatusBadge'
 import StepProgress from '../../components/esteira/StepProgress'
+import CurrencyInput from '../../components/esteira/CurrencyInput'
 import PortalShell from '../../components/portal/PortalShell'
 
 function formatarDataCurta(iso) {
@@ -189,7 +190,7 @@ function FormConfirmarDados({ proposta, onAtualizar }) {
       </div>
       <div className="field">
         <label htmlFor="pf-valor-oferta">Valor da oferta (R$)</label>
-        <input id="pf-valor-oferta" type="number" step="0.01" value={form.valor_oferta} onChange={(e) => setForm({ ...form, valor_oferta: e.target.value })} />
+        <CurrencyInput id="pf-valor-oferta" value={form.valor_oferta} onChange={(valor_oferta) => setForm({ ...form, valor_oferta })} />
       </div>
       <div className="field">
         <label htmlFor="pf-observacoes">Observações (opcional)</label>
@@ -295,11 +296,11 @@ function FormCadastro({ proposta, onAtualizar }) {
           <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
             <div className="field" style={{ flex: 1 }}>
               <label htmlFor="fc-renda-pessoal">Renda pessoal (R$)</label>
-              <input id="fc-renda-pessoal" type="number" step="0.01" required value={form.renda_pessoal} onChange={(e) => setForm({ ...form, renda_pessoal: e.target.value })} />
+              <CurrencyInput id="fc-renda-pessoal" required value={form.renda_pessoal} onChange={(renda_pessoal) => setForm({ ...form, renda_pessoal })} />
             </div>
             <div className="field" style={{ flex: 1 }}>
               <label htmlFor="fc-renda-familiar">Renda familiar (R$)</label>
-              <input id="fc-renda-familiar" type="number" step="0.01" value={form.renda_familiar} onChange={(e) => setForm({ ...form, renda_familiar: e.target.value })} />
+              <CurrencyInput id="fc-renda-familiar" value={form.renda_familiar} onChange={(renda_familiar) => setForm({ ...form, renda_familiar })} />
             </div>
           </div>
           <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -333,7 +334,7 @@ function FormCadastro({ proposta, onAtualizar }) {
           </div>
           <div className="field">
             <label htmlFor="fc-conjuge-renda">Renda do cônjuge (R$)</label>
-            <input id="fc-conjuge-renda" type="number" step="0.01" required value={form.conjuge_renda} onChange={(e) => setForm({ ...form, conjuge_renda: e.target.value })} />
+            <CurrencyInput id="fc-conjuge-renda" required value={form.conjuge_renda} onChange={(conjuge_renda) => setForm({ ...form, conjuge_renda })} />
           </div>
         </div>
       )}
