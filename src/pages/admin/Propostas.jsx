@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
 import { criarProposta, decidirAprovacaoInterna, descartarProposta } from '../../lib/esteira'
-import { formatarPrazo } from '../../lib/esteiraLabels'
+import { formatarPrazo, valorBR } from '../../lib/esteiraLabels'
 import { StatusBadge } from '../../components/esteira/StatusBadge'
 import ReasonModal from '../../components/esteira/ReasonModal'
-import ModalPortal from '../../components/esteira/ModalPortal'
+import PropostaDetalheModal from '../../components/esteira/PropostaDetalheModal'
 import CurrencyInput from '../../components/esteira/CurrencyInput'
 
 const vazio = { nome_cliente: '', email: '', codigo_imovel: '', valor: '', imovel_titulo: '', imovel_endereco: '' }
@@ -18,6 +18,28 @@ export default function Propostas() {
   const [descartandoId, setDescartandoId] = useState(null)
   const [propostaDescartando, setPropostaDescartando] = useState(null)
   const [erroDescarte, setErroDescarte] = useState('')
+
+  const [detalhando, setDetalhando] = useState(null)
+  const [rejeitando, setRejeitando] = useState(null)
+  const [processandoId, setProcessandoId] = useState(null)
+  const [erroAcao, setErroAcao] = useState('')
+
+  const pendentes = propostas.filter((p) => p.status_efetivo === 'aguardando_aprovacao_interna')
+
+  async function handleDecisao(proposta, decisao, motivo) {
+    setErroAcao('')
+    setProcessandoId(proposta.id)
+    try {
+      await decidirAprovacaoInterna({ proposta_id: proposta.id, decisao, motivo })
+      setRejeitando(null)
+      setDetalhando(null)
+      await recarregar()
+    } catch (err) {
+      setErroAcao(err.message)
+    } finally {
+      setProcessandoId(null)
+    }
+  }
 
   async function handleDescartar(motivo) {
     setDescartandoId(propostaDescartando.id)
@@ -69,7 +91,48 @@ export default function Propostas() {
         </button>
       </header>
 
-      <RevisaoInterna propostas={propostas} onAtualizar={recarregar} />
+      {pendentes.length > 0 && (
+        <div className="card card-body" style={{ marginBottom: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <div className="page-eyebrow">Aguardando revisão interna ({pendentes.length})</div>
+          {erroAcao && !rejeitando && !detalhando && <div className="login-error">{erroAcao}</div>}
+          <div className="avisos-list">
+            {pendentes.map((p) => (
+              <div className="avisos-item" key={p.id}>
+                <div className="avisos-item-body">
+                  <button type="button" className="btn-link" style={{ font: 'inherit', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)' }} onClick={() => setDetalhando(p)}>
+                    {p.nome_cliente || p.email}
+                  </button>
+                  <div className="avisos-item-sub">
+                    {p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}
+                    {p.valor_oferta != null ? ` · oferta: ${valorBR(p.valor_oferta)}` : ''}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetalhando(p)}>
+                    Ver detalhes
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    disabled={processandoId === p.id}
+                    onClick={() => handleDecisao(p, 'aprovado')}
+                  >
+                    Aprovar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    disabled={processandoId === p.id}
+                    onClick={() => setRejeitando(p)}
+                  >
+                    Pedir correção
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {mostrarForm && (
         <form onSubmit={handleSubmit} className="card card-body" style={{ marginBottom: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -136,20 +199,25 @@ export default function Propostas() {
                   <tr key={p.id}>
                     <td>{p.nome_cliente || p.email}</td>
                     <td>{p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}</td>
-                    <td>{ValorBR(p.valor)}</td>
+                    <td>{valorBR(p.valor)}</td>
                     <td><StatusBadge status={p.status_efetivo} /></td>
                     <td>{prazo ? <span className={`esteira-prazo ${prazo.urgente ? 'is-urgente' : 'is-ok'}`}>{prazo.texto}</span> : '—'}</td>
                     <td>
-                      {!['rejeitada', 'expirada'].includes(p.status_efetivo) && (
-                        <button
-                          type="button"
-                          className="btn btn-ghost btn-sm"
-                          disabled={descartandoId === p.id}
-                          onClick={() => setPropostaDescartando(p)}
-                        >
-                          {descartandoId === p.id ? 'Descartando…' : 'Descartar'}
+                      <div style={{ display: 'flex', gap: 'var(--space-1)', justifyContent: 'flex-end' }}>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetalhando(p)}>
+                          Visualizar
                         </button>
-                      )}
+                        {!['rejeitada', 'expirada'].includes(p.status_efetivo) && (
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm"
+                            disabled={descartandoId === p.id}
+                            onClick={() => setPropostaDescartando(p)}
+                          >
+                            {descartandoId === p.id ? 'Descartando…' : 'Descartar'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )
@@ -157,6 +225,29 @@ export default function Propostas() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {detalhando && (
+        <PropostaDetalheModal
+          proposta={detalhando}
+          processando={processandoId === detalhando.id}
+          erro={erroAcao}
+          onClose={() => { setDetalhando(null); setErroAcao('') }}
+          onAprovar={() => handleDecisao(detalhando, 'aprovado')}
+          onPedirCorrecao={() => { setRejeitando(detalhando); setDetalhando(null) }}
+        />
+      )}
+
+      {rejeitando && (
+        <ReasonModal
+          title="Pedir correção"
+          description="O locatário vai ver esse motivo pra corrigir e reenviar."
+          confirmLabel="Pedir correção"
+          processando={processandoId === rejeitando.id}
+          erro={erroAcao}
+          onConfirm={(motivo) => handleDecisao(rejeitando, 'rejeitado', motivo)}
+          onCancel={() => { setRejeitando(null); setErroAcao('') }}
+        />
       )}
 
       {propostaDescartando && (
@@ -168,150 +259,6 @@ export default function Propostas() {
           erro={erroDescarte}
           onConfirm={handleDescartar}
           onCancel={() => { setPropostaDescartando(null); setErroDescarte('') }}
-        />
-      )}
-    </div>
-  )
-}
-
-function ValorBR(v) {
-  return v != null ? `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'
-}
-
-function RevisaoInterna({ propostas, onAtualizar }) {
-  const pendentes = propostas.filter((p) => p.status_efetivo === 'aguardando_aprovacao_interna')
-  const [processandoId, setProcessandoId] = useState(null)
-  const [rejeitando, setRejeitando] = useState(null)
-  const [detalhando, setDetalhando] = useState(null)
-  const [erro, setErro] = useState('')
-
-  if (pendentes.length === 0) return null
-
-  async function handleDecisao(proposta, decisao, motivo) {
-    setErro('')
-    setProcessandoId(proposta.id)
-    try {
-      await decidirAprovacaoInterna({ proposta_id: proposta.id, decisao, motivo })
-      setRejeitando(null)
-      setDetalhando(null)
-      await onAtualizar()
-    } catch (err) {
-      setErro(err.message)
-    } finally {
-      setProcessandoId(null)
-    }
-  }
-
-  return (
-    <div className="card card-body" style={{ marginBottom: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-      <div className="page-eyebrow">Aguardando revisão interna ({pendentes.length})</div>
-      {erro && !rejeitando && !detalhando && <div className="login-error">{erro}</div>}
-      <div className="avisos-list">
-        {pendentes.map((p) => (
-          <div className="avisos-item" key={p.id}>
-            <div className="avisos-item-body">
-              <button type="button" className="btn-link" style={{ font: 'inherit', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)' }} onClick={() => setDetalhando(p)}>
-                {p.nome_cliente || p.email}
-              </button>
-              <div className="avisos-item-sub">
-                {p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}
-                {p.valor_oferta != null ? ` · oferta: ${ValorBR(p.valor_oferta)}` : ''}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetalhando(p)}>
-                Ver detalhes
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                disabled={processandoId === p.id}
-                onClick={() => handleDecisao(p, 'aprovado')}
-              >
-                Aprovar
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                disabled={processandoId === p.id}
-                onClick={() => setRejeitando(p)}
-              >
-                Pedir correção
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {detalhando && (
-        <ModalPortal>
-        <div className="modal-overlay" onClick={() => setDetalhando(null)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title">{detalhando.nome_cliente || detalhando.email}</div>
-              <button type="button" className="modal-close" onClick={() => setDetalhando(null)}>×</button>
-            </div>
-            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-              {erro && <div className="login-error">{erro}</div>}
-              <div>
-                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Locatário</div>
-                <div>{detalhando.nome_cliente || '—'}</div>
-                <div style={{ color: 'var(--grafite-soft)' }}>{detalhando.email}{detalhando.tel ? ` · ${detalhando.tel}` : ''}</div>
-              </div>
-              <div>
-                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Imóvel</div>
-                <div>{detalhando.imovel_titulo || `Imóvel ${detalhando.codigo_imovel}`}</div>
-                {detalhando.imovel_endereco && <div style={{ color: 'var(--grafite-soft)' }}>{detalhando.imovel_endereco}</div>}
-              </div>
-              <div style={{ display: 'flex', gap: 'var(--space-5)' }}>
-                <div>
-                  <div className="page-eyebrow" style={{ marginBottom: 2 }}>Valor pedido</div>
-                  <div>{ValorBR(detalhando.valor)}</div>
-                </div>
-                <div>
-                  <div className="page-eyebrow" style={{ marginBottom: 2 }}>Oferta do locatário</div>
-                  <div>{ValorBR(detalhando.valor_oferta)}</div>
-                </div>
-              </div>
-              {detalhando.observacoes && (
-                <div>
-                  <div className="page-eyebrow" style={{ marginBottom: 2 }}>Observações do locatário</div>
-                  <div>{detalhando.observacoes}</div>
-                </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                disabled={processandoId === detalhando.id}
-                onClick={() => { setRejeitando(detalhando); setDetalhando(null) }}
-              >
-                Pedir correção
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                disabled={processandoId === detalhando.id}
-                onClick={() => handleDecisao(detalhando, 'aprovado')}
-              >
-                {processandoId === detalhando.id ? 'Aprovando…' : 'Aprovar'}
-              </button>
-            </div>
-          </div>
-        </div>
-        </ModalPortal>
-      )}
-
-      {rejeitando && (
-        <ReasonModal
-          title="Pedir correção"
-          description="O locatário vai ver esse motivo pra corrigir e reenviar."
-          confirmLabel="Pedir correção"
-          processando={processandoId === rejeitando.id}
-          erro={erro}
-          onConfirm={(motivo) => handleDecisao(rejeitando, 'rejeitado', motivo)}
-          onCancel={() => { setRejeitando(null); setErro('') }}
         />
       )}
     </div>

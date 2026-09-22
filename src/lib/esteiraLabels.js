@@ -3,6 +3,10 @@
 // Propostas, Esteiras, Processos) tinha seu próprio STATUS_LABEL, divergentes
 // entre si, e nenhuma usava cor semântica (tudo badge-gray ou texto puro).
 
+export function valorBR(v) {
+  return v != null ? `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'
+}
+
 export const STATUS_LABEL = {
   aguardando_locatario: 'Aguardando seus dados',
   aguardando_aprovacao_interna: 'Em revisão interna',
