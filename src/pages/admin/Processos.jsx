@@ -1,18 +1,8 @@
 import { useState } from 'react'
 import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
 import { useHistoricoProposta } from '../../hooks/useHistoricoProposta'
-
-const STATUS_LABEL = {
-  aguardando_locatario: 'Aguardando locatário',
-  aguardando_aprovacao_interna: 'Em revisão interna',
-  criada: 'Aguardando liberação da esteira',
-  aguardando_docs: 'Aguardando documentos',
-  docs_em_analise: 'Docs em análise',
-  docs_aprovados: 'Docs aprovados',
-  sincronizada: 'Sincronizada',
-  rejeitada: 'Rejeitada',
-  expirada: 'Expirada',
-}
+import { STATUS_LABEL, formatarPrazo } from '../../lib/esteiraLabels'
+import { StatusBadge } from '../../components/esteira/StatusBadge'
 
 function formatarData(iso) {
   return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -61,23 +51,29 @@ export default function Processos() {
                 <th>Imóvel</th>
                 <th>Valor</th>
                 <th>Status</th>
+                <th>Prazo</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {propostas.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.nome_cliente || p.email}</td>
-                  <td>{p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}</td>
-                  <td>{p.valor != null ? `R$ ${Number(p.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}</td>
-                  <td>{STATUS_LABEL[statusEfetivo(p)] ?? statusEfetivo(p)}</td>
-                  <td>
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPropostaSelecionadaId(p.id)}>
-                      Ver linha do tempo
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {propostas.map((p) => {
+                const efetivo = statusEfetivo(p)
+                const prazo = formatarPrazo(p.link_expira_em, efetivo)
+                return (
+                  <tr key={p.id}>
+                    <td>{p.nome_cliente || p.email}</td>
+                    <td>{p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}</td>
+                    <td>{p.valor != null ? `R$ ${Number(p.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'}</td>
+                    <td><StatusBadge status={efetivo} /></td>
+                    <td>{prazo ? <span className={`esteira-prazo ${prazo.urgente ? 'is-urgente' : 'is-ok'}`}>{prazo.texto}</span> : '—'}</td>
+                    <td>
+                      <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPropostaSelecionadaId(p.id)}>
+                        Ver linha do tempo
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -98,16 +94,13 @@ function TimelineProcesso({ proposta }) {
       </div>
       {carregando && <div className="hub-loading">Carregando…</div>}
       {!carregando && (
-        <div className="avisos-list">
+        <div className="timeline">
           {historico.map((h) => (
-            <div className="avisos-item" key={h.id}>
-              <div className="avisos-item-body">
-                <span className="avisos-item-title">{STATUS_LABEL[h.status_novo] ?? h.status_novo}</span>
-                <div className="avisos-item-sub">
-                  {formatarData(h.timestamp_registro)} · {h.ator}
-                  {h.motivo ? ` · ${h.motivo}` : ''}
-                </div>
-              </div>
+            <div className="timeline-item" key={h.id}>
+              <span className="timeline-dot" />
+              <div className="timeline-time">{formatarData(h.timestamp_registro)} · {h.ator}</div>
+              <div className="timeline-title">{STATUS_LABEL[h.status_novo] ?? h.status_novo}</div>
+              {h.motivo && <div className="timeline-sub">{h.motivo}</div>}
             </div>
           ))}
         </div>

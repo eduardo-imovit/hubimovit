@@ -5,24 +5,13 @@ import { useHistoricoProposta } from '../../hooks/useHistoricoProposta'
 import { useDocumentosEsteira } from '../../hooks/useDocumentosEsteira'
 import { supabase } from '../../lib/supabaseClient'
 import { confirmarDadosLocatario, completarCadastro, registrarDocumentosEnviados } from '../../lib/esteira'
+import { STATUS_LABEL, STATUS_VARIANT, formatarPrazo } from '../../lib/esteiraLabels'
+import { StatusBadge, DocStatusBadge } from '../../components/esteira/StatusBadge'
+import StepProgress from '../../components/esteira/StepProgress'
 import PortalShell from '../../components/portal/PortalShell'
 
-const STATUS_LABEL = {
-  aguardando_locatario: 'Aguardando seus dados',
-  aguardando_aprovacao_interna: 'Em análise pela nossa equipe',
-  criada: 'Aguardando liberação da esteira',
-  aguardando_docs: 'Aguardando envio de documentos',
-  docs_em_analise: 'Documentos em análise',
-  docs_aprovados: 'Documentos aprovados — finalizando',
-  sincronizada: 'Processo concluído',
-  rejeitada: 'Proposta rejeitada',
-  expirada: 'Prazo expirado',
-}
-
-const DOC_STATUS_LABEL = { pendente: 'Pendente', enviado: 'Em análise', aprovado: 'Aprovado', rejeitado: 'Rejeitado — reenvie' }
-
-function formatarData(iso) {
-  return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+function formatarDataCurta(iso) {
+  return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
 export default function PortalStatus() {
@@ -81,6 +70,9 @@ export default function PortalStatus() {
 
 function PropostaDetalhe({ proposta, onAtualizar }) {
   const { historico } = useHistoricoProposta(proposta.id)
+  const prazo = formatarPrazo(proposta.link_expira_em, proposta.status)
+
+  const atividade = [...historico].reverse()
 
   return (
     <div>
@@ -92,27 +84,40 @@ function PropostaDetalhe({ proposta, onAtualizar }) {
         </div>
       </header>
 
-      <div className="card card-body" style={{ marginBottom: 'var(--space-5)' }}>
-        <span className="badge badge-gray">{STATUS_LABEL[proposta.status] ?? proposta.status}</span>
-      </div>
-
-      <AcaoDaVez proposta={proposta} onAtualizar={onAtualizar} />
-
-      {historico.length > 0 && (
-        <section style={{ marginTop: 'var(--space-6)' }}>
-          <div className="page-eyebrow" style={{ marginBottom: 'var(--space-3)' }}>Linha do tempo</div>
-          <div className="avisos-list">
-            {historico.map((h) => (
-              <div className="avisos-item" key={h.id}>
-                <div className="avisos-item-body">
-                  <span className="avisos-item-title">{STATUS_LABEL[h.status_novo] ?? h.status_novo}</span>
-                  <div className="avisos-item-sub">{formatarData(h.timestamp_registro)}{h.motivo ? ` · ${h.motivo}` : ''}</div>
-                </div>
-              </div>
-            ))}
+      <div className="esteira-layout">
+        <aside className="esteira-sidebar">
+          <div className="card card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <StatusBadge status={proposta.status} />
+            {prazo && <span className={`esteira-prazo ${prazo.urgente ? 'is-urgente' : 'is-ok'}`}>{prazo.texto}</span>}
           </div>
-        </section>
-      )}
+          <div className="card card-body">
+            <div className="page-eyebrow" style={{ marginBottom: 'var(--space-4)' }}>Etapas</div>
+            <StepProgress status={proposta.status} />
+          </div>
+        </aside>
+
+        <main style={{ minWidth: 0 }}>
+          <AcaoDaVez proposta={proposta} onAtualizar={onAtualizar} />
+
+          {atividade.length > 0 && (
+            <section style={{ marginTop: 'var(--space-6)' }}>
+              <div className="page-eyebrow" style={{ marginBottom: 'var(--space-2)' }}>Atividade recente</div>
+              <div className="esteira-atividade">
+                {atividade.map((h) => (
+                  <div className="esteira-atividade-item" key={h.id}>
+                    <span className={`esteira-atividade-dot is-${STATUS_VARIANT[h.status_novo] ?? 'info'}`} />
+                    <div className="esteira-atividade-body">
+                      <div className="esteira-atividade-title">{STATUS_LABEL[h.status_novo] ?? h.status_novo}</div>
+                      <div className="esteira-atividade-meta">{formatarDataCurta(h.timestamp_registro)}</div>
+                      {h.motivo && <div className="esteira-atividade-motivo">{h.motivo}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </main>
+      </div>
     </div>
   )
 }
@@ -261,6 +266,10 @@ function FormCadastro({ proposta, onAtualizar }) {
       </div>
       {ehFisica && (
         <>
+          <p className="page-sub" style={{ margin: 0 }}>
+            Esses dados de profissão e renda são usados só pra avaliar sua proposta — ficam restritos à nossa
+            equipe de locação e não são compartilhados fora disso.
+          </p>
           <div className="field">
             <label htmlFor="fc-profissao">Profissão</label>
             <input id="fc-profissao" required value={form.profissao} onChange={(e) => setForm({ ...form, profissao: e.target.value })} />
@@ -360,22 +369,30 @@ function ChecklistDocumentos({ proposta, onAtualizar }) {
 
   if (carregando) return <div className="hub-loading">Carregando checklist…</div>
 
+  const aprovados = checklist.filter((doc) => doc.envio?.status === 'aprovado').length
+
   return (
     <div>
-      <div className="page-eyebrow" style={{ marginBottom: 'var(--space-3)' }}>Documentos necessários</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
+        <div className="page-eyebrow" style={{ marginBottom: 0 }}>Documentos necessários</div>
+        <span className="stat-sub is-muted" style={{ marginTop: 0 }}>{aprovados} de {checklist.length} aprovados</span>
+      </div>
+      <div className="mini-bar-track" style={{ background: 'var(--champagne)', marginBottom: 'var(--space-4)' }}>
+        <div className="mini-bar-fill" style={{ width: `${checklist.length ? (aprovados / checklist.length) * 100 : 0}%` }} />
+      </div>
       {erro && <div className="login-error" style={{ marginBottom: 'var(--space-3)' }}>{erro}</div>}
-      <div className="avisos-list">
+      <div className="upload-list" style={{ marginTop: 0 }}>
         {checklist.map((doc) => (
-          <div className="avisos-item" key={doc.codigo}>
-            <div className="avisos-item-body">
-              <span className="avisos-item-title">{doc.nome}</span>
-              <div className="avisos-item-sub">
-                {DOC_STATUS_LABEL[doc.envio?.status ?? 'pendente']}
-                {doc.envio?.status === 'rejeitado' && doc.envio?.feedback_adm ? ` · ${doc.envio.feedback_adm}` : ''}
-              </div>
+          <div className="upload-item" key={doc.codigo}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="upload-item-name">{doc.nome}</div>
+              {doc.envio?.status === 'rejeitado' && doc.envio?.feedback_adm && (
+                <div className="timeline-sub" style={{ marginTop: 2 }}>{doc.envio.feedback_adm}</div>
+              )}
             </div>
+            <DocStatusBadge status={doc.envio?.status} />
             {doc.envio?.status !== 'aprovado' && (
-              <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
+              <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer', flexShrink: 0 }}>
                 {enviandoCodigo === doc.codigo ? 'Enviando…' : doc.envio ? 'Reenviar' : 'Enviar'}
                 <input
                   type="file"
