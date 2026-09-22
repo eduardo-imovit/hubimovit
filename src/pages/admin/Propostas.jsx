@@ -207,6 +207,16 @@ export default function Propostas() {
                         <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetalhando(p)}>
                           Visualizar
                         </button>
+                        {p.status_efetivo === 'aguardando_aprovacao_interna' && (
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            disabled={processandoId === p.id}
+                            onClick={() => handleDecisao(p, 'aprovado')}
+                          >
+                            {processandoId === p.id ? 'Aprovando…' : 'Aprovar'}
+                          </button>
+                        )}
                         {!['rejeitada', 'expirada'].includes(p.status_efetivo) && (
                           <button
                             type="button"
