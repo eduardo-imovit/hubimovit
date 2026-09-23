@@ -30,7 +30,11 @@ export default function Login() {
     setEnviando(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password: senha })
     setEnviando(false)
-    if (error) setErro('E-mail ou senha inválidos.')
+    if (error) {
+      // Suspenso pela Gestão: o Auth bloqueia o login (ver gestao-colaboradores).
+      const suspenso = error.code === 'user_banned' || /banned/i.test(error.message)
+      setErro(suspenso ? 'Seu acesso ao Hub está suspenso. Fale com a Gestão.' : 'E-mail ou senha inválidos.')
+    }
   }
 
   async function handleCriarConta(e) {

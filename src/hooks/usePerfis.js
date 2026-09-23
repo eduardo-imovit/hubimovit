@@ -11,7 +11,7 @@ export function usePerfis() {
     setCarregando(true)
     const { data, error } = await supabase
       .from('perfis')
-      .select('id, email, role, criado_em, nome, cargo, foto_url')
+      .select('id, email, role, criado_em, nome, cargo, foto_url, suspenso_em')
       .order('email', { ascending: true })
     if (error) setErro(error.message)
     else setPerfis(data ?? [])

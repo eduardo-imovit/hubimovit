@@ -36,7 +36,7 @@ export function usePerfil() {
     let ativo = true
     supabase
       .from('perfis')
-      .select('id, email, role, nome, telefone, cargo, foto_url')
+      .select('id, email, role, nome, telefone, cargo, foto_url, suspenso_em')
       .eq('id', session.user.id)
       .single()
       .then(({ data, error }) => {

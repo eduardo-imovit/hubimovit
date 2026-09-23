@@ -1,27 +1,11 @@
-import { supabase } from './supabaseClient'
+import { chamarFuncao } from './funcoes'
 
 /**
  * Chama a Edge Function esteira-locacao, que valida identidade (JWT) e
- * despacha pro RPC certo no banco. A sessão atual do supabase-js já vai
- * automaticamente no header Authorization.
+ * despacha pro RPC certo no banco.
  */
-async function chamarEsteira(evento, dados) {
-  const { data, error } = await supabase.functions.invoke('esteira-locacao', {
-    body: { evento, ...dados },
-  })
-  if (error) {
-    // FunctionsHttpError não expõe a mensagem custom que a function devolve
-    // ({ erro: "..." }) direto em error.message — precisa ler o corpo.
-    let mensagem = error.message
-    try {
-      const corpo = await error.context.json()
-      if (corpo?.erro) mensagem = corpo.erro
-    } catch {
-      // corpo não era JSON, mantém a mensagem padrão do erro
-    }
-    throw new Error(mensagem)
-  }
-  return data
+function chamarEsteira(evento, dados) {
+  return chamarFuncao('esteira-locacao', { evento, ...dados })
 }
 
 export const criarProposta = (dados) => chamarEsteira('nova_proposta', dados)
