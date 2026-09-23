@@ -240,12 +240,17 @@ async function exigirEmailProposta(
 // envio só loga, nunca derruba a operação principal.
 // -----------------------------------------------------------------------------
 
-const APP_URL = Deno.env.get('APP_URL') ?? 'http://localhost:5175'
 const REMETENTE = { name: 'Hub Imovit', email: 'relacionamento@imovit.com.br' }
 const DESTINATARIOS_REVISAO_INTERNA = ['gabriel@imovit.com.br', 'daniele@imovit.com.br']
-const LINK_PORTAL = `${APP_URL}/portal/entrar`
-const LINK_PROPOSTAS = `${APP_URL}/admin/propostas`
-const LINK_ESTEIRAS = `${APP_URL}/admin/esteiras`
+
+// Lido a cada envio (não no carregamento do módulo): uma instância já quente
+// continuaria com o valor antigo depois de alguém trocar a secret APP_URL.
+function appUrl() {
+  return (Deno.env.get('APP_URL') || 'https://hub.imovit.com.br').replace(/\/+$/, '')
+}
+const linkPortal = () => `${appUrl()}/portal/entrar`
+const linkPropostas = () => `${appUrl()}/admin/propostas`
+const linkEsteiras = () => `${appUrl()}/admin/esteiras`
 
 async function notificar(destinatarios: string[], assunto: string, corpoHtml: string) {
   const brevoApiKey = Deno.env.get('BREVO_API_KEY')
@@ -288,7 +293,7 @@ async function handleNovaProposta(evento: Extract<Evento, { evento: 'nova_propos
   })
   if (error) throw error
 
-  const email = emailPropostaCriada(data, LINK_PORTAL)
+  const email = emailPropostaCriada(data, linkPortal())
   await notificar([data.email], email.assunto, email.html)
 
   return { proposta: data }
@@ -305,7 +310,7 @@ async function handleConfirmarDadosLocatario(evento: Extract<Evento, { evento: '
   })
   if (error) throw error
 
-  const email = emailRevisaoInterna(data, LINK_PROPOSTAS)
+  const email = emailRevisaoInterna(data, linkPropostas())
   await notificar(DESTINATARIOS_REVISAO_INTERNA, email.assunto, email.html)
 
   return { proposta: data }
@@ -357,10 +362,10 @@ async function handleDecisaoInterna(evento: Extract<Evento, { evento: 'decisao_i
     // Sem proprietário no sistema (ver decisão da Parte 1, 2026-09-21) --
     // aprovado aqui já pula direto pra aguardando_docs, então o locatário é
     // avisado pra enviar os documentos, não mais o proprietário.
-    const email = emailPropostaAprovada(data, LINK_PORTAL)
+    const email = emailPropostaAprovada(data, linkPortal())
     await notificar([data.email], email.assunto, email.html)
   } else {
-    const email = emailPropostaAjuste(data, evento.motivo, LINK_PORTAL)
+    const email = emailPropostaAjuste(data, evento.motivo, linkPortal())
     await notificar([data.email], email.assunto, email.html)
   }
 
@@ -388,7 +393,7 @@ async function handleDocsEnviados(evento: Extract<Evento, { evento: 'docs_enviad
   if (erroProposta) throw erroProposta
 
   if (proposta.status === 'docs_em_analise') {
-    const email = emailDocsEnviados(proposta, LINK_ESTEIRAS)
+    const email = emailDocsEnviados(proposta, linkEsteiras())
     await notificar(DESTINATARIOS_REVISAO_INTERNA, email.assunto, email.html)
   }
 
@@ -414,9 +419,9 @@ async function handleDecisaoAdm(evento: Extract<Evento, { evento: 'decisao_adm' 
   // documento no portal, e o ADM manda um e-mail só com todos os reprovados
   // quando fecha a revisão (ver handleSolicitarAjustes).
   if (proposta && evento.decisao === 'aprovado' && proposta.status === 'docs_aprovados') {
-    const paraLocatario = emailDocsAprovados(proposta, LINK_PORTAL)
+    const paraLocatario = emailDocsAprovados(proposta, linkPortal())
     await notificar([proposta.email], paraLocatario.assunto, paraLocatario.html)
-    const paraEquipe = emailProntoImoview(proposta, LINK_ESTEIRAS)
+    const paraEquipe = emailProntoImoview(proposta, linkEsteiras())
     await notificar(DESTINATARIOS_REVISAO_INTERNA, paraEquipe.assunto, paraEquipe.html)
   }
 
@@ -469,7 +474,7 @@ async function handleSolicitarAjustes(evento: Extract<Evento, { evento: 'solicit
   const email = emailAjustesDocumentos(
     proposta,
     reprovados.map((d) => ({ nome: d.nome, motivo: d.envio?.feedback_adm ?? null })),
-    LINK_PORTAL
+    linkPortal()
   )
   await notificar([proposta.email], email.assunto, email.html)
 
@@ -516,7 +521,7 @@ async function handleSincronizarImoview(evento: Extract<Evento, { evento: 'sincr
     console.error('[esteira-locacao] erro ao limpar Storage:', err)
   }
 
-  const email = emailProcessoConcluido(data, LINK_PORTAL)
+  const email = emailProcessoConcluido(data, linkPortal())
   await notificar([data.email], email.assunto, email.html)
 
   return { proposta: data }

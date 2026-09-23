@@ -34,6 +34,14 @@
 - [ ] Testar do início ao fim: reprovar 2 docs → "Solicitar ajustes" → conferir o e-mail único
 - [ ] Seguir o sprint: teste completo com os campos novos, IP das chaves de API no Brevo, dashboard, dados (registro órfão de 21/08, proposta de teste que vence em 25/09), fluxos antigos no n8n
 
+### Correção: links dos e-mails com localhost (2026-09-23)
+- Sintoma: mesmo depois de o Eduardo trocar a secret `APP_URL` para `https://hub.imovit.com.br`, o e-mail de proposta criada ainda saiu com localhost.
+- Causa provável: o `APP_URL` era lido uma vez, no carregamento do módulo, e uma instância já quente mantinha o valor antigo.
+- `index.ts`: `appUrl()` agora lê a secret a cada envio; o valor reserva passou de `localhost:5175` para `https://hub.imovit.com.br`. Os links `linkPortal()`, `linkPropostas()` e `linkEsteiras()` viraram funções.
+- Deploy **v13** feito (o deploy também reinicia as instâncias). Teste rápido ok (401 sem usuário logado).
+- ⚠️ Havia uma **v12 desconhecida** entre a minha v11 e esta v13. Não há commit correspondente e não dá para ler versões antigas pelo conector. A v13 substituiu essa versão. A confirmar com o Eduardo quem publicou e o que continha.
+- Falta: confirmar com um e-mail real que o link sai com `hub.imovit.com.br`.
+
 ### Extra do dia: favicon (2026-09-23)
 - O favicon padrão do Vite (raio roxo) foi trocado pelo símbolo coral da Imovit (`00 - Padrão/2026 - lares/simbolo-coral.png`).
 - `public/favicon.svg`: símbolo redesenhado em vetor, com a mesma geometria do PNG (dois anéis, raio 420/245, cor `#F15E51`). Conferido renderizado em 200/32/16 px, em fundo claro e escuro.
