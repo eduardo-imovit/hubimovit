@@ -34,6 +34,12 @@
 - [ ] Testar do início ao fim: reprovar 2 docs → "Solicitar ajustes" → conferir o e-mail único
 - [ ] Seguir o sprint: teste completo com os campos novos, IP das chaves de API no Brevo, dashboard, dados (registro órfão de 21/08, proposta de teste que vence em 25/09), fluxos antigos no n8n
 
+### Extra do dia: favicon (2026-09-23)
+- O favicon padrão do Vite (raio roxo) foi trocado pelo símbolo coral da Imovit (`00 - Padrão/2026 - lares/simbolo-coral.png`).
+- `public/favicon.svg`: símbolo redesenhado em vetor, com a mesma geometria do PNG (dois anéis, raio 420/245, cor `#F15E51`). Conferido renderizado em 200/32/16 px, em fundo claro e escuro.
+- `public/favicon-32.png` (reserva para navegadores sem SVG) e `public/apple-touch-icon.png` (180 px, fundo branco, porque o iOS pinta transparência de preto), gerados a partir do PNG original.
+- `index.html`: links dos três ícones. Build ok.
+
 ### Como retomar
 - `npm run dev` (precisa de `.env` com `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`).
 - Painel do ADM: `/admin/esteiras`. Portal do locatário: `/portal/entrar`.
