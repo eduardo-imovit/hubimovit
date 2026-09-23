@@ -1,6 +1,6 @@
 # Handoff — Hub Imovit
 
-## Sprint 2026-09-23 — TV Display: carrossel de dados no rodapé (Sprint 1 de 3)
+## Sprint 2026-09-23 — TV Display: carrossel de dados no rodapé (Sprints 1 e 2 de 3)
 
 **Objetivo da tarefa:** a TV continua como está; o espaço da agenda do fotógrafo, no rodapé, vira um carrossel de painéis em ciclo: Agenda do fotógrafo → KPIs 1 → KPIs 2 → Agenda de eventos. Detalhes do escopo e das decisões no Obsidian: "🟡 Modo TV v2 - Design e Dados". O esboço do Google Stitch foi analisado e descartado como redesenho completo.
 
@@ -17,9 +17,18 @@
 - A conta da TV já lê todas as fontes da agenda de eventos (RLS `authenticated`). Nada mudou no banco.
 - **Não testado ao vivo na TV** (depende do push).
 
+### Feito (Sprint 2): KPIs
+- `supabase/migrations/20260923220000_kpis_tv.sql` (**aplicada**): função `kpis_tv()` (security definer, só leitura) que devolve um JSON só com agregados; chamável por gestao/adm/marketing/tvaccess, recusa os demais (testado: Corretor bloqueado; sem login responde 401). Fuso de São Paulo.
+- `src/hooks/useKpisTV.js`: RPC com atualização a cada 5 min; se uma atualização falhar, mantém os últimos números.
+- `src/components/tv/KpisTV.jsx`: **KPIs 1 · Comercial** (leads × meta, ou × mês anterior quando não há meta; negócios; conversão; ciclo até o fechamento) e **KPIs 2 · Operação** (propostas de locação por etapa; leads parados 30+ dias; leads venda × aluguel; plantão de hoje).
+- Ciclo do rodapé: Fotógrafo → Comercial → Operação → Eventos.
+- **Ajustes pelos dados reais:** não há meta de leads para setembro (a última é de junho), então aparece a comparação com o mês anterior. "Imóveis locados no mês" foi trocado por venda × aluguel, porque `imoveis_locados` está vazia. Não há plantão escalado depois de 11/09, então hoje aparece "Sem plantão escalado hoje".
+- Números de hoje (23/09) no teste: 101 leads (ago: 191), 0 negócios (ago: 4), 182 leads parados, 43 venda × 58 aluguel, 1 proposta aguardando o locatário.
+
 ### Próximos passos
-- [ ] Sprint 2: KPIs 1 (comercial do mês: leads × meta, negócios, conversão, ciclo) e KPIs 2 (operação: propostas por etapa da esteira, imóveis locados no mês, leads parados 30+ dias, plantão de hoje), com uma consulta que devolva à conta `tvaccess` só números agregados
 - [ ] Sprint 3: ajuste na TV real (tempos, legibilidade, 24/7)
+- [ ] Cadastrar a meta de leads do mês (depende da tela de metas do Marketing) e preencher a escala de plantão
+- [ ] Sincronização da `imoveis_locados` com o Imoview (tabela vazia)
 
 ---
 
