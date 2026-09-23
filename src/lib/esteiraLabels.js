@@ -45,21 +45,37 @@ export const DOC_STATUS_VARIANT = {
   rejeitado: 'danger',
 }
 
-/** Ordem "feliz" do fluxo, pra indicador de progresso -- estados terminais (rejeitada/expirada) não entram aqui. */
-export const PASSOS_FLUXO = [
-  { status: 'aguardando_locatario', label: 'Proposta' },
-  { status: 'aguardando_aprovacao_interna', label: 'Aprovação' },
-  { status: 'aguardando_docs', label: 'Documentos' },
-  { status: 'docs_em_analise', label: 'Análise' },
-  { status: 'sincronizada', label: 'Concluído' },
+/**
+ * Jornada do locatário no portal -- etapas que "destravam" conforme o
+ * processo anda. Cadastro e Documentos são etapas separadas, porque pro
+ * locatário são duas tarefas distintas, mesmo com o mesmo status (aguardando_docs).
+ * `acao`: a etapa pede algo do locatário (merece o aviso de "liberada");
+ * sem `acao`, é espera pela equipe.
+ */
+export const ETAPAS_JORNADA = [
+  { chave: 'proposta', label: 'Proposta', acao: true, aguardando: 'Confirme seus dados e o valor da oferta.' },
+  { chave: 'aprovacao', label: 'Aprovação', acao: false, aguardando: 'Nossa equipe está revisando sua proposta.' },
+  { chave: 'cadastro', label: 'Cadastro', acao: true, aguardando: 'Complete seu cadastro para liberar os documentos.' },
+  { chave: 'documentos', label: 'Documentos', acao: true, aguardando: 'Envie os documentos da lista.' },
+  { chave: 'conclusao', label: 'Conclusão', acao: false, aguardando: 'Documentação aprovada. Estamos finalizando seu processo.' },
 ]
 
-/** Mapeia um status_efetivo pro índice do passo correspondente em PASSOS_FLUXO (docs_aprovados/criada contam como o passo seguinte mais próximo). */
-export function passoAtual(status) {
-  const equivalencias = { criada: 'aguardando_docs', docs_aprovados: 'docs_em_analise' }
-  const alvo = equivalencias[status] ?? status
-  const idx = PASSOS_FLUXO.findIndex((p) => p.status === alvo)
-  return idx === -1 ? null : idx
+/**
+ * Índice da etapa atual da jornada, ou null quando a proposta saiu do fluxo
+ * (rejeitada/expirada). Proposta concluída (sincronizada) devolve o total de
+ * etapas: tudo feito.
+ */
+export function etapaJornada(proposta) {
+  switch (proposta.status) {
+    case 'aguardando_locatario': return 0
+    case 'aguardando_aprovacao_interna': return 1
+    case 'criada':
+    case 'aguardando_docs': return proposta.tipo_pessoa ? 3 : 2
+    case 'docs_em_analise': return 3
+    case 'docs_aprovados': return 4
+    case 'sincronizada': return ETAPAS_JORNADA.length
+    default: return null
+  }
 }
 
 const STATUS_COM_PRAZO = ['aguardando_locatario', 'aguardando_aprovacao_interna', 'criada', 'aguardando_docs', 'docs_em_analise', 'docs_aprovados']

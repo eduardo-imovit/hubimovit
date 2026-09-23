@@ -34,6 +34,16 @@
 - [ ] Testar do início ao fim: reprovar 2 docs → "Solicitar ajustes" → conferir o e-mail único
 - [ ] Seguir o sprint: teste completo com os campos novos, IP das chaves de API no Brevo, dashboard, dados (registro órfão de 21/08, proposta de teste que vence em 25/09), fluxos antigos no n8n
 
+### Portal do locatário: jornada com etapas destraváveis (2026-09-23)
+- Pedido do Eduardo depois do teste completo ("funcionou 100%"): com o portal aberto, a aprovação não aparecia, e o locatário só chegava à etapa nova pelo e-mail. Pediu navegação melhor e "desbloquear acessos" gamificado; escolheu o modelo "etapas com cadeado".
+- `src/hooks/usePortalAcesso.js`: atualização silenciosa a cada 20 s (só com a aba visível) e ao voltar para a aba. `recarregar({ silencioso: true })` não troca a tela por "Carregando…".
+- `src/lib/esteiraLabels.js`: `ETAPAS_JORNADA` + `etapaJornada(proposta)`, com 5 etapas: Proposta → Aprovação → Cadastro → Documentos → Conclusão. Cadastro e Documentos se separam por `tipo_pessoa`, porque os dois têm status `aguardando_docs`.
+- `src/components/esteira/JornadaLocatario.jsx` (novo): trilha com check/atual/cadeado, barra de %, selo "Liberada!" com animação (respeita `prefers-reduced-motion`).
+- `src/pages/portal/PortalStatus.jsx`: jornada no lugar da antiga lista de etapas. Aviso "Nova etapa liberada" quando a etapa avança desde a última visita (guardada em `localStorage` por proposta, com try/catch). A mensagem de espera diz o que acontece agora. A lista de documentos recarrega quando a proposta muda.
+- Removidos `StepProgress.jsx`, `PASSOS_FLUXO`/`passoAtual` e o CSS `.esteira-progress` (só eram usados ali).
+- Verificado: build ok; jornada renderizada com o componente real em 4 estados (prévia temporária, já apagada). **Não testado ao vivo** no portal logado: a troca automática de etapa com a aba aberta e o aviso.
+- Limite conhecido: reprovação de documento que não muda o status da proposta só aparece para o locatário ao recarregar a página.
+
 ### Correção: links dos e-mails com localhost (2026-09-23)
 - Sintoma: mesmo depois de o Eduardo trocar a secret `APP_URL` para `https://hub.imovit.com.br`, o e-mail de proposta criada ainda saiu com localhost.
 - Causa provável: o `APP_URL` era lido uma vez, no carregamento do módulo, e uma instância já quente mantinha o valor antigo.

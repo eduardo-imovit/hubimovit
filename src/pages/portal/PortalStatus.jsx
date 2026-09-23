@@ -1,13 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { usePortalAcesso } from '../../hooks/usePortalAcesso'
 import { useHistoricoProposta } from '../../hooks/useHistoricoProposta'
 import { useDocumentosEsteira } from '../../hooks/useDocumentosEsteira'
 import { supabase } from '../../lib/supabaseClient'
 import { confirmarDadosLocatario, completarCadastro, registrarDocumentosEnviados } from '../../lib/esteira'
-import { STATUS_LABEL, STATUS_VARIANT, formatarPrazo } from '../../lib/esteiraLabels'
+import { ETAPAS_JORNADA, STATUS_LABEL, STATUS_VARIANT, etapaJornada, formatarPrazo } from '../../lib/esteiraLabels'
 import { StatusBadge, DocStatusBadge } from '../../components/esteira/StatusBadge'
-import StepProgress from '../../components/esteira/StepProgress'
+import JornadaLocatario from '../../components/esteira/JornadaLocatario'
 import CurrencyInput from '../../components/esteira/CurrencyInput'
 import PortalShell from '../../components/portal/PortalShell'
 import DefinirSenha from '../../components/portal/DefinirSenha'
@@ -71,9 +71,67 @@ export default function PortalStatus() {
   )
 }
 
+// Última etapa que o locatário já viu neste navegador, pra saber quando uma
+// etapa nova destravou. Sem storage (aba anônima, bloqueio), só não anima.
+function lerEtapaVista(propostaId) {
+  try {
+    const v = localStorage.getItem(`jornada:${propostaId}`)
+    return v === null ? null : Number(v)
+  } catch {
+    return null
+  }
+}
+
+function salvarEtapaVista(propostaId, etapa) {
+  try {
+    localStorage.setItem(`jornada:${propostaId}`, String(etapa))
+  } catch {
+    // sem storage: segue sem lembrar
+  }
+}
+
+/** Detecta a etapa que acabou de destravar desde a última vez que o locatário viu a proposta. */
+function useEtapaLiberada(propostaId, etapa) {
+  const [liberada, setLiberada] = useState(null)
+
+  useEffect(() => {
+    if (etapa === null) return
+    const vista = lerEtapaVista(propostaId)
+    if (vista !== null && etapa > vista) setLiberada(etapa)
+    salvarEtapaVista(propostaId, etapa)
+  }, [propostaId, etapa])
+
+  return [liberada, () => setLiberada(null)]
+}
+
+function AvisoEtapaLiberada({ etapa, onFechar }) {
+  if (etapa >= ETAPAS_JORNADA.length) {
+    return (
+      <div className="jornada-aviso" role="status">
+        <div>
+          <strong>Processo concluído!</strong> Todas as etapas da sua locação foram cumpridas.
+        </div>
+        <button type="button" className="modal-close" aria-label="Fechar aviso" onClick={onFechar}>×</button>
+      </div>
+    )
+  }
+  const e = ETAPAS_JORNADA[etapa]
+  return (
+    <div className="jornada-aviso" role="status">
+      <div>
+        <strong>{e.acao ? 'Nova etapa liberada:' : 'Etapa concluída!'}</strong>{' '}
+        {e.acao ? `${e.label}. ${e.aguardando}` : e.aguardando}
+      </div>
+      <button type="button" className="modal-close" aria-label="Fechar aviso" onClick={onFechar}>×</button>
+    </div>
+  )
+}
+
 function PropostaDetalhe({ proposta, onAtualizar }) {
   const { historico } = useHistoricoProposta(proposta.id)
   const prazo = formatarPrazo(proposta.link_expira_em, proposta.status)
+  const etapa = proposta.meuPapel === 'locatario' ? etapaJornada(proposta) : null
+  const [etapaLiberada, fecharAviso] = useEtapaLiberada(proposta.id, etapa)
 
   const atividade = [...historico].reverse()
 
@@ -93,13 +151,15 @@ function PropostaDetalhe({ proposta, onAtualizar }) {
             <StatusBadge status={proposta.status} />
             {prazo && <span className={`esteira-prazo ${prazo.urgente ? 'is-urgente' : 'is-ok'}`}>{prazo.texto}</span>}
           </div>
-          <div className="card card-body">
-            <div className="page-eyebrow" style={{ marginBottom: 'var(--space-4)' }}>Etapas</div>
-            <StepProgress status={proposta.status} />
-          </div>
+          {etapa !== null && (
+            <div className="card card-body">
+              <JornadaLocatario etapa={etapa} recemLiberada={etapaLiberada} />
+            </div>
+          )}
         </aside>
 
         <main style={{ minWidth: 0 }}>
+          {etapaLiberada !== null && <AvisoEtapaLiberada etapa={etapaLiberada} onFechar={fecharAviso} />}
           <AcaoDaVez proposta={proposta} onAtualizar={onAtualizar} />
 
           {atividade.length > 0 && (
@@ -135,11 +195,15 @@ function AcaoDaVez({ proposta, onAtualizar }) {
     }
     return <ChecklistDocumentos proposta={proposta} onAtualizar={onAtualizar} />
   }
+  const etapa = etapaJornada(proposta)
+  const aguardando = etapa !== null && etapa < ETAPAS_JORNADA.length ? ETAPAS_JORNADA[etapa].aguardando : null
   return (
-    <div className="stat-sub is-muted">
-      {proposta.status === 'sincronizada'
-        ? 'Tudo certo por aqui — o processo foi concluído.'
-        : 'Nada pra fazer da sua parte agora. Assim que houver uma próxima etapa, ela aparece aqui.'}
+    <div className="card card-body">
+      <div className="stat-sub is-muted" style={{ marginTop: 0 }}>
+        {proposta.status === 'sincronizada'
+          ? 'Tudo certo por aqui: o processo foi concluído.'
+          : `${aguardando ?? 'Nada para fazer da sua parte agora.'} Esta página se atualiza sozinha quando a próxima etapa for liberada.`}
+      </div>
     </div>
   )
 }
@@ -349,6 +413,12 @@ function FormCadastro({ proposta, onAtualizar }) {
 
 function ChecklistDocumentos({ proposta, onAtualizar }) {
   const { checklist, carregando, recarregar } = useDocumentosEsteira(proposta)
+
+  // A atualização automática do portal traz a proposta nova; se ela mudou
+  // (ex.: ADM reprovou um documento), a lista de documentos acompanha.
+  useEffect(() => {
+    recarregar()
+  }, [proposta.updated_at, recarregar])
   const [enviandoCodigo, setEnviandoCodigo] = useState(null)
   const [erro, setErro] = useState('')
 
