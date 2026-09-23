@@ -1,5 +1,27 @@
 # Handoff — Hub Imovit
 
+## 2026-09-23 — Dados de performance: duplicados da Meta e ponte de conversões
+
+### Achados
+- **`dashboard_meta_ads` duplicada:** o fluxo n8n `meta_ads` (3h, janela de 14 dias) grava com "Create a row"; cada dia entrava até 14 vezes. Somar a tabela inflava tudo (ago/26: R$ 29.176 somado × **R$ 2.950** real; jul: 22.980 × 10.178). `dashboard_google_ads` e `dashboard_atendimentos_crm` não têm duplicados.
+- **`leads_wpp_gtm` com cerca de 80% das linhas vazias:** o fluxo `wpp_entrada` (bot Severino) grava usando campos que não existem (`whatsapp`, `id_atendimento`, `origem`; a etapa anterior entrega `telefone`, `codigo_atendimento`, `midia`). São leads reais de WhatsApp com os dados perdidos. Nesse fluxo, os nós "Incluir lead" e "Criar atividade" estão **desligados**.
+- **`wpp_gtm`:** `imovel_codigo` lido de `$json.imovel_codigo` em vez de `$json.body.imovel_codigo` (nunca gravou). Nenhum identificador de clique (gclid) é capturado.
+- Token da Meta e senha/chave do Imoview estão em texto aberto nos fluxos; o certo é movê-los para as credenciais do n8n.
+
+### Feito
+- `supabase/migrations/20260923230000_meta_ads_sem_duplicados.sql` (**aplicada**): backup `dashboard_meta_ads_backup_20260923` (1.992 linhas); ficou 1 linha por dia+campanha+anúncio, a de maior investimento (695 linhas); trigger `meta_ads_upsert`, que transforma o insert repetido do n8n em atualização; índice único. Colunas novas em `leads_wpp_gtm`: `gclid`, `gbraid`, `wbraid`, `fbclid`, `origem_registro`.
+- **Verificado com o fluxo real:** execução n8n 17171 do `meta_ads` terminou com sucesso, a tabela continuou com 695 linhas e 0 duplicadas, e os dias recentes foram atualizados. Os dashboards já leem o número correto.
+- As edições nos fluxos `wpp_gtm` e `wpp_entrada` **não foram feitas pelo conector**: ele reescreve o fluxo inteiro e cria credenciais novas, o que desligaria Supabase e Imoview. Foram entregues ao Eduardo como expressões para colar.
+
+### Pendências
+- [ ] Eduardo aplicar as edições no `wpp_gtm` (código do imóvel + gclid/gbraid/wbraid/fbclid) e no `wpp_entrada` (3 campos + origem)
+- [ ] GTM: tag que guarda os identificadores de clique em cookie, envio deles no payload, Conversion Linker, tag de conversão do Google Ads
+- [ ] Conversões offline (lead qualificado, visita, negócio) de volta ao Google Ads pelo gclid (n8n + API do Google Ads)
+- [ ] Confirmar se os nós desligados do `wpp_entrada` são intencionais
+- [ ] Mover o token da Meta e a senha do Imoview para as credenciais do n8n
+
+---
+
 ## Sprint 2026-09-23 — TV Display: carrossel de dados no rodapé (Sprints 1 e 2 de 3)
 
 **Objetivo da tarefa:** a TV continua como está; o espaço da agenda do fotógrafo, no rodapé, vira um carrossel de painéis em ciclo: Agenda do fotógrafo → KPIs 1 → KPIs 2 → Agenda de eventos. Detalhes do escopo e das decisões no Obsidian: "🟡 Modo TV v2 - Design e Dados". O esboço do Google Stitch foi analisado e descartado como redesenho completo.
