@@ -8,6 +8,8 @@ import { formatarPrazo } from '../../lib/esteiraLabels'
 import { StatusBadge, DocStatusBadge } from '../../components/esteira/StatusBadge'
 import ReasonModal from '../../components/esteira/ReasonModal'
 import ModalPortal from '../../components/esteira/ModalPortal'
+import { usePerfil } from '../../hooks/usePerfil'
+import { pode } from '../../lib/acessos'
 
 function sanitizarNomeArquivo(nome) {
   return nome.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-')
@@ -34,7 +36,7 @@ export default function Esteiras() {
         <div>
           <div className="page-eyebrow">Admin</div>
           <div className="page-title">Esteiras</div>
-          <div className="page-sub">Revise os documentos enviados por cada locatário e aprove ou rejeite.</div>
+          <div className="page-sub">Documentos enviados por cada locatário, e a revisão de cada um.</div>
         </div>
       </header>
 
@@ -44,7 +46,7 @@ export default function Esteiras() {
       {!carregando && !erro && propostasEsteira.length === 0 && (
         <div className="empty">
           <div className="empty-title">Nenhuma esteira em andamento</div>
-          <div className="empty-sub">Propostas aparecem aqui depois que o proprietário aprova, até a documentação ser sincronizada.</div>
+          <div className="empty-sub">Propostas aparecem aqui depois da aprovação interna, até o processo ser finalizado.</div>
         </div>
       )}
 
@@ -89,6 +91,9 @@ export default function Esteiras() {
 
 function ChecklistEsteira({ proposta, onAtualizar }) {
   const { checklist, carregando, recarregar } = useDocumentosEsteira(proposta)
+  const { perfil } = usePerfil()
+  // Corretor acompanha a esteira das propostas dele; decidir documentos e finalizar é da Admin/Gestão.
+  const podeDecidir = pode(perfil, 'esteiraDecidir')
   const [processandoId, setProcessandoId] = useState(null)
   const [finalizando, setFinalizando] = useState(false)
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false)
@@ -123,7 +128,7 @@ function ChecklistEsteira({ proposta, onAtualizar }) {
   // locatário mandou tudo e o ADM já decidiu cada documento.
   const tudoEnviado = checklist.length > 0 && checklist.every((doc) => doc.envio?.arquivo_path)
   const semDecisaoPendente = !checklist.some((doc) => doc.envio?.status === 'enviado')
-  const podeSolicitarAjustes = tudoEnviado && semDecisaoPendente && reprovados.length > 0
+  const podeSolicitarAjustes = podeDecidir && tudoEnviado && semDecisaoPendente && reprovados.length > 0
 
   async function handleSolicitarAjustes() {
     setErro('')
@@ -205,7 +210,7 @@ function ChecklistEsteira({ proposta, onAtualizar }) {
             <div className="mini-bar-fill" style={{ width: `${checklist.length ? (aprovados / checklist.length) * 100 : 0}%` }} />
           </div>
 
-          {proposta.status_efetivo === 'docs_aprovados' && (
+          {podeDecidir && proposta.status_efetivo === 'docs_aprovados' && (
             <button
               type="button"
               className="btn btn-primary btn-sm"
@@ -254,7 +259,7 @@ function ChecklistEsteira({ proposta, onAtualizar }) {
                       Ver arquivo
                     </button>
                   )}
-                  {doc.envio?.status === 'enviado' && (
+                  {podeDecidir && doc.envio?.status === 'enviado' && (
                     <>
                       <button
                         type="button"

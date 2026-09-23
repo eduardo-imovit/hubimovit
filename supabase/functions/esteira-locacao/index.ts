@@ -14,7 +14,8 @@
 //   3. despacha pro RPC certo, de acordo com o campo `evento`.
 //
 // Modelo de autorização por evento:
-//   nova_proposta            -- qualquer usuário interno logado (tem linha em perfis)
+//   nova_proposta            -- role gestao/adm/corretor (via perfis); grava criado_por,
+//                                que define as propostas que o corretor enxerga
 //   confirmar_dados_locatario -- Form de Proposta (perfil) -- e-mail do JWT precisa bater
 //                                com propostas_locacao.email
 //   completar_cadastro       -- Form de Cadastro (tipo de pessoa/renda/cônjuge), liberado
@@ -199,17 +200,19 @@ async function exigirAdmin(req: Request): Promise<string> {
   return perfil.email
 }
 
-async function exigirUsuarioInterno(req: Request): Promise<string> {
+const PAPEIS_CRIAM_PROPOSTA = ['gestao', 'adm', 'corretor']
+
+async function exigirCriadorProposta(req: Request): Promise<{ id: string; email: string }> {
   const chamador = await obterChamador(req)
   const { data: perfil, error } = await supabase
     .from('perfis')
-    .select('email')
+    .select('id, role, email')
     .eq('id', chamador.id)
     .single()
-  if (error || !perfil) {
-    throw new HttpError(403, 'Ação restrita a usuários internos')
+  if (error || !perfil || !PAPEIS_CRIAM_PROPOSTA.includes(perfil.role)) {
+    throw new HttpError(403, 'Só Gestão, Admin e Corretor criam propostas')
   }
-  return perfil.email
+  return { id: perfil.id, email: perfil.email }
 }
 
 /** Confere se o e-mail do JWT bate com `email` ou `proprietario_email` da proposta. */
@@ -281,7 +284,7 @@ async function notificar(destinatarios: string[], assunto: string, corpoHtml: st
 // Handlers — um por evento, espelhando 1:1 os passos da esteira
 // -----------------------------------------------------------------------------
 
-async function handleNovaProposta(evento: Extract<Evento, { evento: 'nova_proposta' }>, atorEmail: string) {
+async function handleNovaProposta(evento: Extract<Evento, { evento: 'nova_proposta' }>, ator: { id: string; email: string }) {
   const { data, error } = await supabase.rpc('criar_proposta_locacao', {
     p_nome_cliente: evento.nome_cliente,
     p_email: evento.email,
@@ -289,9 +292,17 @@ async function handleNovaProposta(evento: Extract<Evento, { evento: 'nova_propos
     p_valor: evento.valor,
     p_imovel_titulo: evento.imovel_titulo ?? null,
     p_imovel_endereco: evento.imovel_endereco ?? null,
-    p_ator: atorEmail,
+    p_ator: ator.email,
   })
   if (error) throw error
+
+  // Quem cria (ou recria) a proposta passa a ser o dono dela -- é o que o
+  // corretor enxerga em Propostas/Esteira/Processos.
+  const { error: erroDono } = await supabase
+    .from('propostas_locacao')
+    .update({ criado_por: ator.id })
+    .eq('id', data.id)
+  if (erroDono) throw erroDono
 
   const email = emailPropostaCriada(data, linkPortal())
   await notificar([data.email], email.assunto, email.html)
@@ -602,8 +613,8 @@ Deno.serve(async (req) => {
 
     switch (evento.evento) {
       case 'nova_proposta': {
-        const atorEmail = await exigirUsuarioInterno(req)
-        return jsonResponse(await handleNovaProposta(evento, atorEmail))
+        const ator = await exigirCriadorProposta(req)
+        return jsonResponse(await handleNovaProposta(evento, ator))
       }
       case 'confirmar_dados_locatario': {
         await exigirEmailProposta(req, evento.proposta_id, 'email')

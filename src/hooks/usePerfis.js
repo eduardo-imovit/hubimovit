@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
-/** Lista de perfis (todos os usuários do Hub) — só admin enxerga via RLS. */
+/** Lista de perfis (todos os usuários do Hub) — só a Gestão enxerga via RLS. */
 export function usePerfis() {
   const [perfis, setPerfis] = useState([])
   const [carregando, setCarregando] = useState(true)
@@ -11,7 +11,7 @@ export function usePerfis() {
     setCarregando(true)
     const { data, error } = await supabase
       .from('perfis')
-      .select('id, email, role, criado_em')
+      .select('id, email, role, criado_em, nome, cargo, foto_url')
       .order('email', { ascending: true })
     if (error) setErro(error.message)
     else setPerfis(data ?? [])
@@ -28,5 +28,5 @@ export function usePerfis() {
     await recarregar()
   }
 
-  return { perfis, carregando, erro, atualizarRole }
+  return { perfis, carregando, erro, atualizarRole, recarregar }
 }

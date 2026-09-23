@@ -20,6 +20,8 @@ import Esteiras from './pages/admin/Esteiras'
 import Processos from './pages/admin/Processos'
 import PortalLogin from './pages/portal/PortalLogin'
 import PortalStatus from './pages/portal/PortalStatus'
+import Perfil from './pages/Perfil'
+import { ACESSO } from './lib/acessos'
 
 export default function App() {
   return (
@@ -28,20 +30,21 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/tv-display" element={<ProtectedRoute papeis={['gestao', 'adm', 'tvaccess']} navbar={<NavbarTV />} semPadding semScroll><TVDisplay /></ProtectedRoute>} />
-        <Route path="/spotify-callback" element={<ProtectedRoute papeis={['gestao']}><SpotifyCallback /></ProtectedRoute>} />
-        <Route path="/kanban" element={<ProtectedRoute papeis={['gestao', 'adm']}><Kanban /></ProtectedRoute>} />
-        <Route path="/kanban/dados" element={<ProtectedRoute papeis={['gestao', 'adm']}><DadosAtendimento /></ProtectedRoute>} />
-        <Route path="/kanban/atividades" element={<ProtectedRoute papeis={['gestao', 'adm']}><RelatorioAtividades /></ProtectedRoute>} />
-        <Route path="/dashboard" element={<ProtectedRoute papeis={['gestao']}><DashboardVisaoGeral /></ProtectedRoute>} />
-        <Route path="/dashboard/funil" element={<ProtectedRoute papeis={['gestao']}><DashboardFunil /></ProtectedRoute>} />
-        <Route path="/dashboard/campanhas" element={<ProtectedRoute papeis={['gestao']}><DashboardCampanhas /></ProtectedRoute>} />
-        <Route path="/dashboard/performance" element={<ProtectedRoute papeis={['gestao']}><DashboardPerformance /></ProtectedRoute>} />
-        <Route path="/dashboard/leads" element={<ProtectedRoute papeis={['gestao']}><DashboardLeads /></ProtectedRoute>} />
-        <Route path="/configuracoes" element={<ProtectedRoute papeis={['gestao', 'adm']}><Configuracoes /></ProtectedRoute>} />
-        <Route path="/admin/propostas" element={<ProtectedRoute papeis={['gestao', 'adm']}><Propostas /></ProtectedRoute>} />
-        <Route path="/admin/esteiras" element={<ProtectedRoute papeis={['gestao', 'adm']}><Esteiras /></ProtectedRoute>} />
-        <Route path="/admin/processos" element={<ProtectedRoute papeis={['gestao', 'adm']}><Processos /></ProtectedRoute>} />
+        <Route path="/tv-display" element={<ProtectedRoute papeis={ACESSO.tv} navbar={<NavbarTV />} semPadding semScroll><TVDisplay /></ProtectedRoute>} />
+        <Route path="/spotify-callback" element={<ProtectedRoute papeis={ACESSO.spotify}><SpotifyCallback /></ProtectedRoute>} />
+        <Route path="/kanban" element={<ProtectedRoute papeis={ACESSO.kanban}><Kanban /></ProtectedRoute>} />
+        <Route path="/kanban/dados" element={<ProtectedRoute papeis={ACESSO.kanban}><DadosAtendimento /></ProtectedRoute>} />
+        <Route path="/kanban/atividades" element={<ProtectedRoute papeis={ACESSO.kanban}><RelatorioAtividades /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute papeis={ACESSO.dash}><DashboardVisaoGeral /></ProtectedRoute>} />
+        <Route path="/dashboard/funil" element={<ProtectedRoute papeis={ACESSO.dash}><DashboardFunil /></ProtectedRoute>} />
+        <Route path="/dashboard/campanhas" element={<ProtectedRoute papeis={ACESSO.dash}><DashboardCampanhas /></ProtectedRoute>} />
+        <Route path="/dashboard/performance" element={<ProtectedRoute papeis={ACESSO.dash}><DashboardPerformance /></ProtectedRoute>} />
+        <Route path="/dashboard/leads" element={<ProtectedRoute papeis={ACESSO.dash}><DashboardLeads /></ProtectedRoute>} />
+        <Route path="/configuracoes" element={<ProtectedRoute papeis={ACESSO.configuracoes}><Configuracoes /></ProtectedRoute>} />
+        <Route path="/admin/propostas" element={<ProtectedRoute papeis={ACESSO.esteira}><Propostas /></ProtectedRoute>} />
+        <Route path="/admin/esteiras" element={<ProtectedRoute papeis={ACESSO.esteira}><Esteiras /></ProtectedRoute>} />
+        <Route path="/admin/processos" element={<ProtectedRoute papeis={ACESSO.esteira}><Processos /></ProtectedRoute>} />
+        <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
         <Route path="/portal/entrar" element={<PortalLogin />} />
         <Route path="/portal" element={<PortalStatus />} />
       </Routes>

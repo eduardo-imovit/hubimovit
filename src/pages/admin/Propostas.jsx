@@ -6,11 +6,16 @@ import { StatusBadge } from '../../components/esteira/StatusBadge'
 import ReasonModal from '../../components/esteira/ReasonModal'
 import PropostaDetalheModal from '../../components/esteira/PropostaDetalheModal'
 import CurrencyInput from '../../components/esteira/CurrencyInput'
+import { usePerfil } from '../../hooks/usePerfil'
+import { pode } from '../../lib/acessos'
 
 const vazio = { nome_cliente: '', email: '', codigo_imovel: '', valor: '', imovel_titulo: '', imovel_endereco: '' }
 
 export default function Propostas() {
   const { propostas, carregando, erro, recarregar } = usePropostasLocacao()
+  const { perfil } = usePerfil()
+  // Corretor cria e acompanha as dele (o banco já filtra); decidir é da Admin/Gestão.
+  const podeDecidir = pode(perfil, 'esteiraDecidir')
   const [mostrarForm, setMostrarForm] = useState(false)
   const [form, setForm] = useState(vazio)
   const [salvando, setSalvando] = useState(false)
@@ -111,22 +116,26 @@ export default function Propostas() {
                   <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetalhando(p)}>
                     Ver detalhes
                   </button>
-                  <button
-                    type="button"
-                    className="btn btn-primary btn-sm"
-                    disabled={processandoId === p.id}
-                    onClick={() => handleDecisao(p, 'aprovado')}
-                  >
-                    Aprovar
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    disabled={processandoId === p.id}
-                    onClick={() => setRejeitando(p)}
-                  >
-                    Pedir correção
-                  </button>
+                  {podeDecidir && (
+                    <>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        disabled={processandoId === p.id}
+                        onClick={() => handleDecisao(p, 'aprovado')}
+                      >
+                        Aprovar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm"
+                        disabled={processandoId === p.id}
+                        onClick={() => setRejeitando(p)}
+                      >
+                        Pedir correção
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
@@ -207,7 +216,7 @@ export default function Propostas() {
                         <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetalhando(p)}>
                           Visualizar
                         </button>
-                        {p.status_efetivo === 'aguardando_aprovacao_interna' && (
+                        {podeDecidir && p.status_efetivo === 'aguardando_aprovacao_interna' && (
                           <button
                             type="button"
                             className="btn btn-primary btn-sm"
@@ -217,7 +226,7 @@ export default function Propostas() {
                             {processandoId === p.id ? 'Aprovando…' : 'Aprovar'}
                           </button>
                         )}
-                        {!['rejeitada', 'expirada'].includes(p.status_efetivo) && (
+                        {podeDecidir && !['rejeitada', 'expirada'].includes(p.status_efetivo) && (
                           <button
                             type="button"
                             className="btn btn-ghost btn-sm"
@@ -243,8 +252,8 @@ export default function Propostas() {
           processando={processandoId === detalhando.id}
           erro={erroAcao}
           onClose={() => { setDetalhando(null); setErroAcao('') }}
-          onAprovar={() => handleDecisao(detalhando, 'aprovado')}
-          onPedirCorrecao={() => { setRejeitando(detalhando); setDetalhando(null) }}
+          onAprovar={podeDecidir ? () => handleDecisao(detalhando, 'aprovado') : undefined}
+          onPedirCorrecao={podeDecidir ? () => { setRejeitando(detalhando); setDetalhando(null) } : undefined}
         />
       )}
 

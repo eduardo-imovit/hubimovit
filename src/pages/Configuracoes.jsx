@@ -7,6 +7,7 @@ import FotografoAdmin from '../components/settings/FotografoAdmin'
 import DatasComemorativasAdmin from '../components/settings/DatasComemorativasAdmin'
 import UsuariosAdmin from '../components/settings/UsuariosAdmin'
 import { usePerfil } from '../hooks/usePerfil'
+import { pode } from '../lib/acessos'
 
 const ABAS = [
   { id: 'avisos', label: 'Avisos & Links' },
@@ -19,8 +20,7 @@ const ABAS = [
 
 export default function Configuracoes() {
   const { perfil } = usePerfil()
-  const ehGestao = perfil?.role === 'gestao'
-  const abasVisiveis = ABAS.filter((a) => !a.somenteGestao || ehGestao)
+  const abasVisiveis = ABAS.filter((a) => !a.somenteGestao || pode(perfil, 'usuarios'))
   const [aba, setAba] = useState('avisos')
 
   return (

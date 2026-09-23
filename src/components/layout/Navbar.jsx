@@ -1,13 +1,14 @@
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useSession } from '../../hooks/useSession'
 import { usePerfil } from '../../hooks/usePerfil'
 import WeatherWidget from './WeatherWidget'
+import { PAPEL_LABEL, pode } from '../../lib/acessos'
 
-const linksAdmin = [
+const linksLocacao = [
   {
     to: '/admin/propostas',
-    label: 'Admin',
+    label: 'Locação',
     children: [
       { to: '/admin/propostas', label: 'Propostas' },
       { to: '/admin/esteiras', label: 'Esteiras' },
@@ -16,20 +17,22 @@ const linksAdmin = [
   },
 ]
 
-/** Dash reúne Kanban (adm/gestao) e KPIs (só gestao) num único item de navbar. */
-function buildLinksDash(ehGestao) {
-  const children = [
-    {
+/** Dash reúne Kanban (gestão/admin) e dashboards (gestão/marketing) num único item de navbar. */
+function buildLinksDash({ verKanban, verDash }) {
+  const children = []
+
+  if (verKanban) {
+    children.push({
       label: 'Kanban',
       children: [
         { to: '/kanban', label: 'Quadro' },
         { to: '/kanban/dados', label: 'Dados de Atendimento' },
         { to: '/kanban/atividades', label: 'Relatório de Atividades' },
       ],
-    },
-  ]
+    })
+  }
 
-  if (ehGestao) {
+  if (verDash) {
     children.push(
       {
         label: 'Negócio',
@@ -49,7 +52,8 @@ function buildLinksDash(ehGestao) {
     )
   }
 
-  return [{ to: ehGestao ? '/dashboard' : '/kanban', label: 'Dash', children }]
+  if (children.length === 0) return []
+  return [{ to: verDash ? '/dashboard' : '/kanban', label: 'Dash', children }]
 }
 
 /** Item de dropdown: link direto (sem children) ou submenu-flyout (com children). */
@@ -78,12 +82,10 @@ function ItemMenu({ item }) {
 export default function Navbar() {
   const { session } = useSession()
   const { perfil } = usePerfil()
-  const ehGestao = perfil?.role === 'gestao'
-  const ehAdmOuGestao = perfil?.role === 'gestao' || perfil?.role === 'adm'
-  const podeVerTV = !!perfil?.role && perfil.role !== 'user'
-  const linksDash = buildLinksDash(ehGestao)
+  const linksDash = buildLinksDash({ verKanban: pode(perfil, 'kanban'), verDash: pode(perfil, 'dash') })
   const email = session?.user?.email ?? ''
-  const iniciais = email.slice(0, 2).toUpperCase()
+  const nomeExibido = perfil?.nome || email
+  const iniciais = (perfil?.nome || email).split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase()
 
   async function sair() {
     await supabase.auth.signOut()
@@ -101,13 +103,13 @@ export default function Navbar() {
           Home
         </NavLink>
 
-        {podeVerTV && (
+        {pode(perfil, 'tv') && (
           <NavLink to="/tv-display" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
             TV Display
           </NavLink>
         )}
 
-        {ehAdmOuGestao && linksDash.map((link) => (
+        {linksDash.map((link) => (
           <div className="navbar-item" key={link.to}>
             <NavLink to={link.to} end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
               {link.label} <span className="navbar-caret">▾</span>
@@ -120,7 +122,7 @@ export default function Navbar() {
           </div>
         ))}
 
-        {ehAdmOuGestao && linksAdmin.map((link) => (
+        {pode(perfil, 'esteira') && linksLocacao.map((link) => (
           <div className="navbar-item" key={link.to}>
             <NavLink to={link.to} end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
               {link.label} <span className="navbar-caret">▾</span>
@@ -135,7 +137,7 @@ export default function Navbar() {
           </div>
         ))}
 
-        {ehAdmOuGestao && (
+        {pode(perfil, 'configuracoes') && (
           <NavLink to="/configuracoes" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
             Configurações
           </NavLink>
@@ -145,13 +147,18 @@ export default function Navbar() {
       <WeatherWidget />
 
       <div className="navbar-footer">
-        <span className="avatar avatar-sm">{iniciais || '?'}</span>
-        <div style={{ minWidth: 0 }}>
-          <div className="navbar-footer-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{email}</div>
-          <button type="button" onClick={sair} className="navbar-footer-role" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-            Sair
-          </button>
-        </div>
+        <Link to="/perfil" title="Meu perfil" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0, textDecoration: 'none' }}>
+          {perfil?.foto_url
+            ? <img src={perfil.foto_url} alt="" className="avatar avatar-sm" style={{ objectFit: 'cover' }} />
+            : <span className="avatar avatar-sm">{iniciais || '?'}</span>}
+          <div className="navbar-footer-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
+            {nomeExibido}
+            {perfil?.role && <span className="navbar-footer-role" style={{ display: 'block' }}>{PAPEL_LABEL[perfil.role] ?? perfil.role}</span>}
+          </div>
+        </Link>
+        <button type="button" onClick={sair} className="navbar-footer-role" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginLeft: 'var(--space-2)' }}>
+          Sair
+        </button>
       </div>
     </nav>
   )
