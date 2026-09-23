@@ -4,12 +4,14 @@
 
 ### Achados
 - **`dashboard_meta_ads` duplicada:** o fluxo n8n `meta_ads` (3h, janela de 14 dias) grava com "Create a row"; cada dia entrava até 14 vezes. Somar a tabela inflava tudo (ago/26: R$ 29.176 somado × **R$ 2.950** real; jul: 22.980 × 10.178). `dashboard_google_ads` e `dashboard_atendimentos_crm` não têm duplicados.
-- **`leads_wpp_gtm` com cerca de 80% das linhas vazias:** o fluxo `wpp_entrada` (bot Severino) grava usando campos que não existem (`whatsapp`, `id_atendimento`, `origem`; a etapa anterior entrega `telefone`, `codigo_atendimento`, `midia`). São leads reais de WhatsApp com os dados perdidos. Nesse fluxo, os nós "Incluir lead" e "Criar atividade" estão **desligados**.
+- **`leads_wpp_gtm` com 3.939 linhas totalmente vazias (cerca de 80%):** vêm do webhook público do `wpp_gtm`. Padrão de máquina (24h por dia, rajadas de 5 a 93 chamadas no mesmo segundo), sem nenhum dado. *(A primeira hipótese, de que viriam do `wpp_entrada`, estava errada.)*
+- **`wpp_entrada` (bot Severino):** desde 02/09 o telefone deixou de ser gravado, porque o nó usa `whatsapp`/`id_atendimento`/`origem` e a etapa anterior entrega `telefone`/`codigo_atendimento`/`midia`. Os nós "Incluir lead" e "Criar atividade" estão **desligados**.
 - **`wpp_gtm`:** `imovel_codigo` lido de `$json.imovel_codigo` em vez de `$json.body.imovel_codigo` (nunca gravou). Nenhum identificador de clique (gclid) é capturado.
 - Token da Meta e senha/chave do Imoview estão em texto aberto nos fluxos; o certo é movê-los para as credenciais do n8n.
 
 ### Feito
 - `supabase/migrations/20260923230000_meta_ads_sem_duplicados.sql` (**aplicada**): backup `dashboard_meta_ads_backup_20260923` (1.992 linhas); ficou 1 linha por dia+campanha+anúncio, a de maior investimento (695 linhas); trigger `meta_ads_upsert`, que transforma o insert repetido do n8n em atualização; índice único. Colunas novas em `leads_wpp_gtm`: `gclid`, `gbraid`, `wbraid`, `fbclid`, `origem_registro`.
+- `supabase/migrations/20260923233000_leads_wpp_gtm_sem_vazias.sql` (**aplicada**): backup `leads_wpp_gtm_backup_20260923` (4.739); remove as vazias (ficam 800); trigger que descarta linha sem nenhum dado. Testado: webhook chamado com corpo vazio respondeu 200 e não gravou nada.
 - **Verificado com o fluxo real:** execução n8n 17171 do `meta_ads` terminou com sucesso, a tabela continuou com 695 linhas e 0 duplicadas, e os dias recentes foram atualizados. Os dashboards já leem o número correto.
 - As edições nos fluxos `wpp_gtm` e `wpp_entrada` **não foram feitas pelo conector**: ele reescreve o fluxo inteiro e cria credenciais novas, o que desligaria Supabase e Imoview. Foram entregues ao Eduardo como expressões para colar.
 
