@@ -1,5 +1,32 @@
 # Handoff — Hub Imovit
 
+## ▶ Retomar em 2026-09-24 (fim do dia 23/09)
+
+**Onde paramos:** auditoria dos dados de performance. Meta e `leads_wpp_gtm` corrigidas no banco. Próximo passo: o Eduardo aplica as edições no n8n e no GTM, e eu confiro se o `gclid` chega.
+
+### Estado de cada frente
+| Frente | Estado | Nota no Obsidian |
+|---|---|---|
+| **Dados de performance + conversões Google** | Banco corrigido (Meta sem duplicados; leads vazias removidas e bloqueadas). **Falta:** edições nos fluxos `wpp_gtm` e `wpp_entrada` (expressões prontas na seção abaixo), montagem da ponte no GTM, e depois as conversões offline | 🟡 Dados de Performance e Conversões Google |
+| **Metas pelo funil** | Método discutido (taxas móveis, maturação, faixas, hierarquia de amostra). **Espera os dados certos** antes da calculadora de funil e do cadastro/aprovação de metas | 🟡 Níveis de Acesso e Perfil (tela de metas) |
+| **TV Display, rodapé** | Sprints 1 e 2 prontos e commitados (carrossel Fotógrafo → Comercial → Operação → Eventos; função `kpis_tv` já aplicada). Eduardo decidiu não testar na TV agora. **Push pendente** | 🟡 Modo TV v2 - Design e Dados |
+| **Esteira de locação** | Sprint encerrado; pendências em nota própria | 🟡 Esteira de Locação - Próximo Sprint |
+
+### Checklist para começar
+1. `git status`: a `main` está **4 commits à frente** do origin (TV sprints 1 e 2, migrations da Meta e do GTM). O push pode ir a qualquer momento; o banco já está pronto para tudo.
+2. Perguntar ao Eduardo se aplicou as edições no `wpp_gtm`/`wpp_entrada` e no GTM. Para testar: abrir o site com `?gclid=teste123`, clicar no WhatsApp e procurar a linha em `leads_wpp_gtm`.
+3. Perguntar se os nós desligados do `wpp_entrada` ("Incluir lead", "Criar atividade") são intencionais.
+4. Depois do `gclid` chegando: montar as conversões offline (n8n + API do Google Ads; precisa de developer token).
+5. Refazer as taxas do funil pago com os números corrigidos (agosto: cerca de R$ 6 mil de mídia no total, não R$ 32 mil).
+
+### Cuidados
+- **Não editar fluxos do n8n pelo conector MCP:** ele regrava o fluxo inteiro e cria credenciais novas (desligaria Supabase e Imoview). Correções de fluxo: passar as expressões ao Eduardo, ou resolver no banco.
+- Backups de hoje: `dashboard_meta_ads_backup_20260923`, `leads_wpp_gtm_backup_20260923`. Dá para apagar quando os números forem validados no Gerenciador de Anúncios.
+- Deploys de banco e função pelo conector do Supabase (o CLI local não está logado). Push sempre pelo Eduardo, no VS Code.
+
+---
+
+
 ## 2026-09-23 — Dados de performance: duplicados da Meta e ponte de conversões
 
 ### Achados
