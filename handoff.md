@@ -39,7 +39,8 @@
 - Causa provável: o `APP_URL` era lido uma vez, no carregamento do módulo, e uma instância já quente mantinha o valor antigo.
 - `index.ts`: `appUrl()` agora lê a secret a cada envio; o valor reserva passou de `localhost:5175` para `https://hub.imovit.com.br`. Os links `linkPortal()`, `linkPropostas()` e `linkEsteiras()` viraram funções.
 - Deploy **v13** feito (o deploy também reinicia as instâncias). Teste rápido ok (401 sem usuário logado).
-- ⚠️ Havia uma **v12 desconhecida** entre a minha v11 e esta v13. Não há commit correspondente e não dá para ler versões antigas pelo conector. A v13 substituiu essa versão. A confirmar com o Eduardo quem publicou e o que continha.
+- A v12 entre a minha v11 e esta v13 não veio de mudança de código: o Eduardo só alterou `APP_URL` e URL Configuration (provável republicação automática do Supabase ao salvar a secret). Nada perdido.
+- `localhost:5173` não existe no código nem no histórico do git. Veio de configuração: a secret `APP_URL` antiga (e-mail da função) ou, se for o e-mail de login, a Site URL / template de Magic Link do Supabase Auth.
 - Falta: confirmar com um e-mail real que o link sai com `hub.imovit.com.br`.
 
 ### Extra do dia: favicon (2026-09-23)
