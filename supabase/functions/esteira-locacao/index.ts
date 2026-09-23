@@ -24,7 +24,10 @@
 //   decisao_interna          -- role gestao/adm (via perfis) -- aprova (segue direto
 //                                pra aguardando_docs) ou rejeita (volta pro locatário corrigir)
 //   docs_enviados            -- e-mail do JWT precisa bater com propostas_locacao.email
-//   decisao_adm              -- role gestao/adm (via perfis)
+//   decisao_adm              -- role gestao/adm (via perfis) -- sem e-mail: reprovação
+//                                aparece pro locatário no aviso ao lado do documento
+//   solicitar_ajustes        -- role gestao/adm (via perfis) -- fecha a revisão e manda
+//                                UM e-mail com todos os documentos reprovados
 //   sincronizar_imoview      -- role gestao/adm (via perfis)
 //
 // Notificações por e-mail (Brevo) disparam inline em cada handler, sempre
@@ -43,6 +46,17 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { z } from 'https://deno.land/x/zod@v3.23.8/mod.ts'
+import {
+  emailAjustesDocumentos,
+  emailDocsAprovados,
+  emailDocsEnviados,
+  emailProcessoConcluido,
+  emailPropostaAjuste,
+  emailPropostaAprovada,
+  emailPropostaCriada,
+  emailProntoImoview,
+  emailRevisaoInterna,
+} from './emails.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -123,6 +137,10 @@ const eventoSchema = z.discriminatedUnion('evento', [
     documento_id: z.string().uuid(),
     decisao: z.enum(['aprovado', 'rejeitado']),
     feedback: z.string().optional(),
+  }),
+  z.object({
+    evento: z.literal('solicitar_ajustes'),
+    proposta_id: z.string().uuid(),
   }),
   z.object({
     evento: z.literal('sincronizar_imoview'),
@@ -229,19 +247,6 @@ const LINK_PORTAL = `${APP_URL}/portal/entrar`
 const LINK_PROPOSTAS = `${APP_URL}/admin/propostas`
 const LINK_ESTEIRAS = `${APP_URL}/admin/esteiras`
 
-function escapeHtml(texto: string | null | undefined): string {
-  if (!texto) return ''
-  return texto.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-}
-
-function emailHtml(titulo: string, mensagemHtml: string, linkTexto: string, linkUrl: string) {
-  return `<div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-    <h2>${escapeHtml(titulo)}</h2>
-    <p>${mensagemHtml}</p>
-    <p><a href="${linkUrl}" style="display:inline-block;background:#c86b4a;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none">${escapeHtml(linkTexto)}</a></p>
-  </div>`
-}
-
 async function notificar(destinatarios: string[], assunto: string, corpoHtml: string) {
   const brevoApiKey = Deno.env.get('BREVO_API_KEY')
   if (!brevoApiKey) {
@@ -283,16 +288,8 @@ async function handleNovaProposta(evento: Extract<Evento, { evento: 'nova_propos
   })
   if (error) throw error
 
-  await notificar(
-    [data.email],
-    'Proposta de locação criada',
-    emailHtml(
-      'Você tem uma proposta de locação',
-      `Uma proposta de locação foi criada em seu nome${data.imovel_titulo ? ` para <strong>${escapeHtml(data.imovel_titulo)}</strong>` : ''}. Acesse com este e-mail para continuar.`,
-      'Acessar minha proposta',
-      LINK_PORTAL
-    )
-  )
+  const email = emailPropostaCriada(data, LINK_PORTAL)
+  await notificar([data.email], email.assunto, email.html)
 
   return { proposta: data }
 }
@@ -308,16 +305,8 @@ async function handleConfirmarDadosLocatario(evento: Extract<Evento, { evento: '
   })
   if (error) throw error
 
-  await notificar(
-    DESTINATARIOS_REVISAO_INTERNA,
-    'Nova proposta aguardando revisão interna',
-    emailHtml(
-      'Proposta aguardando revisão',
-      `${escapeHtml(data.nome_cliente)} completou os dados da proposta${data.imovel_titulo ? ` para <strong>${escapeHtml(data.imovel_titulo)}</strong>` : ''}. Revise antes de liberar a esteira de documentos.`,
-      'Revisar proposta',
-      LINK_PROPOSTAS
-    )
-  )
+  const email = emailRevisaoInterna(data, LINK_PROPOSTAS)
+  await notificar(DESTINATARIOS_REVISAO_INTERNA, email.assunto, email.html)
 
   return { proposta: data }
 }
@@ -368,27 +357,11 @@ async function handleDecisaoInterna(evento: Extract<Evento, { evento: 'decisao_i
     // Sem proprietário no sistema (ver decisão da Parte 1, 2026-09-21) --
     // aprovado aqui já pula direto pra aguardando_docs, então o locatário é
     // avisado pra enviar os documentos, não mais o proprietário.
-    await notificar(
-      [data.email],
-      'Proposta aprovada — envie seus documentos',
-      emailHtml(
-        'Proposta aprovada',
-        'Sua proposta foi aprovada pela nossa equipe. Agora é só enviar os documentos pra seguirmos com o processo.',
-        'Enviar documentos',
-        LINK_PORTAL
-      )
-    )
+    const email = emailPropostaAprovada(data, LINK_PORTAL)
+    await notificar([data.email], email.assunto, email.html)
   } else {
-    await notificar(
-      [data.email],
-      'Revise os dados da sua proposta',
-      emailHtml(
-        'Precisamos que você revise alguns dados',
-        `Nossa equipe pediu um ajuste na sua proposta${evento.motivo ? `: <em>${escapeHtml(evento.motivo)}</em>` : '.'} Acesse pra corrigir e reenviar.`,
-        'Corrigir meus dados',
-        LINK_PORTAL
-      )
-    )
+    const email = emailPropostaAjuste(data, evento.motivo, LINK_PORTAL)
+    await notificar([data.email], email.assunto, email.html)
   }
 
   return { proposta: data }
@@ -415,16 +388,8 @@ async function handleDocsEnviados(evento: Extract<Evento, { evento: 'docs_enviad
   if (erroProposta) throw erroProposta
 
   if (proposta.status === 'docs_em_analise') {
-    await notificar(
-      DESTINATARIOS_REVISAO_INTERNA,
-      'Documentos enviados — aguardando revisão',
-      emailHtml(
-        'Documentos pra revisar',
-        `${escapeHtml(proposta.nome_cliente)} enviou todos os documentos${proposta.imovel_titulo ? ` da proposta de <strong>${escapeHtml(proposta.imovel_titulo)}</strong>` : ''}. Já pode revisar.`,
-        'Revisar documentos',
-        LINK_ESTEIRAS
-      )
-    )
+    const email = emailDocsEnviados(proposta, LINK_ESTEIRAS)
+    await notificar(DESTINATARIOS_REVISAO_INTERNA, email.assunto, email.html)
   }
 
   return { documentos: resultados, proposta }
@@ -445,41 +410,70 @@ async function handleDecisaoAdm(evento: Extract<Evento, { evento: 'decisao_adm' 
     .eq('id', data.proposta_id)
     .single()
 
-  if (proposta && evento.decisao === 'rejeitado') {
-    await notificar(
-      [proposta.email],
-      'Documento reprovado — reenvie',
-      emailHtml(
-        'Um documento precisa ser reenviado',
-        `Um dos documentos que você enviou foi reprovado${evento.feedback ? `: <em>${escapeHtml(evento.feedback)}</em>` : '.'} Acesse pra reenviar.`,
-        'Reenviar documento',
-        LINK_PORTAL
-      )
-    )
-  } else if (proposta && proposta.status === 'docs_aprovados') {
-    await notificar(
-      [proposta.email],
-      'Todos os documentos aprovados',
-      emailHtml(
-        'Documentação aprovada',
-        'Todos os seus documentos foram aprovados. Estamos finalizando o processo.',
-        'Ver status',
-        LINK_PORTAL
-      )
-    )
-    await notificar(
-      DESTINATARIOS_REVISAO_INTERNA,
-      'Proposta pronta pra sincronizar no Imoview',
-      emailHtml(
-        'Documentação completa',
-        `A proposta de ${escapeHtml(proposta.nome_cliente)}${proposta.imovel_titulo ? ` (${escapeHtml(proposta.imovel_titulo)})` : ''} teve todos os documentos aprovados e está pronta pra ser lançada no Imoview.`,
-        'Ver proposta',
-        LINK_ESTEIRAS
-      )
-    )
+  // Reprovação não dispara e-mail aqui: o locatário vê o aviso ao lado do
+  // documento no portal, e o ADM manda um e-mail só com todos os reprovados
+  // quando fecha a revisão (ver handleSolicitarAjustes).
+  if (proposta && evento.decisao === 'aprovado' && proposta.status === 'docs_aprovados') {
+    const paraLocatario = emailDocsAprovados(proposta, LINK_PORTAL)
+    await notificar([proposta.email], paraLocatario.assunto, paraLocatario.html)
+    const paraEquipe = emailProntoImoview(proposta, LINK_ESTEIRAS)
+    await notificar(DESTINATARIOS_REVISAO_INTERNA, paraEquipe.assunto, paraEquipe.html)
   }
 
   return { documento: data }
+}
+
+/**
+ * Situação da revisão de documentos de uma proposta, pelas mesmas regras do
+ * trigger recalcular_status_proposta: quais obrigatórios faltam enviar, quais
+ * ainda esperam decisão do ADM e quais foram reprovados.
+ */
+async function situacaoDocumentos(proposta: { id: string; tipo_pessoa: string | null; tem_conjuge: boolean | null }) {
+  const [{ data: tipos, error: erroTipos }, { data: enviados, error: erroEnviados }] = await Promise.all([
+    supabase.from('documentos_tipos_obrigatorios').select('codigo, nome, tipo_pessoa, exige_conjuge'),
+    supabase.from('documentos_enviados').select('documento_codigo, status, feedback_adm').eq('proposta_id', proposta.id),
+  ])
+  if (erroTipos) throw erroTipos
+  if (erroEnviados) throw erroEnviados
+
+  const checklist = (tipos ?? [])
+    .filter((t) => (t.tipo_pessoa === proposta.tipo_pessoa || t.tipo_pessoa === 'Ambos') && (!t.exige_conjuge || proposta.tem_conjuge))
+    .map((t) => ({ ...t, envio: (enviados ?? []).find((e) => e.documento_codigo === t.codigo) ?? null }))
+
+  return {
+    faltando: checklist.filter((d) => !d.envio || d.envio.status === 'pendente'),
+    aguardandoDecisao: checklist.filter((d) => d.envio?.status === 'enviado'),
+    reprovados: checklist.filter((d) => d.envio?.status === 'rejeitado'),
+  }
+}
+
+async function handleSolicitarAjustes(evento: Extract<Evento, { evento: 'solicitar_ajustes' }>) {
+  const { data: proposta, error: erroProposta } = await supabase
+    .from('propostas_locacao')
+    .select('*')
+    .eq('id', evento.proposta_id)
+    .single()
+  if (erroProposta) throw erroProposta
+
+  const { faltando, aguardandoDecisao, reprovados } = await situacaoDocumentos(proposta)
+  if (faltando.length > 0) {
+    throw new Error('O locatário ainda não enviou todos os documentos. Os reprovados já aparecem pra ele no portal.')
+  }
+  if (aguardandoDecisao.length > 0) {
+    throw new Error(`Ainda há ${aguardandoDecisao.length} documento(s) sem decisão. Aprove ou reprove todos antes de solicitar ajustes.`)
+  }
+  if (reprovados.length === 0) {
+    throw new Error('Nenhum documento reprovado: não há ajustes a solicitar.')
+  }
+
+  const email = emailAjustesDocumentos(
+    proposta,
+    reprovados.map((d) => ({ nome: d.nome, motivo: d.envio?.feedback_adm ?? null })),
+    LINK_PORTAL
+  )
+  await notificar([proposta.email], email.assunto, email.html)
+
+  return { reprovados: reprovados.length }
 }
 
 async function handleSincronizarImoview(evento: Extract<Evento, { evento: 'sincronizar_imoview' }>, adminEmail: string) {
@@ -522,19 +516,8 @@ async function handleSincronizarImoview(evento: Extract<Evento, { evento: 'sincr
     console.error('[esteira-locacao] erro ao limpar Storage:', err)
   }
 
-  const destinatarios = [data.email, data.proprietario_email].filter((e): e is string => !!e)
-  if (destinatarios.length) {
-    await notificar(
-      destinatarios,
-      'Processo de locação concluído',
-      emailHtml(
-        'Processo concluído',
-        `O processo de locação${data.imovel_titulo ? ` de <strong>${escapeHtml(data.imovel_titulo)}</strong>` : ''} foi concluído. Obrigado por usar o Hub Imovit.`,
-        'Ver detalhes',
-        LINK_PORTAL
-      )
-    )
-  }
+  const email = emailProcessoConcluido(data, LINK_PORTAL)
+  await notificar([data.email], email.assunto, email.html)
 
   return { proposta: data }
 }
@@ -640,6 +623,10 @@ Deno.serve(async (req) => {
       case 'decisao_adm': {
         const adminEmail = await exigirAdmin(req)
         return jsonResponse(await handleDecisaoAdm(evento, adminEmail))
+      }
+      case 'solicitar_ajustes': {
+        await exigirAdmin(req)
+        return jsonResponse(await handleSolicitarAjustes(evento))
       }
       case 'sincronizar_imoview': {
         const adminEmail = await exigirAdmin(req)

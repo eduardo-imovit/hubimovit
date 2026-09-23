@@ -32,4 +32,5 @@ export const descartarProposta = (dados) => chamarEsteira('descartar_proposta', 
 export const registrarDocumentosEnviados = (proposta_id, documentos) =>
   chamarEsteira('docs_enviados', { proposta_id, documentos })
 export const decidirDocumento = (dados) => chamarEsteira('decisao_adm', dados)
+export const solicitarAjustes = (proposta_id) => chamarEsteira('solicitar_ajustes', { proposta_id })
 export const marcarSincronizada = (proposta_id) => chamarEsteira('sincronizar_imoview', { proposta_id })

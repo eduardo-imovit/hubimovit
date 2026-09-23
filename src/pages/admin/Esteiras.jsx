@@ -3,7 +3,7 @@ import JSZip from 'jszip'
 import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
 import { useDocumentosEsteira } from '../../hooks/useDocumentosEsteira'
 import { supabase } from '../../lib/supabaseClient'
-import { decidirDocumento, marcarSincronizada } from '../../lib/esteira'
+import { decidirDocumento, marcarSincronizada, solicitarAjustes } from '../../lib/esteira'
 import { formatarPrazo } from '../../lib/esteiraLabels'
 import { StatusBadge, DocStatusBadge } from '../../components/esteira/StatusBadge'
 import ReasonModal from '../../components/esteira/ReasonModal'
@@ -93,6 +93,9 @@ function ChecklistEsteira({ proposta, onAtualizar }) {
   const [finalizando, setFinalizando] = useState(false)
   const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false)
   const [rejeitandoId, setRejeitandoId] = useState(null)
+  const [mostrarAjustes, setMostrarAjustes] = useState(false)
+  const [enviandoAjustes, setEnviandoAjustes] = useState(false)
+  const [avisoAjustes, setAvisoAjustes] = useState('')
   const [erro, setErro] = useState('')
 
   async function handleDecisao(documentoId, decisao, feedback) {
@@ -115,6 +118,26 @@ function ChecklistEsteira({ proposta, onAtualizar }) {
 
   const documentosEnviados = checklist.filter((doc) => doc.envio?.arquivo_path)
   const aprovados = checklist.filter((doc) => doc.envio?.status === 'aprovado').length
+  const reprovados = checklist.filter((doc) => doc.envio?.status === 'rejeitado')
+  // Mesmas regras que a Edge Function confere antes de mandar o e-mail:
+  // locatário mandou tudo e o ADM já decidiu cada documento.
+  const tudoEnviado = checklist.length > 0 && checklist.every((doc) => doc.envio?.arquivo_path)
+  const semDecisaoPendente = !checklist.some((doc) => doc.envio?.status === 'enviado')
+  const podeSolicitarAjustes = tudoEnviado && semDecisaoPendente && reprovados.length > 0
+
+  async function handleSolicitarAjustes() {
+    setErro('')
+    setEnviandoAjustes(true)
+    try {
+      await solicitarAjustes(proposta.id)
+      setMostrarAjustes(false)
+      setAvisoAjustes(`E-mail enviado ao locatário com ${reprovados.length} documento(s) para reenviar.`)
+    } catch (err) {
+      setErro(err.message)
+    } finally {
+      setEnviandoAjustes(false)
+    }
+  }
   const prazo = formatarPrazo(proposta.link_expira_em, proposta.status_efetivo)
 
   async function handleFinalizar() {
@@ -192,6 +215,20 @@ function ChecklistEsteira({ proposta, onAtualizar }) {
               Baixar documentos e finalizar
             </button>
           )}
+
+          {podeSolicitarAjustes && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              style={{ width: '100%', marginTop: 'var(--space-4)' }}
+              onClick={() => { setAvisoAjustes(''); setMostrarAjustes(true) }}
+            >
+              Solicitar ajustes ({reprovados.length})
+            </button>
+          )}
+          {avisoAjustes && (
+            <div className="stat-sub is-muted" style={{ marginTop: 'var(--space-2)' }}>{avisoAjustes}</div>
+          )}
         </div>
       </aside>
 
@@ -247,13 +284,44 @@ function ChecklistEsteira({ proposta, onAtualizar }) {
       {rejeitandoId && (
         <ReasonModal
           title="Rejeitar documento"
-          description="O locatário vai ver esse motivo no portal pra saber o que corrigir e reenviar."
+          description="O locatário vê esse motivo ao lado do documento no portal. O e-mail só sai quando você clicar em “Solicitar ajustes”, com todos os reprovados juntos."
           confirmLabel="Rejeitar"
           obrigatorio={false}
           processando={processandoId === rejeitandoId}
           onConfirm={handleConfirmarRejeicao}
           onCancel={() => setRejeitandoId(null)}
         />
+      )}
+
+      {mostrarAjustes && (
+        <ModalPortal>
+        <div className="modal-overlay" onClick={() => !enviandoAjustes && setMostrarAjustes(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title">Solicitar ajustes?</div>
+              <button type="button" className="modal-close" disabled={enviandoAjustes} onClick={() => setMostrarAjustes(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>O locatário vai receber um e-mail só, pedindo para reenviar:</p>
+              <ul style={{ paddingLeft: 'var(--space-5)', margin: 'var(--space-2) 0' }}>
+                {reprovados.map((doc) => (
+                  <li key={doc.codigo}>
+                    <strong>{doc.nome}</strong>{doc.envio?.feedback_adm ? `: ${doc.envio.feedback_adm}` : ''}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-ghost btn-sm" disabled={enviandoAjustes} onClick={() => setMostrarAjustes(false)}>
+                Cancelar
+              </button>
+              <button type="button" className="btn btn-primary btn-sm" disabled={enviandoAjustes} onClick={handleSolicitarAjustes}>
+                {enviandoAjustes ? 'Enviando…' : 'Enviar e-mail'}
+              </button>
+            </div>
+          </div>
+        </div>
+        </ModalPortal>
       )}
 
       {mostrarConfirmacao && (
