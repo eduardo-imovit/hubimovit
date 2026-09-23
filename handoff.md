@@ -1,5 +1,40 @@
 # Handoff — Hub Imovit
 
+## Sprint 2026-09-23 — ENCERRADO: Finalizar a esteira de locação
+
+**Objetivo:** fechar a esteira de locação para uso real. Encerrado pelo Eduardo em 2026-09-23, depois do teste completo da esteira ("funcionou 100%").
+
+### Entregue (tudo em produção)
+- E-mails da esteira no padrão Imovit; reprovação de documentos consolidada em "Solicitar ajustes" (e-mail único).
+- Links dos e-mails em `hub.imovit.com.br` (`APP_URL` lido a cada envio, com o domínio novo como padrão).
+- Portal do locatário: jornada com etapas destraváveis e atualização automática.
+- Favicon com o símbolo da Imovit.
+- Níveis de acesso (Gestão/Admin/Marketing/Corretor), página de Perfil, pedidos de nível decididos pela Gestão.
+- **Segurança:** fechada a falha que expunha propostas, documentos e arquivos da esteira sem login (RLS reescrita, view com `security_invoker`, RPCs revogadas).
+- Gestão suspende, reativa e exclui colaboradores.
+- Estado de produção: migrations `niveis_acesso_perfil` e `suspender_colaborador` aplicadas; funções `esteira-locacao` v18 e `gestao-colaboradores` v1; frontend no ar via Vercel.
+
+### Não testado ao vivo
+- A jornada destravando sozinha com o portal aberto.
+- O login real em cada nível novo (Corretor, Marketing).
+- Suspender, reativar e excluir colaborador.
+
+### Pendências (próximo sprint)
+No Obsidian: "🟡 Esteira de Locação - Próximo Sprint" e "🟡 Níveis de Acesso e Perfil".
+- [ ] Revisar o dashboard e os dados da esteira (itens da pauta de 23/09 que não foram feitos)
+- [ ] Workflows antigos da esteira no n8n: confirmar se estão ativos e arquivar
+- [ ] Limpar o registro órfão de 21/08 e os 11 arquivos de teste; limpar o Storage também ao descartar, rejeitar ou expirar proposta
+- [ ] Brevo: liberar a checagem de IP das chaves de API
+- [ ] Tela de metas para o Marketing
+- [ ] Views `vw_*` do dashboard legíveis sem login; tabelas `repique_*` sem RLS; proteção contra senha vazada
+
+### Como retomar
+- `npm run dev` (precisa de `.env` com `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`). Produção: `https://hub.imovit.com.br`.
+- Supabase `vlsrmtryzwddqkwqugfr`. O CLI local não está logado; os deploys desta sessão foram feitos pelo conector do Supabase.
+- O detalhe de cada entrega está nas seções abaixo, da mais recente para a mais antiga.
+
+---
+
 ## Sprint 2026-09-23 — Finalizar a esteira de locação (ponto 1: e-mails)
 
 **Objetivo:** fechar a esteira de locação ponto a ponto. O ponto 1 cobre os e-mails do fluxo: visual no padrão Imovit, reprovação de documentos num e-mail só e remoção do resto de `proprietario_email`.
