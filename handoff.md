@@ -1,5 +1,28 @@
 # Handoff — Hub Imovit
 
+## Sprint 2026-09-23 — TV Display: carrossel de dados no rodapé (Sprint 1 de 3)
+
+**Objetivo da tarefa:** a TV continua como está; o espaço da agenda do fotógrafo, no rodapé, vira um carrossel de painéis em ciclo: Agenda do fotógrafo → KPIs 1 → KPIs 2 → Agenda de eventos. Detalhes do escopo e das decisões no Obsidian: "🟡 Modo TV v2 - Design e Dados". O esboço do Google Stitch foi analisado e descartado como redesenho completo.
+
+### Feito (Sprint 1)
+- `src/components/tv/CarrosselRodapeTV.jsx` (novo): troca de painel a cada 15 s; todos os painéis na mesma célula de grid (altura estável, dados mantidos); indicador com rótulo e barra de tempo; respeita `prefers-reduced-motion`.
+- `src/hooks/useEventosCalendario.js` (novo): a montagem de eventos saiu de `Calendario.jsx` (reuniões recorrentes, avisos com data, fotógrafo, datas comemorativas, aniversário e tempo de casa). A Home e a TV usam a mesma fonte; o comportamento da Home não mudou.
+- `src/components/calendar/AgendaEventosSemanalTV.jsx` (novo): semana seg–dom, dia de hoje destacado, até 3 eventos por dia (+N), sem os blocos do fotógrafo (que têm painel próprio).
+- `TVDisplayFooter.jsx`: carrossel com os painéis Fotógrafo e Eventos; `useHojeISO` atualiza a data a cada minuto, para a semana virar sozinha na TV ligada 24/7.
+- CSS em `hub.css` (bloco "CARROSSEL DO RODAPÉ").
+
+### Estado
+- Build ok; Lint sem avisos nos arquivos novos.
+- Prévia temporária (já apagada) com o carrossel real em 1920 px: troca de Fotógrafo para Eventos aos 15 s, confirmada por captura.
+- A conta da TV já lê todas as fontes da agenda de eventos (RLS `authenticated`). Nada mudou no banco.
+- **Não testado ao vivo na TV** (depende do push).
+
+### Próximos passos
+- [ ] Sprint 2: KPIs 1 (comercial do mês: leads × meta, negócios, conversão, ciclo) e KPIs 2 (operação: propostas por etapa da esteira, imóveis locados no mês, leads parados 30+ dias, plantão de hoje), com uma consulta que devolva à conta `tvaccess` só números agregados
+- [ ] Sprint 3: ajuste na TV real (tempos, legibilidade, 24/7)
+
+---
+
 ## Sprint 2026-09-23 — ENCERRADO: Finalizar a esteira de locação
 
 **Objetivo:** fechar a esteira de locação para uso real. Encerrado pelo Eduardo em 2026-09-23, depois do teste completo da esteira ("funcionou 100%").
