@@ -1,5 +1,355 @@
 # Handoff — Hub Imovit
 
+## ▶ Sprint 2026-09-24 — ENCERRADO: painéis, TV e escala de plantão
+
+**Objetivo:** dados de performance confiáveis e um Dash que conta a história (Gestão e Performance), a TV com os mesmos números e o plantão importado do PDF mensal. Encerrado pelo Eduardo em 24/09. As seções abaixo têm o detalhe de cada entrega.
+
+### Entregue
+- **Dados:** gclid na V31 do GTM (publicado), `wpp_entrada` corrigido, Meta Ads de mai–set = API, `campaign_id` na Meta (migration aplicada + fluxo alterado).
+- **Dash:** `/dashboard/gestao` (Painel da Gestão) e `/dashboard/performance` (Painel de Performance), com filtros na URL; páginas antigas removidas, endereços antigos redirecionam mantendo os filtros.
+- **TV:** KPIs com as definições dos painéis (migration `kpis_tv_alinhado_paineis` aplicada, compatível com a TV antiga) e painel "Plantão" com os próximos 5 dias (fim de semana incluído, hoje em destaque).
+- **Plantão:** importação da escala em PDF em Configurações → Plantão; outubro importado (60 plantões, fim de semana = dia inteiro).
+- **Docs:** `docs/01–06` (retroativos, outra sessão do dia) + PRD §5.0, §5.0b, §5.1, §5.3, RF16–RF19, App Flow, Schema e plano atualizados.
+
+### Estado atual
+- Commits locais na `main` (este sprint); **push pendente** (Eduardo, VS Code) → a Vercel publica os painéis, a TV nova e a importação.
+- Banco já está pronto para tudo (migrations aplicadas; escala de outubro gravada).
+- Lint sem avisos novos; build ok; `npm audit` = 0 (pdfjs-dist 6.3.289).
+- Não testado: login Marketing nos painéis, celular, a TV real depois do push.
+
+### Pendências (próximos sprints)
+- [ ] Push (Eduardo) e conferir a TV do escritório
+- [ ] CRM sem leads novos desde 22/09 — investigar a sincronização
+- [ ] Mapa de canais em `vw_atendimentos_base` (mídias do site e do bot caindo em "Outros"/"WhatsApp")
+- [ ] Orçamento de setembro em `metas_campanhas` (o Painel de Performance usa agosto como referência)
+- [ ] Preencher `campaign_id` no histórico da Meta (rodar o fluxo por mês e voltar as datas) e conferir abril
+- [ ] Developer token do Google Ads → conversões offline
+- [ ] Chip "Aguardando seus dados" na TV → "Aguardando locatário"
+- [ ] Revisar os painéis com a Gestão e ajustar
+
+### Como retomar
+- `npm run dev` → `/dashboard` (Gestão), `/dashboard/performance`, `/tv-display`, `/configuracoes` (aba Plantão).
+- Supabase `vlsrmtryzwddqkwqugfr` pelo conector (CLI não logado). Fluxos do n8n: só ler/executar pelo MCP; edições pelo Eduardo no editor.
+
+---
+
+## Sprint 2026-09-24 (cont.) — Escala de plantão por PDF + plantão na TV — RF19
+
+**Objetivo:** subir o PDF mensal da escala ("PLANTAO VENDAS") e o sistema atualizar o plantão; mostrar na TV.
+
+### Feito
+- Docs antes: PRD (RF19 e §5.3), `03-app-flow.md` (aba Plantão), plano (Fase 7).
+- `src/lib/escalaPlantao.js`: lê o PDF no navegador com **pdf.js** (`pdfjs-dist` **6.3.289**; a 5.x tem a falha GHSA-hq66-cqwq-w95j, execução de JS por PDF malicioso; `npm audit` = 0) e monta DATA/MANHÃ/TARDE pelas colunas do cabeçalho (`montarEscala`, função pura). Casa apelido → corretor de `colaboradores_raw` (todas as palavras do apelido no nome, sem acento); apelidos escolhidos à mão ficam no `localStorage`.
+- `src/components/settings/ImportarEscalaPlantao.jsx` (no topo da aba Plantão de Configurações): escolher PDF → prévia (dias, plantões, nomes casados com select para corrigir, opção "fim de semana = dia inteiro", aviso de quantos plantões serão substituídos) → Importar. Grava os novos e **só depois** apaga os antigos do intervalo do arquivo.
+- `src/components/tv/PlantaoSemanalTV.jsx`: painel "Plantão", 2º no carrossel do rodapé (`TVDisplayFooter.jsx`). **Ajustado a pedido do Eduardo:** só segunda a sexta, 5 colunas numa linha, sem caixas/bordas (antes: 7 dias na grade de 3 colunas do fotógrafo, quebrando em 3 linhas). **Versão final:** mostra os **próximos 5 dias úteis a partir de hoje** (no fim de semana, a partir da segunda seguinte), com hoje rotulado "Hoje" e em destaque; os outros ficam com opacidade 0,4. Motivo: a versão "semana seg–sex" pulava para a próxima semana quando a atual não tinha escala e destacava 28/09 num dia 24/09 — o Eduardo apontou o erro. Relê a cada 10 min. `usePlantao` agora expõe `recarregar`.
+- CSS `escala-import-*` e `plantao-tv-*` em `hub.css`. pdf.js vai num pedaço separado do build (só carrega ao escolher um PDF).
+
+### Estado atual
+- Testado: `montarEscala` com o PDF real de outubro no Node → 35 dias (26/09–30/10), 60 plantões, os 5 apelidos casaram sozinhos (Maria Inês, Patrícia Macedo, Rachel Bittencourt, Ricardo Pinheiro, Gabriel Betti). No localhost (logado Gestão), a prévia abriu igual. **Não cliquei em Importar**: nada gravado no banco. Painel da TV renderizado (semana atual vazia).
+- Sem mudança de banco (RLS de `plantao`: leitura para qualquer logado, escrita `pode_editar_conteudo()`). Lint/build ok. Não commitado.
+
+### Decisões e contexto
+- Fim de semana: por padrão fica "manhã", como no PDF; a caixa na prévia transforma em "dia inteiro". **Falta o Eduardo dizer qual é o certo.**
+- Datas do arquivo são a fonte da verdade: plantões antigos entre a primeira e a última data do PDF são apagados na importação (a prévia avisa quantos).
+
+- **Escala de outubro importada em 24/09** pela própria tela (a pedido do Eduardo: "só faltam os corretores"): 60 plantões de 26/09 a 30/10 (35 manhã, 25 tarde), sem substituições; conferido no banco contra o PDF e na TV do localhost ("Plantão — próxima semana · 28/09 a 02/10" com os nomes). Fins de semana gravados como "manhã".
+
+- **Fim de semana = dia inteiro** (Eduardo, 24/09): os 10 plantões de fim de semana de outubro foram atualizados no banco de "manha" para "dia_inteiro" (update limitado a sáb/dom de 26/09–30/10, `observacao like 'Escala importada:%'`); na importação a caixa agora vem marcada. O painel da TV passou a mostrar **os próximos 5 dias corridos, fim de semana incluído** (hoje: qui 24, sex 25, sáb 26 e dom 27 com Maria Inês o dia inteiro, seg 28); conferido no localhost.
+
+### Pendências
+- [ ] Push (VS Code) para a TV e as Configurações em produção ganharem a novidade
+- [ ] Se o layout do PDF mudar (colunas), o leitor avisa "não achei as colunas MANHÃ e TARDE"
+
+---
+
+## Sprint 2026-09-24 (cont.) — KPIs da TV alinhados com os painéis — Fase 7
+
+**Objetivo:** atualizar os números da TV Display, que ainda usavam as definições antigas.
+
+### Feito
+- **Migration `20260924140000_kpis_tv_alinhado_paineis` aplicada** (função `kpis_tv()`): acrescenta `leads_mes`, `ritmo_dia`, `projecao_mes`, `leads_media_3m`, `negocios_fechados_mes`, `negocios_media_3m`, `conversao_safra`, `conversao_safra_anterior`, `ciclo_mediano_12m`, `sem_contato`, `abertos_30d`, `atividades_vencidas_30d` e `crm_atualizado_ate`. **Os campos de 23/09 continuam**, então a TV em produção (site antigo) não quebra antes do push.
+- `src/components/tv/KpisTV.jsx`: slide **Comercial** = leads do mês + ritmo 30 dias + projeção × média, negócios no mês (pela data de fechamento) × média 3 meses, conversão da safra madura × semestre anterior, ciclo mediano 12 meses. Slide **Operação** = propostas da esteira, leads sem nenhum contato (+ abertos 30+ dias), atividades vencidas no último mês, plantão. Os dois títulos mostram "· CRM até dd/mm" quando o CRM está sem dados há mais de 1 dia. Sem os campos novos, cada card volta ao campo antigo.
+- Docs: `05-backend-schema.md` (kpis_tv), PRD (RF06), plano (Fase 7).
+
+### Estado atual
+- Testada antes com `BEGIN … ROLLBACK` simulando um usuário Gestão (resultado igual ao Painel da Gestão: 93 leads, projeção 117, média 138, conversão 4,5% × 4,9%, ciclo 11, 77 sem contato, 148 abertos, 190 vencidas); depois de aplicar: versão nova no banco, `anon` sem execução, `authenticated` com execução.
+- Conferido no localhost em `/tv-display`: os dois slides com os números novos e o aviso do CRM. Build ok. **Não visto na TV real**; não commitado.
+- Diferença que a versão antiga escondia: ela contava 102 leads em setembro (com ruído e captação interna); a nova conta 93.
+
+### Pendências
+- [ ] Push (Eduardo, VS Code) para a TV passar a mostrar os cards novos
+- [ ] O chip da esteira mostra "Aguardando seus dados" (texto do portal do locatário); na TV o certo seria "Aguardando locatário" — rótulo antigo, não mexido
+- [ ] Sprint 3 da TV: legibilidade na TV real
+
+---
+
+## Sprint 2026-09-24 (cont.) — Remoção das páginas antigas do Dash
+
+**Objetivo:** pedido do Eduardo depois de aprovar os dois painéis: tirar as páginas antigas do Dash.
+
+### Feito
+- **Removidos (37 arquivos; os do git voltam pelo histórico):** páginas `DashboardVisaoGeral`, `DashboardLeads`, `DashboardFunil`, `DashboardCampanhas`, `DashboardPerformance` (com a pasta `components/PerformanceDashboard/` e `src/utils/performance*.js`), os protótipos `DashboardComercial`/`DashboardOperacional` e `components/paineis/CardMetrica.jsx`, 14 componentes de `components/dashboard/` que só elas usavam, e os hooks `useCampanhas`, `useMetas`, `useView`, `usePerformanceDashboard`, `usePerformanceFilters`. A lista saiu de uma varredura de imports a partir do `main.jsx`: só foi apagado o que ficou inalcançável.
+- **Mantidos:** Kanban, Dados de Atendimento e Relatório de Atividades (usam os componentes restantes de `components/dashboard/`).
+- **Rotas (`App.jsx`):** `/dashboard/gestao` e `/dashboard/performance` (endereço definitivo; `performance-v2` sai). `/dashboard` e todos os endereços antigos redirecionam para um dos painéis **mantendo os filtros da URL** (componente `Redirecionar`).
+- **Menu (`Navbar.jsx`):** Dash → Painel da Gestão, Painel de Performance e o grupo Kanban; o item "Dash" abre o Painel da Gestão.
+- `lib/paineis.js` enxugado (ficaram só utilitários, safra madura e saúde dos dados); `usePaineis.js` sem as cargas dos protótipos e sem duas consultas que não eram mais usadas (`vw_cobertura_atividades`, `vw_descartes`).
+- `hub.css`: removidas 62 regras que só as páginas apagadas usavam (`dash-*`, `funnel*`, `mini-funnel*`, `etapa-*`, `tabs-panel`, `painel-*` dos protótipos).
+- Docs: PRD (escopo; RF08 marcado como substituído por RF16/RF18; rota da performance), `03-app-flow.md` (tabela de rotas), `06-implementation-plan.md`.
+
+### Estado atual
+- `npm run lint` sem avisos novos (sumiram os dos arquivos apagados); `npm run build` ok.
+- Conferido no navegador: `/dashboard` → Painel da Gestão; `/dashboard/performance-v2?plataforma=Google&periodo=90d` → `/dashboard/performance` com os mesmos filtros; `/kanban/dados` carrega os 11 gráficos sem erro; o menu só aponta para os painéis novos.
+- Não commitado.
+
+### Pendências
+- [ ] Commit/push (Eduardo, VS Code); depois o deploy da Vercel publica os dois painéis
+- [ ] Revisão dos painéis em produção com os níveis Gestão e Marketing
+
+### Como retomar
+- `npm run dev` → `http://localhost:5173/dashboard` (abre o Painel da Gestão).
+
+---
+
+## Sprint 2026-09-24 (cont.) — Painel de Performance — Fase 5b
+
+**Objetivo:** o Eduardo aprovou o Painel da Gestão e pediu um parecido com foco em performance (PRD §5.0b).
+
+### Feito
+- `src/pages/PainelPerformance.jsx` em **`/dashboard/performance-v2`** (menu Dash → "Painel de Performance").
+- Estrutura: manchete (ritmo de gasto × orçamento, CPL, custo real) → 1 gasto acumulado × orçamento × projeção pelo ritmo de 30 dias → 2 CPM/CTR/CPC em três gráficos pequenos, Meta × Google → 3 tabela de campanhas (barra de gasto com marca do orçamento, CPL × meta, status; clique filtra) → 4 cascata investimento → impressões → cliques → conversões → leads CRM → qualificados → visitas → negócios, com taxa e custo por degrau → 5 matriz gasto × CPL + recomendações geradas → saúde dos dados.
+- Filtros na URL: período, plataforma, etapa da campanha (`metas_campanhas.etapa_funil`), finalidade (inferida pelo nome), campanha.
+- `src/lib/painelPerformance.js`, `src/components/painel/GraficosPerformance.jsx`, `src/hooks/useFiltrosUrl.js` (agora compartilhado com o Painel da Gestão), `usePainelPerformance` em `usePaineis.js`, CSS `pp-*` em `hub.css`.
+- `fmtMoeda` agora mostra centavos abaixo de R$ 10 (CPC, CPL de marca). Isso vale para todos os painéis.
+- Cores validadas: Meta `#6A4FB8`, Google `#14907F`.
+- Docs no mesmo sprint: PRD (RF18 e §5.0b), `03-app-flow.md` (rota), `06-implementation-plan.md` (Fase 5b, item marcado).
+
+### Estado atual
+- Lint limpo nos arquivos novos, build ok, conferido ao vivo (Gestão) com dados reais. Filtros deste painel **não** foram testados clicando; celular e Marketing também não.
+- Números de hoje: set/26 R$ 3.543 até 23/09, projeção R$ 4.448 = 43% do orçamento de agosto (setembro não tem orçamento cadastrado); CPL da plataforma R$ 21; 4 leads pagos no CRM (atribuição quebrada: leads do bot entram como "WhatsApp").
+
+### Decisões e contexto
+- Mês sem orçamento em `metas_campanhas` usa o último mês cadastrado como referência, com aviso na tela.
+- As etapas do CRM na cascata não respeitam os filtros de plataforma/campanha (o CRM não guarda a campanha); aviso na tela.
+- "Maior perda" só concorre com etapa anterior ≥ 10 (evita marcar 0 de 4).
+
+### Pendências
+- [ ] Revisão do Eduardo
+- [ ] Cadastrar o orçamento de setembro em `metas_campanhas` (ou pela futura tela de metas)
+- [ ] Remover as páginas antigas (Performance, Campanhas etc.) depois da aprovação
+
+### Como retomar
+- `npm run dev` → `http://localhost:5173/dashboard/performance-v2` (ex.: `?plataforma=Google&periodo=90d`).
+
+---
+
+## Sprint 2026-09-24 (cont.) — Painel da Gestão: a história em cascata — Fase 5b
+
+**Objetivo:** o protótipo por cards foi reprovado ("números vazios, sem história"). Refeito como uma página com narrativa, gráficos e filtros (PRD §5.0).
+
+### Feito
+- `src/pages/PainelGestao.jsx` em **`/dashboard/gestao`** (menu Dash → "Painel da Gestão"; os protótipos saíram do menu, mas as rotas continuam).
+- Estrutura: manchete escura com frases geradas pelos dados + índices com minigráfico → 1 Ritmo (leads e negócios por mês, projeção pelo **ritmo de 30 dias**) → 2 Funil em cascata venda × locação, com a maior queda e o delta vs semestre anterior → 3 Descartes por etapa + **simulador** (slider de p.p. no gargalo → negócios/mês) → 4 Matriz de canais (volume × conversão, bolha = negócios) + custo real por lead → 5 Mapa de calor por corretor (clique filtra o painel) → saúde dos dados + aviso no topo quando uma fonte atrasa.
+- Filtros numa barra fixa: finalidade (Tudo/Venda/Locação), período (mês atual, 30d, 90d, mês passado), canal, corretor. **Estado na URL** + botão "Copiar link desta visão".
+- `src/lib/painelGestao.js` (cálculo puro), `src/components/painel/Estrutura.jsx` e `Graficos.jsx` (recharts), CSS `pg-*` no fim de `hub.css`.
+- Cores validadas com o script do skill de dataviz: Venda `#E8593C`, Locação `#2F6DB5` (o `--info` do DS reprovou no piso de saturação).
+
+### Estado atual
+- Lint limpo nos arquivos novos, build ok, conferido ao vivo logado como Gestão (visão "Tudo" e filtro "Venda": URL e todos os capítulos recalculam).
+- **Não testado:** celular, login Marketing, filtros de período diferentes do padrão e clique no mapa de pessoas. Não commitado.
+- Docs atualizados no mesmo sprint: PRD §5.0 (narrativa) e §5.1 (dicionário de métricas), `03-app-flow.md` (rota `/dashboard/gestao`), `06-implementation-plan.md` (Fase 5b: Painel da Gestão marcado como primeira versão feita).
+
+### Como retomar
+- `npm run dev` → `http://localhost:5173/dashboard/gestao` (nível Gestão ou Marketing). Os filtros ficam na URL, ex.: `?finalidade=Venda&periodo=90d`.
+
+### Pendências
+- [ ] Revisão do Eduardo
+- [ ] Remover as páginas antigas do Dash e os protótipos depois da aprovação
+- [ ] Tabela "ver dados" para cada gráfico (acessibilidade; hoje os valores estão no tooltip e nas tabelas)
+
+---
+
+## Sprint 2026-09-24 — Painéis Comercial e Operacional (protótipo) — Fase 5b
+
+**Objetivo:** trocar os cards "sem noção" por dois painéis com catálogo definido (PRD §5.1): Comercial = resultado, Operacional = execução.
+
+### Feito
+- Docs antes do código: `docs/01-prd.md` (RF16, RF17 e §5.1 com o catálogo), `docs/03-app-flow.md` (rotas), `docs/06-implementation-plan.md` (Fase 5b).
+- `src/lib/paineis.js`: cálculo puro de cada card (conferível contra SQL); `src/hooks/usePaineis.js`: cargas; `src/components/paineis/CardMetrica.jsx`: card com pergunta, fórmula (ícone "i"), comparação com cor de status.
+- `src/pages/DashboardComercial.jsx` (`/dashboard/comercial`) e `src/pages/DashboardOperacional.jsx` (`/dashboard/operacional`), rotas em `App.jsx`, menu "Dash → Painéis (novo)" no `Navbar.jsx`, CSS no fim de `hub.css`. Nenhuma página antiga removida. Nada mudou no banco.
+
+### Estado atual
+- `npm run lint` sem avisos nos arquivos novos; `npm run build` ok. Dev em `http://localhost:5173` (rodando nesta sessão).
+- Conferido ao vivo, logado como Gestão, contra SQL: leads de set = 93 (venda 37), média 3 meses = 138, conversão do último semestre maduro = 45/1.003 = 4,5% (anterior 33/677), ciclo = 11 dias, pipeline = 44 visitas e 10 propostas. Operacional renderizado com dados reais.
+- **Não testado:** login como Marketing (não vê propostas por RLS; o card da esteira mostra aviso) e celular.
+- Não commitado.
+
+### Decisões e contexto
+- O CRM só tem negócios de leads a partir de out/2025: conversão e funil usam esse piso (antes disso, leads com zero negócios distorciam a taxa).
+- `vw_aging_ativos.dias_parado` = dias desde a **entrada**, não desde a última interação: o card virou "abertos há 30+ dias".
+- "1ª atividade": o valor principal virou "% em até 1 dia" (a mediana só de quem teve contato dava "0 dia", enganoso).
+- "Valor locado" de set = R$ 2.000 vem da proposta de teste sincronizada; só vai ter sentido com propostas reais.
+- Abril na tabela de mídia mostra 123% porque a Meta de abril está incompleta (só 05–08/04).
+
+### Pendências / próximos passos
+- [ ] Eduardo revisar os dois painéis no localhost e pedir ajustes
+- [ ] Decidir o destino das páginas antigas (Visão Geral etc.) e do painel de Marketing
+- [ ] Commit/push (Eduardo, VS Code) depois da aprovação
+
+### Como retomar
+- `npm run dev` → `/dashboard/comercial` e `/dashboard/operacional` (nível Gestão ou Marketing).
+
+---
+
+## Sprint 2026-09-24 — ENCERRADO: dados de performance e conversões (gclid, bot, Meta)
+
+**Objetivo:** deixar os dados de mídia e de leads confiáveis antes das metas e dos cards do Hub. Encerrado pelo Eduardo em 24/09.
+
+### Feito
+- **GTM (versão 94 publicada):** a V31 envia gclid/gbraid/wbraid/fbclid, guardados por 90 dias; a tag `[N8N] WHATSAPP CLICK`, que gerava linhas vazias, foi excluída. Testado ponta a ponta: o gclid chega em `leads_wpp_gtm`.
+- **`wpp_entrada` (bot) corrigido e publicado:** o IF passou a testar `acao` (lead quente vira atividade, não lead duplicado), a atividade é montada com JSON seguro e a mídia é inferida. Testado com o lead de teste (atividade criada no atendimento 6242).
+- **`dashboard_meta_ads` = API da Meta de mai a set/26:** mai 4.266 · jun 8.329 (era 21.741) · jul 9.016 (era 10.178) · ago 3.111 · set confere. Backup `dashboard_meta_ads_backup_20260924`.
+- **Migration `20260924120000_meta_ads_campaign_id` aplicada** e fluxo `meta_ads` alterado pelo Eduardo: 42 linhas de 10–23/09 já ganharam `campaign_id` sem duplicar.
+- Taxas do funil recalculadas (tabela corrigida abaixo). `docs/05-backend-schema.md` atualizado.
+
+**Topo do funil pago com a Meta corrigida (substitui a tabela mais abaixo):**
+| Mês | Invest. | CTR | CPC | Conv/clique | CPL plataforma | Leads pagos CRM | CPL real |
+|---|---|---|---|---|---|---|---|
+| abr* | 695 | 3,1% | 1,49 | 9,1% | 16 | 52 | 13 |
+| mai | 7.551 | 1,7% | 1,01 | 3,0% | 33 | 30 | 252 |
+| jun | 14.741 | 1,5% | 1,08 | 1,6% | 67 | 41 | 360 |
+| jul | 14.523 | 1,1% | 1,52 | 3,9% | 39 | 44 | 330 |
+| ago | 6.137 | 2,3% | 1,48 | 7,5% | 20 | 38 | 162 |
+| set (até 23/09) | 3.543 | 3,0% | 1,57 | 7,6% | 21 | 4 | 886 |
+*abril da Meta ainda incompleto (só 05–08/04).
+
+### Estado atual
+- Tudo aplicado em produção e conferido contra a API ou por teste. Nada de código do app mudou neste sprint; os arquivos novos no repo são a migration e o handoff/docs, **não commitados**.
+
+### Pendências (seguem para os próximos sprints)
+- [ ] Eduardo: preencher o `campaign_id` no histórico (rodar o `meta_ads` mês a mês com datas fixas e **voltar as expressões**); abril traz os dados que faltam. Depois eu confiro.
+- [ ] Mapa de canais em `vw_atendimentos_base` (mídias do site e do bot caindo em "Outros"/"WhatsApp") — migration pequena.
+- [ ] CRM sem leads novos desde 22/09 — investigar a sincronização.
+- [ ] Developer token do Google Ads → conversões offline pelo gclid.
+- [ ] `imovel_titulo` nunca gravado; UTMs da V31 só da URL atual; token da Meta e senha do Imoview em texto aberto nos fluxos.
+
+---
+
+## Sprint 2026-09-24 — Documentação retroativa (framework docs-first)
+
+**Objetivo:** documentar o Hub como ele está hoje nos 6 documentos do novo framework, para os próximos sprints partirem de uma base escrita.
+
+### Feito
+- `docs/01-prd.md`: problema, papéis, escopo, 15 requisitos com estado, regras de negócio, critérios de aceite.
+- `docs/02-trd.md`: stack, arquitetura, integrações, auth/RLS, ambientes, secrets (só nomes), ordem de deploy, decisões.
+- `docs/03-app-flow.md`: mapa de telas por papel, tabela de rotas, fluxo de status da esteira, estados de tela, e-mails.
+- `docs/04-design-system.md`: tokens de `tokens.css`, componentes de `components.css`, padrões, tom de voz, divergências.
+- `docs/05-backend-schema.md`: lido do banco de produção: tabelas, RLS por papel, Storage, funções, triggers, views.
+- `docs/06-implementation-plan.md`: pendências do handoff e do Obsidian em 8 fases (0 a 7), com a segurança primeiro.
+
+### Estado atual
+- Só documentação. Nenhuma mudança em código, banco ou n8n. Não commitado.
+- Levantamento do banco só com leitura (`select` no catálogo).
+- Os itens marcados com ⚠ nos docs são inferências que o Eduardo precisa confirmar.
+
+### Decisões e contexto (achados do levantamento)
+- 🔴 `repique_control` e `repique_ponteiro` estão sem RLS, e `anon` tem SELECT/INSERT/UPDATE/DELETE/TRUNCATE nelas. A anon key é pública, então qualquer pessoa pode ler ou apagar essas tabelas. Virou a Fase 1 do plano. **Não corrigi**: primeiro precisa confirmar com qual chave o n8n acessa essas tabelas.
+- 🟠 As 9 views `vw_*` não têm `security_invoker` e têm SELECT para `anon` (já estava no handoff; confirmado).
+- O repo tem 28 migrations; o banco tem 67. Tudo de antes de 21/08 não está versionado (Fase 2).
+- Existem 5 tabelas de metas com formatos diferentes: é preciso decidir qual fica antes de fazer a tela de metas (Fase 6).
+- `leads_wpp_gtm` (nome e telefone de lead) e `atividades` são legíveis por qualquer usuário logado, inclusive "Sem nível" e a TV.
+
+### Pendências / próximos passos
+- [ ] Eduardo revisar os docs e responder aos ⚠ (Fase 0)
+- [ ] Fase 1: confirmar a chave usada pelo n8n no repique → RLS + revogar anon em `repique_*` e `vw_*`
+- [ ] Commitar `docs/` (Eduardo, VS Code)
+
+### Como retomar
+- Comece por `docs/06-implementation-plan.md`. Regra do framework: mudança de banco é conferida contra `docs/05-backend-schema.md` antes de aplicar, e os docs são atualizados no mesmo sprint.
+
+---
+
+## 2026-09-24 — Taxas do funil refeitas com os dados corrigidos (só análise, nada alterado no banco)
+
+**Topo do funil pago (Meta + Google, por mês):**
+| Mês | Invest. | CTR | CPC | Conv/clique | CPL plataforma | Leads pagos no CRM | CPL real (CRM) |
+|---|---|---|---|---|---|---|---|
+| abr | 695 | 3,1% | 1,49 | 9,1% | 16 | 52 | 13 |
+| mai | 7.100 | 1,8% | 1,00 | 3,4% | 29 | 30 | 237 |
+| jun ⚠ | 28.153 | 1,0% | 1,38 | 1,3% | 103 | 41 | 687 |
+| jul | 15.685 | 1,1% | 1,49 | 3,8% | 40 | 44 | 356 |
+| ago | 5.976 | 2,3% | 1,50 | 7,6% | 20 | 38 | 157 |
+| set (até 22/09) | 3.543 | 3,0% | 1,57 | 7,6% | 21 | 4 | 886 |
+
+**Fundo do funil (safras maduras out/25–jul/26; 90% dos ganhos fecham em até 49 dias):**
+| Grupo | Leads | L→Qualif | Qualif→Visita | Visita→Proposta | Proposta→Negócio | Lead→Negócio |
+|---|---|---|---|---|---|---|
+| Todos os canais | 1.713 | 43,0% | 50,0% | 44,0% | 48,1% | 4,55% |
+| Site | 426 | 56,1% | 67,4% | 56,5% | 39,6% | 8,45% |
+| Campanhas pagas | 333 | 32,1% | 16,8% | 3 de 18 | 1 de 3 | 0,30% |
+
+**Achados:**
+- **Junho da Meta inflado:** 10 linhas (R$ 11.014, dias 01, 10, 18 e 24/06) são totais de período, não diários. Ex.: "WhatsApp - Entreverdes | Interesses" começou em 29/05 gastando cerca de R$ 30/dia, e a linha de 01/06 tem R$ 1.886. Parte disso cobre dias sem registro e parte se sobrepõe a dias que existem. O dedup de 23/09 não pega esse caso. Google sem esse padrão.
+- **Conversão da plataforma ≠ lead:** só 11–15% das conversões (cliques no WhatsApp) viram lead de "Campanhas pagas" no CRM (mai–ago).
+- **Atribuição paga quebrada no CRM:** o canal "WhatsApp" subiu de 7–11/mês para 43 (jul) e 51 (ago), e os pagos caíram para 4 em setembro. Os leads de anúncio que entram pelo bot chegam como "WhatsApp". Em `vw_atendimentos_base`, as mídias `site pagina imovel`, `site_imovel`, `severino`, `severino_desconhecido` e `wpp_nao_identificado` caem em "Outros".
+- **CRM parado:** o último `data_de_entrada` em `dashboard_atendimentos_crm` é de 22/09.
+- Os dados de anúncios só começam em abril/26.
+
+**Meta — verdade pela API (24/09):** cópia do fluxo `meta_ads` sem o nó de gravação (workflow `xiWPwuZQoJg1hK0u`), rodada pelo Eduardo por mês. Eu leio a execução pelo MCP; a consulta direta à Graph API foi bloqueada pela regra de segurança, porque o token está no fluxo.
+- Junho (execução 17250): **R$ 8.328,54 reais** × R$ 21.741 na tabela; 129 linhas diárias, 5 campanhas. O total de cada campanha é igual às linhas "gordas" de 01/06.
+- A tabela mistura granularidades: abr–mai só por anúncio; **jun com linhas por anúncio (01–16/06) + por campanha + totais de período** (contagem em dobro); jul–set só por campanha. O índice único (data, campanha, anuncio) não pega isso.
+- A campanha "Engajamento 2026" passou a se chamar "Imovit | Engajamento | Posts | Geral" (as duas aparecem na tabela, de 16/07 a 28/07).
+
+**Pendências:**
+- [x] **Junho corrigido (24/09, com o OK do Eduardo):** backup `dashboard_meta_ads_backup_20260924` (698 linhas); as 187 linhas de junho foram trocadas pelas 129 da API. Conferido: junho = R$ 8.328,54, igual à API. Junho no funil: investimento total R$ 14.741 (antes 28.153), CPL da plataforma R$ 67, CPL real R$ 360 (antes 687). A "Engajamento 2026" foi mantida com o nome antigo em junho.
+- [x] **Maio corrigido (24/09, com o OK do Eduardo; execução 17252):** as 185 linhas por anúncio foram trocadas pelas 99 por campanha da API. Conferido: R$ 4.266,44 (antes 3.815,77, faltavam 01–02/05 e parte do gasto por anúncio) e 98 conversões (antes 117).
+- [x] **Agosto (execução 17254):** estava certo, mas faltavam 30 e 31/08 (o fluxo não gravou esses dias; também não estavam no backup de 23/09). As 6 linhas foram inseridas e o dia 29/08 do Engajamento foi ajustado. Conferido: R$ 3.111,49, 93 linhas, 176 conversões, igual à API.
+- [x] **Setembro (execução 17256):** certo até 22/09. Em 23/09 há diferenças de centavos e 24/09 é parcial; o fluxo diário atualiza os dois sozinho. Nada foi gravado.
+- [x] **Julho gravado (24/09, com o OK do Eduardo):** R$ 9.016,39, 207 conversões, 130 linhas (duas campanhas diferentes chamadas "RMKT" em 08/07 foram somadas, porque a chave por nome não aceita as duas). Antes: R$ 10.178.
+- [x] **Migration `20260924120000_meta_ads_campaign_id.sql` APLICADA em 24/09** (conferido depois: coluna text, 532 linhas intactas, total R$ 26.388,50, índices parciais e trigger no lugar).
+- [ ] Eduardo: mudar o fluxo `meta_ads` (os 3 pontos abaixo) e salvar/publicar; depois eu confiro a execução das 3h (as linhas devem ganhar campaign_id).
+- Registro do teste antes de aplicar: Testada em produção com rollback: renomear atualiza o nome sem duplicar; mesmo nome com id diferente vira duas linhas; linha antiga sem id adota o id; insert sem id segue casando por nome. Ordem: aplicar a migration → Eduardo muda o fluxo `meta_ads` (campaign_id em `fields`, no Code e no nó do Supabase). Opcional: rodar a cópia do fluxo com campaign_id para preencher o histórico.
+- Detalhe de julho: API R$ 9.016,39 × tabela R$ 10.178. Causa: **campanhas renomeadas contadas duas vezes**. O fluxo regrava 14 dias com o nome novo e as linhas com o nome antigo ficam: "Locação jul/2026" → "Imovit | Locação | WhatsApp | Geral", "Engajamento 2026" → "Imovit | Engajamento | Posts | Geral", "Imovit - WhatsApp - Casas à venda" → "Imovit | Vendas | WhatsApp | Casas | Campinas". Falta também 01/07 do RMKT. SQL pronto no scratchpad (`fix_meta_julho.sql`), com os nomes da API.
+- [ ] **Causa raiz dos duplicados por renomeação:** a chave única é (data, campanha, anuncio), por **nome**. Adicionar `campaign_id` na tabela e no fluxo (`fields=campaign_id,...`) e usar o id na chave. Sem isso, toda renomeação volta a duplicar.
+- [ ] Abril (a tabela só tem 05–08/04).
+- [ ] Ajustar o mapa de canais em `vw_atendimentos_base` (mídias de site e do bot); migration pequena, com aprovação.
+- [ ] Ver por que o CRM não sincroniza desde 22/09.
+- [ ] Taxas do pago abaixo de Qualificado: amostra pequena (18 visitas). Para as metas, usar a taxa do pago em L→Q e a de todos os canais daí para baixo, até as conversões offline darem atribuição por gclid.
+
+## 2026-09-24 — Ponte do gclid no GTM: testada e publicada
+
+**Feito (no GTM e no n8n, pelo Eduardo; conferido por mim):**
+- Tag `V30` virou `V31 - WhatsApp - Mensagem (testado)`: envia `gclid`/`gbraid`/`wbraid`/`fbclid`. Lê da URL e guarda em cookies `imv_*` por 90 dias; como reserva, usa `_gcl_aw` (Vinculador de conversões) e `_fbc` (Meta Pixel). Sintaxe conferida.
+- Tag `[N8N] WHATSAPP CLICK` excluída: usava o mesmo webhook e só mandava UTMs, gerando linhas vazias.
+- `wpp_gtm` no n8n grava `gclid` e `imovel_codigo`.
+- **Teste no Visualizar (24/09, 12:48 UTC):** 2 linhas em `leads_wpp_gtm` com `gclid = teste123`, `origem_registro = site_gtm`. O gclid sobreviveu à navegação da home até o imóvel 8771.
+- Aviso de CSP do GTM: alarme falso. O único CSP do site é `upgrade-insecure-requests`, e GTM, GA4 e Ads carregam com status 200.
+
+**Pendências:**
+- [x] Contêiner publicado pelo Eduardo (versão 94). Conferido no `gtm.js` público: tem o código do gclid, não tem mais a `[N8N] WHATSAPP CLICK` nem as variáveis `form_corretor_*`. **Não conferi** se as 3 tags do formulário antigo (`Enviar Form para N8N`, `GA4 - Form Submission`, `Meta Pixel - Form Submission`) foram pausadas.
+- [x] As 2 linhas de teste (`gclid = 'teste123'`) foram apagadas de `leads_wpp_gtm`.
+- [ ] Acompanhar nos próximos dias: leads de anúncio do Google devem chegar com `gclid` preenchido.
+- [ ] `imovel_titulo` nunca foi gravado (0 de 802 linhas): conferir o mapeamento no n8n e a variável `{{nome_do_imovel}}` no GTM.
+- [ ] UTMs na V31 vêm só da URL atual: quem navega vira `direct`/`organic`. Usar os cookies de UTM como reserva.
+- [ ] `wpp_entrada`: ver a seção abaixo. Conversões offline (developer token do Google Ads). Refazer as taxas do funil.
+
+**`wpp_entrada` — diagnóstico de 24/09 (fluxo lido pelo MCP, sem edição):**
+- Já corrigido pelo Eduardo em 23/09, às 19:41: o nó do Supabase usa `telefone`, `codigo_atendimento` e `midia`, e grava `tipo_conversao = whatsapp_bot` e `origem_registro = bot_severino`. "Incluir lead" e "Criar atividade" estão ligados.
+- Insert do bot simulado no banco (transação desfeita): passa. `lead_id` é identity e a trigger de vazias não o barra.
+- **Nenhuma linha do bot desde 22/09, às 09:59.** Em setembro o ritmo foi de 0 a 5 por dia, então pode ser só falta de lead. Não deu para confirmar pelas execuções, porque o MCP não lista execuções.
+- **Bug:** o IF "Está atualizado 30D?" testa `$json.ehLeadFrio`, campo que o Code nunca cria (ele cria `acao`). Por isso "Criar atividade" nunca roda, e todo lead que já existe é incluído de novo no Imoview. Correção: condição de texto `{{ $json.acao }}` é igual a `criar_atividade`.
+- **Bug:** a nota de "Criar atividade" lê `$('Webhook').item.json.body[0].body[0].body.mensagem_completa` (caminho frágil) e monta o JSON com texto cru (aspas ou quebras de linha na mensagem quebram o JSON). Correção: usar `JSON.stringify` com `mensagem_testada`.
+- O nome do nó diz 30 dias, mas o Code usa 60. Falta o Eduardo definir qual vale.
+- **Teste de 24/09 (execução 17239, manual via Postman, com o lead de teste do Eduardo, atendimento 6242):** o fluxo inteiro passou. `existe = true` → Retornar Atendimento → `acao = criar_atividade` → **atividade criada** para a corretora → linha 483 no banco com telefone e `origem_registro = bot_severino`. As duas correções (IF por `acao`, e `jsonAtividade` com `JSON.stringify`) funcionaram.
+- **Bug novo:** o bot real manda `midia = "whatsapp"`/`"WhatsApp"` (341 linhas no histórico). Esse valor não está no `NORMALIZA`, então vira `wpp_nao_identificado`, e a inferência pelo código de atendimento ou pela mensagem **nunca roda**. Correção: só confiar em `payload.midia` quando estiver no `NORMALIZA`; caso contrário, cair na inferência.
+- Detalhe: o título da atividade saiu "Ligação - Ligação - Eduardo", porque o Imoview já prefixa o tipo. Deixar só o nome em `titulo`.
+- [x] **Publicado em 24/09, 13:34 UTC** (versão ativa = versão do editor). Conferido pelo MCP: IF por `acao`, `jsonAtividade` com `JSON.stringify` e título só com o nome, mídia via `NORMALIZA` com queda para a inferência.
+- [ ] Acompanhar o primeiro lead real do bot: linha com `midia` inferida (`wpp_site_geral`/`wpp_pag_imovel`/`campanha_*`) e atividade ou lead no Imoview.
+- [x] Linha de teste 483 apagada de `leads_wpp_gtm`.
+- [x] Limite de lead frio: **60 dias** por enquanto (decisão do Eduardo, 24/09). O nome do nó "Está atualizado 30D?" está desatualizado; dá para renomear para "60D" no editor.
+- [ ] Envios ao GA4 voltaram 503 no navegador de teste: conferir no GA4 → Tempo real.
+
+---
+
 ## ▶ Retomar em 2026-09-24 (fim do dia 23/09)
 
 **Onde paramos:** auditoria dos dados de performance. Meta e `leads_wpp_gtm` corrigidas no banco. Próximo passo: o Eduardo aplica as edições no n8n e no GTM, e eu confiro se o `gclid` chega.
