@@ -1,5 +1,56 @@
 # Handoff — Hub Imovit
 
+## ▶ Sprint 2026-09-24 — ENCERRADO: Home por nível (Fase 8, RF20)
+
+**Objetivo:** Home simples de navegar, diferente por nível, que leva cada pessoa ao próprio trabalho. Encerrado pelo Eduardo em 24/09.
+
+### Entregue
+- Home nova: busca "O que você procura?", atalhos por nível, **Para você hoje** (pendências com número que levam à tela certa), **Plantão** dos próximos 5 dias, **Agenda da semana** (eventos + fotógrafo, filtros), avisos e links úteis. Sem banner (fica só na TV).
+- Seletor "Ver a Home como…" para a Gestão conferir os 5 níveis.
+- `/agenda` (calendário completo) e `?aba=` em Configurações.
+- Docs: PRD §5.4 e RF20, App Flow, plano (Fase 8).
+
+### Estado atual
+- Commitado na `main`; **push pendente** junto com o sprint anterior (a `main` está à frente do GitHub).
+- Conferido no localhost como Gestão e pela prévia dos outros níveis. Não testado com logins reais de Admin/Marketing/Corretor, nem no celular.
+
+### Pendências
+- [ ] Push (Eduardo, VS Code)
+- [ ] Confirmar formulários/eventos na lista de links e o que mais entra na Home (aniversariantes do mês, novidades do catálogo, meta do mês)
+- [ ] Limpar as propostas de teste abertas da esteira (geram "8 documentos esperando decisão" para o Admin)
+- [ ] Testar a Home com um login real de corretor quando houver
+
+### Como retomar
+- `npm run dev` → `http://localhost:5173/` (Gestão vê o seletor "Ver a Home como").
+
+---
+
+## Sprint 2026-09-24 (cont.) — Home por nível — Fase 8 (RF20, PRD §5.4)
+
+**Objetivo:** a Home como porta de entrada simples: "o que eu faço agora?", diferente por nível.
+
+### Feito
+- Docs antes: PRD (RF20, §5.4), App Flow (Home e `/agenda`), plano (Fase 8).
+- `src/pages/Home.jsx` reescrita: saudação → **busca** "O que você procura?" (páginas do nível + links úteis; setas/Enter) → **atalhos** por nível → **Para você hoje** (pendências com número que levam à tela; "Tudo em dia" quando vazio; erro de consulta nunca vira "tudo em dia") | **Hoje no escritório** (plantão dos próximos 5 dias, compromissos de hoje/amanhã, link para a agenda) → **Avisos** (3 + "ver todos") | **Links úteis** (chips por categoria, âncora `#links`) → banner no fim.
+- Pendências (`src/hooks/usePendenciasHome.js`): Gestão = pedidos de nível, CRM parado, leads sem contato (via `kpis_tv`); Admin = documentos `enviado` de propostas abertas e propostas em aprovação interna; Corretor = propostas dele com link vencendo/paradas e leads dele sem contato (login ↔ corretor pelo e-mail em `colaboradores_raw`); Marketing = orçamento do mês e dias sem plantão nos próximos 7; Sem nível = pedir acesso.
+- Seletor **"Ver a Home como…"** só para a Gestão (prévia visual; os dados seguem a permissão de quem está logado).
+- `src/lib/homeNiveis.js` (atalhos, páginas da busca), `src/components/home/BlocosHome.jsx` (ícones SVG, blocos), `src/pages/Agenda.jsx` + rota `/agenda` (o calendário do mês saiu da Home), Configurações aceita `?aba=`. Removidos `PlantaoCard`, `AvisosFeed`, `BibliotecaLinks`. CSS `home-*` em `hub.css`.
+
+### Estado atual
+- Lint/build ok. Conferido no localhost (Gestão), passando pelos 5 níveis no seletor: atalhos e pendências certos para cada um (Gestão: CRM parado 2 dias + 77 sem contato; Admin: 8 documentos esperando decisão; Marketing: orçamento de setembro + 2 dias sem plantão; Corretor: tudo em dia; Sem nível: pedir acesso). Busca testada ("plantao", "convite").
+- Bug achado e corrigido no teste: a consulta de orçamento usava `2026-09-31` (data inválida) e o erro aparecia como "Tudo em dia".
+- **Não testado:** login real de corretor/admin/marketing (não há contas de corretor), celular. Não commitado.
+
+- **Agenda da semana** (pedido do Eduardo: "calendário de eventos, fotógrafo…"): `AgendaSemana` em `BlocosHome.jsx`, bloco largo com os próximos 7 dias em colunas (reuniões, datas/aniversários, avisos com data, fotógrafo), filtros Tudo/Eventos/Fotógrafo com contagem, legenda de cores, "+N na agenda". O bloco "Hoje no escritório" virou só **Plantão** (os compromissos foram para a agenda da semana) e mostra "Carregando o plantão…" em vez de "sem escala" enquanto a consulta não volta (a captura de tela pegou esse estado e parecia que a escala tinha sumido; o banco estava certo, 60 plantões).
+
+- **Banner fora da Home** (Eduardo, 24/09): `BannerCarrossel` e o CSS `home-banner` saíram de `Home.jsx`/`hub.css`; o componente continua na TV (`TVDisplay.jsx`). A Home ficou com 1.273 px de altura (era 2.064 px).
+
+### Pendências
+- [ ] Revisão do Eduardo; confirmar formulários/eventos nos links; o que mais entra no "…" (aniversariantes do mês? novidades do catálogo?)
+- [ ] Os 8 "documentos esperando decisão" do Admin são de propostas de teste abertas — limpar os dados de teste da esteira
+
+---
+
 ## ▶ Sprint 2026-09-24 — ENCERRADO: painéis, TV e escala de plantão
 
 **Objetivo:** dados de performance confiáveis e um Dash que conta a história (Gestão e Performance), a TV com os mesmos números e o plantão importado do PDF mensal. Encerrado pelo Eduardo em 24/09. As seções abaixo têm o detalhe de cada entrega.
