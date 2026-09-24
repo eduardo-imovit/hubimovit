@@ -3,6 +3,7 @@ import WeatherCardTV from './WeatherCardTV'
 import AgendaFotografoSemanalTV from '../calendar/AgendaFotografoSemanalTV'
 import AgendaEventosSemanalTV from '../calendar/AgendaEventosSemanalTV'
 import CarrosselRodapeTV from '../tv/CarrosselRodapeTV'
+import PlantaoSemanalTV from '../tv/PlantaoSemanalTV'
 import { KpisComercialTV, KpisOperacaoTV } from '../tv/KpisTV'
 import { useKpisTV } from '../../hooks/useKpisTV'
 import { hojeISO } from '../../lib/dateUtils'
@@ -21,9 +22,10 @@ export default function TVDisplayFooter() {
   const hoje = useHojeISO()
   const { kpis, erro } = useKpisTV()
 
-  // Ordem definida com o Eduardo (2026-09-23): Fotógrafo → KPIs 1 → KPIs 2 → Eventos.
+  // Ordem: Fotógrafo → Plantão (24/09) → KPIs 1 → KPIs 2 → Eventos.
   const paineis = [
     { chave: 'fotografo', rotulo: 'Fotógrafo', conteudo: <AgendaFotografoSemanalTV /> },
+    { chave: 'plantao', rotulo: 'Plantão', conteudo: <PlantaoSemanalTV hojeISO={hoje} /> },
     { chave: 'comercial', rotulo: 'Comercial', conteudo: <KpisComercialTV kpis={kpis} erro={erro} /> },
     { chave: 'operacao', rotulo: 'Operação', conteudo: <KpisOperacaoTV kpis={kpis} erro={erro} /> },
     { chave: 'eventos', rotulo: 'Eventos', conteudo: <AgendaEventosSemanalTV hojeISO={hoje} /> },

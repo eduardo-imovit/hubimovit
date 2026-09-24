@@ -33,27 +33,14 @@ function buildLinksDash({ verKanban, verDash }) {
   }
 
   if (verDash) {
-    children.push(
-      {
-        label: 'Negócio',
-        children: [
-          { to: '/dashboard', label: 'Visão Geral' },
-          { to: '/dashboard/leads', label: 'Leads' },
-        ],
-      },
-      {
-        label: 'Performance',
-        children: [
-          { to: '/dashboard/performance', label: 'Performance' },
-          { to: '/dashboard/campanhas', label: 'Campanhas' },
-        ],
-      },
-      { to: '/dashboard/funil', label: 'Funil' },
+    children.unshift(
+      { to: '/dashboard/gestao', label: 'Painel da Gestão' },
+      { to: '/dashboard/performance', label: 'Painel de Performance' },
     )
   }
 
   if (children.length === 0) return []
-  return [{ to: verDash ? '/dashboard' : '/kanban', label: 'Dash', children }]
+  return [{ to: verDash ? '/dashboard/gestao' : '/kanban', label: 'Dash', children }]
 }
 
 /** Item de dropdown: link direto (sem children) ou submenu-flyout (com children). */

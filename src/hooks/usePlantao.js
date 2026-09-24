@@ -41,5 +41,5 @@ export function usePlantao(inicioISO, fimISO) {
     await recarregar()
   }
 
-  return { plantoes, carregando, erro, criarPlantao, atualizarStatus, atualizarPlantao }
+  return { plantoes, carregando, erro, recarregar, criarPlantao, atualizarStatus, atualizarPlantao }
 }

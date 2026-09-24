@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usePlantao } from '../../hooks/usePlantao'
 import { useColaboradores } from '../../hooks/useColaboradores'
+import ImportarEscalaPlantao from './ImportarEscalaPlantao'
 import { diasDaSemana, formatarDiaCurto, hojeISO, inicioDaSemanaISO } from '../../lib/dateUtils'
 
 const TURNO_LABEL = { manha: 'Manhã', tarde: 'Tarde', dia_inteiro: 'Dia inteiro' }
@@ -18,7 +19,7 @@ export default function PlantaoAdmin() {
   const fimSemana = dias[6]
   const hoje = hojeISO()
 
-  const { plantoes, carregando, erro, criarPlantao, atualizarPlantao } = usePlantao(semanaBase, fimSemana)
+  const { plantoes, carregando, erro, recarregar, criarPlantao, atualizarPlantao } = usePlantao(semanaBase, fimSemana)
   const { colaboradores } = useColaboradores()
 
   const vazio = { corretor_id: '', data: hoje, turno: 'dia_inteiro', observacao: '', status: 'agendado' }
@@ -69,8 +70,16 @@ export default function PlantaoAdmin() {
     }
   }
 
+  function aposImportar(primeiraData) {
+    const semana = inicioDaSemanaISO(0, primeiraData)
+    if (semana === semanaBase) recarregar()
+    else setSemanaBase(semana)
+  }
+
   return (
     <div>
+      <ImportarEscalaPlantao colaboradores={colaboradores} onImportado={aposImportar} />
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div className="cal-nav-left">
           <div className="cal-nav-arrows">

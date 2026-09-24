@@ -32,46 +32,78 @@ function Carregando({ titulo, erro }) {
   )
 }
 
-/** KPIs 1 · Comercial do mês: leads (× meta ou × mês anterior), negócios, conversão e ciclo. */
+const decimal = (v) => Number(v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+
+/** Aviso no título quando o CRM está sem dados novos há mais de 1 dia. */
+function avisoCrm(kpis) {
+  const ate = kpis?.crm_atualizado_ate
+  if (!ate) return ''
+  const hoje = new Date()
+  hoje.setHours(12, 0, 0, 0)
+  const diasSemDados = Math.round((hoje - new Date(`${ate}T12:00:00`)) / 86400000)
+  return diasSemDados > 1 ? ` · CRM até ${ate.slice(8, 10)}/${ate.slice(5, 7)}` : ''
+}
+
+/**
+ * KPIs 1 · Comercial do mês, com as definições do Painel da Gestão (PRD §5.0):
+ * leads e ritmo de 30 dias, negócios pela data de fechamento, conversão da
+ * safra madura e ciclo mediano. Sem os campos novos (função antiga), cai nos
+ * campos de 23/09.
+ */
 export function KpisComercialTV({ kpis, erro }) {
-  const titulo = `📊 Comercial — ${nomeDoMes(kpis?.mes_referencia)}`
   if (!kpis) return <Carregando titulo="📊 Comercial do mês" erro={erro} />
   const c = kpis.comercial
-  const pctMeta = c.meta_leads ? Math.min(100, Math.round((c.leads_novos / c.meta_leads) * 100)) : null
+  const titulo = `📊 Comercial — ${nomeDoMes(kpis.mes_referencia)}${avisoCrm(kpis)}`
+  const novo = c.leads_mes !== undefined
+  const pctRitmo = novo && c.leads_media_3m ? Math.min(100, Math.round((c.projecao_mes / c.leads_media_3m) * 100)) : null
 
   return (
     <section className="agenda-fotografo-tv">
       <div className="agenda-fotografo-tv-titulo">{titulo}</div>
       <div className="kpis-tv-grid">
         <Card
-          rotulo="Leads novos"
-          valor={numero(c.leads_novos)}
-          sub={c.meta_leads ? `meta ${numero(c.meta_leads)} · ${pctMeta}%` : `mês anterior: ${numero(c.leads_mes_anterior)}`}
+          rotulo="Leads do mês"
+          valor={numero(novo ? c.leads_mes : c.leads_novos)}
+          sub={novo ? `ritmo ${decimal(c.ritmo_dia)}/dia · fecha em ~${numero(c.projecao_mes)} · média ${numero(c.leads_media_3m)}` : `mês anterior: ${numero(c.leads_mes_anterior)}`}
         >
-          {pctMeta != null && (
-            <div className="kpi-tv-barra"><div className="kpi-tv-barra-fill" style={{ width: `${pctMeta}%` }} /></div>
+          {pctRitmo != null && (
+            <div className="kpi-tv-barra"><div className="kpi-tv-barra-fill" style={{ width: `${pctRitmo}%` }} /></div>
           )}
         </Card>
-        <Card rotulo="Negócios fechados" valor={numero(c.negocios)} sub={`mês anterior: ${numero(c.negocios_mes_anterior)}`} />
-        <Card rotulo="Taxa de conversão" valor={percentual(c.taxa_conversao)} sub={`mês anterior: ${percentual(c.taxa_conversao_mes_anterior)}`} />
-        <Card rotulo="Ciclo até o fechamento" valor={dias(c.ciclo_medio_ganho)} sub={`mês anterior: ${dias(c.ciclo_medio_mes_anterior)}`} />
+        <Card
+          rotulo="Negócios no mês"
+          valor={numero(novo ? c.negocios_fechados_mes : c.negocios)}
+          sub={novo ? `média dos 3 meses: ${decimal(c.negocios_media_3m)}` : `mês anterior: ${numero(c.negocios_mes_anterior)}`}
+        />
+        <Card
+          rotulo="Leads que viram negócio"
+          valor={novo ? (c.conversao_safra == null ? '—' : percentual(c.conversao_safra)) : percentual(c.taxa_conversao)}
+          sub={novo ? `semestre anterior: ${c.conversao_safra_anterior == null ? '—' : percentual(c.conversao_safra_anterior)} · leads com 60+ dias` : `mês anterior: ${percentual(c.taxa_conversao_mes_anterior)}`}
+        />
+        <Card
+          rotulo="Tempo até fechar"
+          valor={dias(novo ? c.ciclo_mediano_12m : c.ciclo_medio_ganho)}
+          sub={novo ? 'mediana dos negócios dos últimos 12 meses' : `mês anterior: ${dias(c.ciclo_medio_mes_anterior)}`}
+        />
       </div>
     </section>
   )
 }
 
-/** KPIs 2 · Operação: esteira de locação, leads parados, venda × aluguel e plantão de hoje. */
+/**
+ * KPIs 2 · Operação: esteira de locação, leads sem contato (e abertos há 30+
+ * dias), atividades vencidas no último mês e plantão de hoje.
+ */
 export function KpisOperacaoTV({ kpis, erro }) {
   if (!kpis) return <Carregando titulo="⚙️ Operação" erro={erro} />
   const o = kpis.operacao
+  const novo = o.sem_contato !== undefined
   const etapas = Object.entries(o.propostas_por_etapa ?? {})
   const totalPropostas = etapas.reduce((soma, [, n]) => soma + n, 0)
-  const totalFinalidade = o.leads_venda + o.leads_aluguel
-  const pctVenda = totalFinalidade ? Math.round((o.leads_venda / totalFinalidade) * 100) : 0
 
   return (
     <section className="agenda-fotografo-tv">
-      <div className="agenda-fotografo-tv-titulo">⚙️ Operação — hoje</div>
+      <div className="agenda-fotografo-tv-titulo">⚙️ Operação — hoje{avisoCrm(kpis)}</div>
       <div className="kpis-tv-grid">
         <Card rotulo="Propostas de locação em andamento" valor={numero(totalPropostas)}>
           <div className="kpi-tv-chips">
@@ -81,12 +113,16 @@ export function KpisOperacaoTV({ kpis, erro }) {
             ))}
           </div>
         </Card>
-        <Card rotulo="Leads parados há 30+ dias" valor={numero(o.leads_parados_30d)} sub="sem movimentação no CRM" />
-        <Card rotulo="Leads do mês por finalidade" valor={`${numero(o.leads_venda)} · ${numero(o.leads_aluguel)}`} sub="venda · aluguel">
-          <div className="kpi-tv-barra kpi-tv-barra--dupla">
-            <div className="kpi-tv-barra-fill" style={{ width: `${pctVenda}%` }} />
-          </div>
-        </Card>
+        {novo ? (
+          <Card rotulo="Leads sem nenhum contato" valor={numero(o.sem_contato)} sub={`e ${numero(o.abertos_30d)} abertos há mais de 30 dias`} />
+        ) : (
+          <Card rotulo="Leads abertos há 30+ dias" valor={numero(o.leads_parados_30d)} sub="desde a entrada no CRM" />
+        )}
+        {novo ? (
+          <Card rotulo="Atividades vencidas" valor={numero(o.atividades_vencidas_30d)} sub="no último mês, ainda não feitas" />
+        ) : (
+          <Card rotulo="Leads do mês por finalidade" valor={`${numero(o.leads_venda)} · ${numero(o.leads_aluguel)}`} sub="venda · aluguel" />
+        )}
         <Card rotulo="Plantão de hoje">
           {o.plantao_hoje.length === 0
             ? <div className="kpi-tv-sub">Sem plantão escalado hoje</div>
