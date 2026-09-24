@@ -66,6 +66,7 @@ Faltava um lugar único para:
 | RF16 | **Painel da Gestão**: uma página que conta a história em cascata (resultado → ritmo → onde perde → quanto custa → canais → pessoas), com gráficos, filtros e visões compartilháveis por URL | gestao, marketing | must | em construção (24/09); substitui os protótipos Comercial/Operacional |
 | RF18 | **Painel de Performance**: história do investimento em mídia até o negócio, com orçamento, campanhas e recomendações (§5.0b) | gestao, marketing | must | em construção (24/09) |
 | RF19 | **Importar a escala de plantão (PDF) do mês**: o sistema lê a tabela (data, dia, manhã, tarde), casa os nomes com os corretores, mostra prévia e grava; a TV mostra o plantão da semana (§5.3) | gestao, marketing (import); todos (TV) | must | feito no localhost (24/09); falta push |
+| RF20 | **Home por nível**: busca, atalhos, pendências com número que levam à tela certa, hoje no escritório, avisos e links (§5.4) | todos com perfil | must | feito (24/09), commitado; falta push |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -98,6 +99,13 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - **Fluxo:** Configurações → Plantão → "Importar escala (PDF)" → leitura no navegador (pdf.js, pelas colunas do cabeçalho) → prévia com os nomes casados com `colaboradores_raw` (sem acento/maiúsculas; apelido = um dos nomes do cadastro); nome sem par ou ambíguo fica para escolher → "Importar".
 - **Regras:** o arquivo é a fonte da verdade para as datas que ele cobre: os plantões já cadastrados entre a primeira e a última data do arquivo são substituídos (a prévia mostra quantos). Grava primeiro os novos e só depois apaga os antigos, para uma falha não deixar dias sem plantão. Turno = coluna do PDF, exceto **fim de semana com um nome só = dia inteiro** (confirmado pelo Eduardo em 24/09; a caixa vem marcada na prévia). Apelidos escolhidos à mão ficam lembrados no navegador para o mês seguinte.
 - **TV:** painel "Plantão" no carrossel do rodapé: **os próximos 5 dias a partir de hoje, fim de semana incluído, em 5 colunas, sem caixas** (pedido do Eduardo), manhã/tarde ou "dia inteiro"; hoje em destaque ("Hoje") e os outros dias esmaecidos. Relê a cada 10 minutos. O card "Plantão de hoje" do slide Operação continua.
+
+### 5.4 Home: a porta de entrada por nível (pedido do Eduardo, 24/09)
+- **Princípio:** a Home responde "o que eu faço agora?". É curta, muda por nível de acesso e **nada nela é só para ler**: todo número ou item leva à tela onde se resolve.
+- **Ordem:** 1) saudação + busca "O que você procura?" (páginas do nível, links úteis, manuais, formulários); 2) atalhos (4–6 cartões por nível); 3) "Para você hoje": pendências com número (ou "Tudo em dia") | Plantão dos próximos 5 dias; 4) **Agenda da semana** (pedido do Eduardo): próximos 7 dias em colunas com reuniões, datas/aniversários, avisos com data e agenda do fotógrafo, filtros Tudo/Eventos/Fotógrafo e legenda de cores; 5) avisos (3 mais recentes) e links úteis. **Sem banner** (decisão do Eduardo, 24/09: o carrossel fica só na TV). O calendário do mês sai da Home e vai para `/agenda`.
+- **Pendências por nível:** Gestão = pedidos de nível, saúde do CRM, leads sem contato; Admin = documentos aguardando decisão e propostas aguardando aprovação interna; Corretor = propostas dele paradas ou com link vencendo, e os leads dele sem contato (login ↔ corretor pelo e-mail em `colaboradores_raw`); Marketing = orçamento do mês não cadastrado em `metas_campanhas`.
+- **Revisão:** a Gestão tem um seletor "ver a Home como…" para conferir cada nível (só muda o que a tela mostra; os dados seguem a permissão de quem está logado).
+- **Decisões:** banner fora da Home (só na TV); formulários e eventos entram na busca e nos links (provisório). Configurações aceita `?aba=` para as pendências abrirem a aba certa.
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.

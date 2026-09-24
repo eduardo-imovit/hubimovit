@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import AvisosAdmin from '../components/settings/AvisosAdmin'
 import BibliotecaLinksAdmin from '../components/settings/BibliotecaLinksAdmin'
 import BannersAdmin from '../components/settings/BannersAdmin'
@@ -21,7 +22,10 @@ const ABAS = [
 export default function Configuracoes() {
   const { perfil } = usePerfil()
   const abasVisiveis = ABAS.filter((a) => !a.somenteGestao || pode(perfil, 'usuarios'))
-  const [aba, setAba] = useState('avisos')
+  // ?aba=plantao abre direto na aba (links das pendências da Home)
+  const [params] = useSearchParams()
+  const abaUrl = params.get('aba')
+  const [aba, setAba] = useState(abasVisiveis.some((a) => a.id === abaUrl) ? abaUrl : 'avisos')
 
   return (
     <div>

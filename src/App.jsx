@@ -4,6 +4,7 @@ import NavbarTV from './components/layout/NavbarTV'
 import Login from './pages/Login'
 import RedefinirSenha from './pages/RedefinirSenha'
 import Home from './pages/Home'
+import Agenda from './pages/Agenda'
 import TVDisplay from './pages/TVDisplay'
 import SpotifyCallback from './pages/SpotifyCallback'
 import Kanban from './pages/Kanban'
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/redefinir-senha" element={<RedefinirSenha />} />
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+        <Route path="/agenda" element={<ProtectedRoute><Agenda /></ProtectedRoute>} />
         <Route path="/tv-display" element={<ProtectedRoute papeis={ACESSO.tv} navbar={<NavbarTV />} semPadding semScroll><TVDisplay /></ProtectedRoute>} />
         <Route path="/spotify-callback" element={<ProtectedRoute papeis={ACESSO.spotify}><SpotifyCallback /></ProtectedRoute>} />
         <Route path="/kanban" element={<ProtectedRoute papeis={ACESSO.kanban}><Kanban /></ProtectedRoute>} />

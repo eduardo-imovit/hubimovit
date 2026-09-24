@@ -24,7 +24,8 @@
 |---|---|---|---|---|
 | Login | `/login` | público | Entrar | Entrar, esqueci a senha; explica quando o bloqueio é suspensão |
 | Redefinir senha | `/redefinir-senha` | público (link do e-mail) | Nova senha | Salvar |
-| Home | `/` | todos com perfil | Dia a dia | Ler banners, agenda, plantão, avisos, links (só leitura) |
+| Home | `/` | todos com perfil | Porta de entrada por nível (PRD §5.4) | Buscar; atalhos; pendências que levam à tela certa; plantão e compromissos; avisos e links |
+| Agenda | `/agenda` | todos com perfil | Calendário completo (saiu da Home) | Navegar mês/semana/dia |
 | Perfil | `/perfil` | todos com perfil | Dados pessoais | Editar nome, telefone, cargo, foto; pedir troca de nível; cancelar o pedido |
 | TV Display | `/tv-display` | gestao, adm, tvaccess | Tela fixa do escritório | Nenhuma (carrossel automático) |
 | Kanban | `/kanban` | gestao, adm | Pipeline de atendimentos | Filtrar |

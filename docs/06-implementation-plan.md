@@ -91,6 +91,12 @@
 - [ ] Teste e ajuste na TV real (tempos, legibilidade a distância, 24/7)
 - [ ] Escala de plantão em dia; sincronizar `imoveis_locados` com o Imoview
 
+## Fase 8 — Home por nível (RF20, PRD §5.4)
+- [x] Home nova no localhost para o Eduardo conferir (24/09)
+- [x] Ajustes da revisão: agenda da semana (eventos + fotógrafo), banner fora da Home (24/09)
+- [ ] Confirmar formulários/eventos nos links e o que mais entra na Home
+- **Pronto quando:** cada nível entra e acha o próprio trabalho em um clique; nenhum bloco é só leitura.
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - Backup: upgrade para o plano Pro do Supabase (~US$ 25/mês) ou dump periódico.
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).
