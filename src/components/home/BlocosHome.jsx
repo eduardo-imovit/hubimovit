@@ -21,6 +21,7 @@ const CAMINHOS = {
   calendario: 'M4 5h16v16H4zM4 10h16M9 3v4M15 3v4',
   link: 'M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1',
   busca: 'M11 18a7 7 0 100-14 7 7 0 000 14zM21 21l-5-5',
+  tv: 'M3 5h18v12H3zM9 21h6M12 17v4',
   seta: 'M5 12h14M13 6l6 6-6 6',
 }
 

@@ -21,6 +21,7 @@ export const ATALHOS = {
   marketing: [
     { to: '/dashboard/performance', titulo: 'Performance', descricao: 'Mídia, orçamento e campanhas', icone: 'grafico' },
     { to: '/dashboard/gestao', titulo: 'Painel da Gestão', descricao: 'Resultado e funil', icone: 'painel' },
+    { to: '/tv-display', titulo: 'TV Display', descricao: 'Ver o resultado na TV', icone: 'tv' },
     { to: '/configuracoes?aba=avisos', titulo: 'Conteúdo da Home', descricao: 'Avisos, links e banners', icone: 'megafone' },
     { to: '/configuracoes?aba=plantao', titulo: 'Plantão', descricao: 'Importar a escala do mês', icone: 'calendario' },
   ],

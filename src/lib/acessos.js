@@ -14,7 +14,7 @@ export const PAPEL_LABEL = {
 export const PAPEL_DESCRICAO = {
   gestao: 'Acesso geral, inclusive usuários e níveis de acesso.',
   adm: 'Propostas, esteira e processos de todos os corretores, e Kanban.',
-  marketing: 'Dashboards e metas, e conteúdo da Home: avisos, links, banners, plantão, agenda do fotógrafo e datas.',
+  marketing: 'Dashboards e metas, TV Display, e conteúdo da Home: avisos, links, banners, plantão, agenda do fotógrafo e datas.',
   corretor: 'Cria propostas e acompanha as suas em Propostas, Esteira e Processos.',
   user: 'Home e Perfil. Solicite um nível para liberar o resto.',
   tvaccess: 'Conta da TV Display.',
@@ -33,7 +33,7 @@ export const ACESSO = {
   dash: ['gestao', 'marketing'],
   configuracoes: ['gestao', 'marketing'],
   usuarios: ['gestao'],
-  tv: ['gestao', 'adm', 'tvaccess'],
+  tv: ['gestao', 'adm', 'marketing', 'tvaccess'],
   spotify: ['gestao'],
 }
 

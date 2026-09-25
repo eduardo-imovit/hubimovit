@@ -55,7 +55,10 @@ export function KpisComercialTV({ kpis, erro }) {
   const c = kpis.comercial
   const titulo = `📊 Comercial — ${nomeDoMes(kpis.mes_referencia)}${avisoCrm(kpis)}`
   const novo = c.leads_mes !== undefined
-  const pctRitmo = novo && c.leads_media_3m ? Math.min(100, Math.round((c.projecao_mes / c.leads_media_3m) * 100)) : null
+  // Meta oficial (25/09): média mensal dos últimos 90 dias corridos.
+  // Fallback para leads_media_3m enquanto a migration nova não foi aplicada.
+  const meta = c.meta_leads_90d ?? c.leads_media_3m ?? null
+  const pctRitmo = novo && meta ? Math.min(100, Math.round((c.projecao_mes / meta) * 100)) : null
 
   return (
     <section className="agenda-fotografo-tv">
@@ -64,7 +67,7 @@ export function KpisComercialTV({ kpis, erro }) {
         <Card
           rotulo="Leads do mês"
           valor={numero(novo ? c.leads_mes : c.leads_novos)}
-          sub={novo ? `ritmo ${decimal(c.ritmo_dia)}/dia · fecha em ~${numero(c.projecao_mes)} · média ${numero(c.leads_media_3m)}` : `mês anterior: ${numero(c.leads_mes_anterior)}`}
+          sub={novo ? `ritmo ${decimal(c.ritmo_dia)}/dia · fecha em ~${numero(c.projecao_mes)} · meta ${numero(meta)} (90d)` : `mês anterior: ${numero(c.leads_mes_anterior)}`}
         >
           {pctRitmo != null && (
             <div className="kpi-tv-barra"><div className="kpi-tv-barra-fill" style={{ width: `${pctRitmo}%` }} /></div>
