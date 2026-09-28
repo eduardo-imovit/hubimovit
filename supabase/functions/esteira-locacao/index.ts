@@ -13,17 +13,21 @@
 //      confia em nada que o cliente diga sobre quem ele é;
 //   3. despacha pro RPC certo, de acordo com o campo `evento`.
 //
+// Fluxo v4 (2026-09-28, PRD §5.6): o locatário negocia antes; o gestor registra
+// a proposta com os termos; o locatário VALIDA (entra na esteira) ou PEDE
+// CORREÇÃO (volta ao gestor). Não existe mais aprovação interna.
+//
 // Modelo de autorização por evento:
 //   nova_proposta            -- role gestao/adm/corretor (via perfis); grava criado_por,
 //                                que define as propostas que o corretor enxerga
-//   confirmar_dados_locatario -- Form de Proposta (perfil) -- e-mail do JWT precisa bater
-//                                com propostas_locacao.email
+//   editar_proposta          -- dono (corretor) ou gestao/adm; só antes da validação;
+//                                reenvia ao locatário
+//   validar_proposta         -- e-mail do JWT == propostas_locacao.email; abre a esteira
+//   pedir_correcao           -- idem; volta ao gestor com o motivo
 //   completar_cadastro       -- Form de Cadastro (tipo de pessoa/renda/cônjuge), liberado
-//                                depois da aprovação interna -- mesma checagem de e-mail
+//                                depois da validação -- mesma checagem de e-mail
 //   descartar_proposta       -- role gestao/adm (via perfis) -- descarte definitivo
 //                                (teste, desistência, duplicada), sem notificação
-//   decisao_interna          -- role gestao/adm (via perfis) -- aprova (segue direto
-//                                pra aguardando_docs) ou rejeita (volta pro locatário corrigir)
 //   docs_enviados            -- e-mail do JWT precisa bater com propostas_locacao.email
 //   decisao_adm              -- role gestao/adm (via perfis) -- sem e-mail: reprovação
 //                                aparece pro locatário no aviso ao lado do documento
@@ -49,14 +53,13 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 import { z } from 'https://deno.land/x/zod@v3.23.8/mod.ts'
 import {
   emailAjustesDocumentos,
+  emailCorrecaoPedida,
   emailDocsAprovados,
   emailDocsEnviados,
+  emailEsteiraAberta,
   emailProcessoConcluido,
-  emailPropostaAjuste,
-  emailPropostaAprovada,
-  emailPropostaCriada,
+  emailPropostaParaValidar,
   emailProntoImoview,
-  emailRevisaoInterna,
 } from './emails.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -83,18 +86,33 @@ const eventoSchema = z.discriminatedUnion('evento', [
     evento: z.literal('nova_proposta'),
     nome_cliente: z.string().min(1),
     email: z.string().email(),
+    tel: z.string().min(1),
     codigo_imovel: z.number().int().positive(),
     valor: z.number().positive(),
+    valor_oferta: z.number().positive(),
+    observacoes: z.string().optional(),
     imovel_titulo: z.string().optional(),
     imovel_endereco: z.string().optional(),
   }),
   z.object({
-    evento: z.literal('confirmar_dados_locatario'),
+    evento: z.literal('editar_proposta'),
     proposta_id: z.string().uuid(),
-    nome: z.string().min(1),
+    nome_cliente: z.string().min(1),
     tel: z.string().min(1),
-    valor_oferta: z.number().positive().optional(),
+    valor: z.number().positive(),
+    valor_oferta: z.number().positive(),
     observacoes: z.string().optional(),
+    imovel_titulo: z.string().optional(),
+    imovel_endereco: z.string().optional(),
+  }),
+  z.object({
+    evento: z.literal('validar_proposta'),
+    proposta_id: z.string().uuid(),
+  }),
+  z.object({
+    evento: z.literal('pedir_correcao'),
+    proposta_id: z.string().uuid(),
+    motivo: z.string().trim().min(1),
   }),
   z.object({
     evento: z.literal('completar_cadastro'),
@@ -116,12 +134,6 @@ const eventoSchema = z.discriminatedUnion('evento', [
     evento: z.literal('descartar_proposta'),
     proposta_id: z.string().uuid(),
     motivo: z.string().min(1),
-  }),
-  z.object({
-    evento: z.literal('decisao_interna'),
-    proposta_id: z.string().uuid(),
-    decisao: z.enum(['aprovado', 'rejeitado']),
-    motivo: z.string().optional(),
   }),
   z.object({
     evento: z.literal('docs_enviados'),
@@ -245,8 +257,8 @@ async function exigirEmailProposta(
 
 const REMETENTE = { name: 'Hub Imovit', email: 'relacionamento@imovit.com.br' }
 const DESTINATARIOS_REVISAO_INTERNA = ['gabriel@imovit.com.br', 'daniele@imovit.com.br']
-// Nova proposta entrando na esteira (locatário confirmou os dados): também o
-// administrativo, que acompanha a abertura de cada esteira (pedido do Eduardo, 24/09).
+// Esteira aberta (locatário validou a proposta): também o administrativo, que
+// acompanha a abertura de cada esteira (pedido do Eduardo, 24/09).
 const DESTINATARIOS_NOVA_ESTEIRA = [
   ...DESTINATARIOS_REVISAO_INTERNA,
   'administrativo@imovit.com.br',
@@ -293,43 +305,76 @@ async function notificar(destinatarios: string[], assunto: string, corpoHtml: st
 
 async function handleNovaProposta(evento: Extract<Evento, { evento: 'nova_proposta' }>, ator: { id: string; email: string }) {
   const { data, error } = await supabase.rpc('criar_proposta_locacao', {
+    p_criado_por: ator.id,
     p_nome_cliente: evento.nome_cliente,
     p_email: evento.email,
+    p_tel: evento.tel,
     p_codigo_imovel: evento.codigo_imovel,
     p_valor: evento.valor,
+    p_valor_oferta: evento.valor_oferta,
+    p_observacoes: evento.observacoes ?? null,
     p_imovel_titulo: evento.imovel_titulo ?? null,
     p_imovel_endereco: evento.imovel_endereco ?? null,
     p_ator: ator.email,
   })
   if (error) throw error
 
-  // Quem cria (ou recria) a proposta passa a ser o dono dela -- é o que o
-  // corretor enxerga em Propostas/Esteira/Processos.
-  const { error: erroDono } = await supabase
-    .from('propostas_locacao')
-    .update({ criado_por: ator.id })
-    .eq('id', data.id)
-  if (erroDono) throw erroDono
-
-  const email = emailPropostaCriada(data, linkPortal())
+  const email = emailPropostaParaValidar(data, linkPortal())
   await notificar([data.email], email.assunto, email.html)
 
   return { proposta: data }
 }
 
-async function handleConfirmarDadosLocatario(evento: Extract<Evento, { evento: 'confirmar_dados_locatario' }>) {
-  const { data, error } = await supabase.rpc('confirmar_dados_locatario', {
+async function handleEditarProposta(evento: Extract<Evento, { evento: 'editar_proposta' }>, ator: { id: string; email: string }) {
+  const { data, error } = await supabase.rpc('editar_proposta_locacao', {
     p_proposta_id: evento.proposta_id,
-    p_nome: evento.nome,
+    p_ator_id: ator.id,
+    p_ator: ator.email,
+    p_nome_cliente: evento.nome_cliente,
     p_tel: evento.tel,
-    p_valor_oferta: evento.valor_oferta ?? null,
+    p_valor: evento.valor,
+    p_valor_oferta: evento.valor_oferta,
     p_observacoes: evento.observacoes ?? null,
-    p_ator: 'locatario',
+    p_imovel_titulo: evento.imovel_titulo ?? null,
+    p_imovel_endereco: evento.imovel_endereco ?? null,
   })
   if (error) throw error
 
-  const email = emailRevisaoInterna(data, linkPropostas())
+  const email = emailPropostaParaValidar(data, linkPortal(), true)
+  await notificar([data.email], email.assunto, email.html)
+
+  return { proposta: data }
+}
+
+async function handleValidarProposta(evento: Extract<Evento, { evento: 'validar_proposta' }>, emailChamador: string) {
+  const { data, error } = await supabase.rpc('validar_proposta_locatario', {
+    p_proposta_id: evento.proposta_id,
+    p_email_chamador: emailChamador,
+  })
+  if (error) throw error
+
+  const email = emailEsteiraAberta(data, linkEsteiras())
   await notificar(DESTINATARIOS_NOVA_ESTEIRA, email.assunto, email.html)
+
+  return { proposta: data }
+}
+
+async function handlePedirCorrecao(evento: Extract<Evento, { evento: 'pedir_correcao' }>, emailChamador: string) {
+  const { data, error } = await supabase.rpc('pedir_correcao_proposta', {
+    p_proposta_id: evento.proposta_id,
+    p_email_chamador: emailChamador,
+    p_motivo: evento.motivo,
+  })
+  if (error) throw error
+
+  // Volta para quem registrou a proposta; sem dono, para a equipe de locação.
+  let destinatarios = DESTINATARIOS_REVISAO_INTERNA
+  if (data.criado_por) {
+    const { data: dono } = await supabase.from('perfis').select('email').eq('id', data.criado_por).single()
+    if (dono?.email) destinatarios = [dono.email]
+  }
+  const email = emailCorrecaoPedida(data, evento.motivo, linkPropostas())
+  await notificar(destinatarios, email.assunto, email.html)
 
   return { proposta: data }
 }
@@ -363,29 +408,6 @@ async function handleDescartarProposta(evento: Extract<Evento, { evento: 'descar
     p_ator: adminEmail,
   })
   if (error) throw error
-
-  return { proposta: data }
-}
-
-async function handleDecisaoInterna(evento: Extract<Evento, { evento: 'decisao_interna' }>, adminEmail: string) {
-  const { data, error } = await supabase.rpc('decidir_aprovacao_interna', {
-    p_proposta_id: evento.proposta_id,
-    p_decisao: evento.decisao,
-    p_ator: adminEmail,
-    p_motivo: evento.motivo ?? null,
-  })
-  if (error) throw error
-
-  if (evento.decisao === 'aprovado') {
-    // Sem proprietário no sistema (ver decisão da Parte 1, 2026-09-21) --
-    // aprovado aqui já pula direto pra aguardando_docs, então o locatário é
-    // avisado pra enviar os documentos, não mais o proprietário.
-    const email = emailPropostaAprovada(data, linkPortal())
-    await notificar([data.email], email.assunto, email.html)
-  } else {
-    const email = emailPropostaAjuste(data, evento.motivo, linkPortal())
-    await notificar([data.email], email.assunto, email.html)
-  }
 
   return { proposta: data }
 }
@@ -623,9 +645,17 @@ Deno.serve(async (req) => {
         const ator = await exigirCriadorProposta(req)
         return jsonResponse(await handleNovaProposta(evento, ator))
       }
-      case 'confirmar_dados_locatario': {
-        await exigirEmailProposta(req, evento.proposta_id, 'email')
-        return jsonResponse(await handleConfirmarDadosLocatario(evento))
+      case 'editar_proposta': {
+        const ator = await exigirCriadorProposta(req)
+        return jsonResponse(await handleEditarProposta(evento, ator))
+      }
+      case 'validar_proposta': {
+        const emailChamador = await exigirEmailProposta(req, evento.proposta_id, 'email')
+        return jsonResponse(await handleValidarProposta(evento, emailChamador))
+      }
+      case 'pedir_correcao': {
+        const emailChamador = await exigirEmailProposta(req, evento.proposta_id, 'email')
+        return jsonResponse(await handlePedirCorrecao(evento, emailChamador))
       }
       case 'completar_cadastro': {
         await exigirEmailProposta(req, evento.proposta_id, 'email')
@@ -634,10 +664,6 @@ Deno.serve(async (req) => {
       case 'descartar_proposta': {
         const adminEmail = await exigirAdmin(req)
         return jsonResponse(await handleDescartarProposta(evento, adminEmail))
-      }
-      case 'decisao_interna': {
-        const adminEmail = await exigirAdmin(req)
-        return jsonResponse(await handleDecisaoInterna(evento, adminEmail))
       }
       case 'docs_enviados': {
         await exigirEmailProposta(req, evento.proposta_id, 'email')

@@ -4,11 +4,12 @@ import { usePortalAcesso } from '../../hooks/usePortalAcesso'
 import { useHistoricoProposta } from '../../hooks/useHistoricoProposta'
 import { useDocumentosEsteira } from '../../hooks/useDocumentosEsteira'
 import { supabase } from '../../lib/supabaseClient'
-import { confirmarDadosLocatario, completarCadastro, registrarDocumentosEnviados } from '../../lib/esteira'
-import { ETAPAS_JORNADA, STATUS_LABEL, STATUS_VARIANT, etapaJornada, formatarPrazo } from '../../lib/esteiraLabels'
+import { completarCadastro, pedirCorrecao, registrarDocumentosEnviados, validarProposta } from '../../lib/esteira'
+import { ETAPAS_JORNADA, STATUS_LABEL, STATUS_VARIANT, etapaJornada, formatarPrazo, valorBR } from '../../lib/esteiraLabels'
 import { StatusBadge, DocStatusBadge } from '../../components/esteira/StatusBadge'
 import JornadaLocatario from '../../components/esteira/JornadaLocatario'
 import CurrencyInput from '../../components/esteira/CurrencyInput'
+import ReasonModal from '../../components/esteira/ReasonModal'
 import PortalShell from '../../components/portal/PortalShell'
 import DefinirSenha from '../../components/portal/DefinirSenha'
 
@@ -187,7 +188,18 @@ function PropostaDetalhe({ proposta, onAtualizar }) {
 
 function AcaoDaVez({ proposta, onAtualizar }) {
   if (proposta.meuPapel === 'locatario' && proposta.status === 'aguardando_locatario') {
-    return <FormConfirmarDados proposta={proposta} onAtualizar={onAtualizar} />
+    return <ValidarProposta proposta={proposta} onAtualizar={onAtualizar} />
+  }
+  if (proposta.meuPapel === 'locatario' && proposta.status === 'correcao_solicitada') {
+    return (
+      <div className="card card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+        <div className="page-eyebrow">Correção pedida</div>
+        {proposta.motivo_correcao && <div style={{ whiteSpace: 'pre-line' }}>Você pediu: “{proposta.motivo_correcao}”</div>}
+        <div className="stat-sub is-muted" style={{ marginTop: 0 }}>
+          Seu corretor vai ajustar a proposta. Você recebe um e-mail quando ela estiver pronta para validar de novo.
+        </div>
+      </div>
+    )
   }
   if (proposta.meuPapel === 'locatario' && ['aguardando_docs', 'docs_em_analise'].includes(proposta.status)) {
     if (!proposta.tipo_pessoa) {
@@ -208,71 +220,99 @@ function AcaoDaVez({ proposta, onAtualizar }) {
   )
 }
 
-function FormConfirmarDados({ proposta, onAtualizar }) {
-  const [form, setForm] = useState({
-    nome: proposta.nome_cliente || '',
-    tel: '',
-    valor_oferta: proposta.valor != null ? String(proposta.valor) : '',
-    observacoes: '',
-  })
-  const [salvando, setSalvando] = useState(false)
+/**
+ * Etapa 1 (esteira v4): os termos já foram negociados entre as partes e
+ * registrados pelo gestor. O locatário só confere e valida, ou pede correção.
+ */
+function ValidarProposta({ proposta, onAtualizar }) {
+  const [concordo, setConcordo] = useState(false)
+  const [enviando, setEnviando] = useState(false)
+  const [pedindoCorrecao, setPedindoCorrecao] = useState(false)
   const [erro, setErro] = useState('')
 
-  async function handleSubmit(e) {
-    e.preventDefault()
+  async function handleValidar() {
     setErro('')
-    setSalvando(true)
+    setEnviando(true)
     try {
-      await confirmarDadosLocatario({
-        proposta_id: proposta.id,
-        nome: form.nome,
-        tel: form.tel,
-        valor_oferta: form.valor_oferta ? Number(form.valor_oferta) : undefined,
-        observacoes: form.observacoes || undefined,
-      })
+      await validarProposta(proposta.id)
       await onAtualizar()
     } catch (err) {
       setErro(err.message)
     } finally {
-      setSalvando(false)
+      setEnviando(false)
+    }
+  }
+
+  async function handlePedirCorrecao(motivo) {
+    setErro('')
+    setEnviando(true)
+    try {
+      await pedirCorrecao(proposta.id, motivo)
+      setPedindoCorrecao(false)
+      await onAtualizar()
+    } catch (err) {
+      setErro(err.message)
+    } finally {
+      setEnviando(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="card card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-      <div className="page-eyebrow">Confirme seus dados pra seguir com a proposta</div>
-      {erro && <div className="login-error">{erro}</div>}
-      <div className="field">
-        <label htmlFor="pf-nome">Nome completo</label>
-        <input id="pf-nome" required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} />
+    <div className="card card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <div>
+        <div className="page-eyebrow">Confira e valide sua proposta</div>
+        <div className="page-sub" style={{ margin: 0 }}>
+          Estes são os termos combinados na negociação. Se estiver tudo certo, valide para seguir para o cadastro e os documentos.
+        </div>
       </div>
-      <div className="field">
-        <label htmlFor="pf-email">E-mail</label>
-        <input id="pf-email" value={proposta.email} disabled />
+      {erro && !pedindoCorrecao && <div className="login-error">{erro}</div>}
+      <div>
+        <div className="page-eyebrow" style={{ marginBottom: 2 }}>Locatário</div>
+        <div>{proposta.nome_cliente}</div>
+        <div style={{ color: 'var(--grafite-soft)' }}>{proposta.email}{proposta.tel ? ` · ${proposta.tel}` : ''}</div>
       </div>
-      <div className="field">
-        <label htmlFor="pf-tel">Telefone</label>
-        <input id="pf-tel" required value={form.tel} onChange={(e) => setForm({ ...form, tel: e.target.value })} placeholder="(19) 99999-9999" />
+      <div style={{ display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap' }}>
+        <div>
+          <div className="page-eyebrow" style={{ marginBottom: 2 }}>Valor do aluguel</div>
+          <div style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)' }}>{valorBR(proposta.valor_oferta ?? proposta.valor)}</div>
+        </div>
+        {proposta.valor != null && proposta.valor_oferta != null && Number(proposta.valor) !== Number(proposta.valor_oferta) && (
+          <div>
+            <div className="page-eyebrow" style={{ marginBottom: 2 }}>Valor anunciado</div>
+            <div style={{ color: 'var(--grafite-soft)' }}>{valorBR(proposta.valor)}</div>
+          </div>
+        )}
       </div>
-      <div className="field">
-        <label htmlFor="pf-valor-oferta">Valor da oferta (R$)</label>
-        <CurrencyInput id="pf-valor-oferta" value={form.valor_oferta} onChange={(valor_oferta) => setForm({ ...form, valor_oferta })} />
+      {proposta.observacoes && (
+        <div>
+          <div className="page-eyebrow" style={{ marginBottom: 2 }}>Termos combinados</div>
+          <div style={{ whiteSpace: 'pre-line' }}>{proposta.observacoes}</div>
+        </div>
+      )}
+      <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 'var(--space-2)' }}>
+        <input id="pv-concordo" type="checkbox" checked={concordo} onChange={(e) => setConcordo(e.target.checked)} style={{ width: 'auto' }} />
+        <label htmlFor="pv-concordo" style={{ textTransform: 'none', letterSpacing: 0 }}>Li e confirmo que estes são os termos combinados.</label>
       </div>
-      <div className="field">
-        <label htmlFor="pf-observacoes">Detalhes da proposta</label>
-        <textarea
-          id="pf-observacoes"
-          rows={4}
-          value={form.observacoes}
-          onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
-          placeholder="Ex.: contrato de 30 meses, aluguel de R$ 3.500 com condomínio incluso, garantia por seguro-fiança, entrada no dia 10/11."
+      <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+        <button type="button" className="btn btn-primary btn-sm" disabled={!concordo || enviando} onClick={handleValidar}>
+          {enviando ? 'Enviando…' : 'Validar proposta'}
+        </button>
+        <button type="button" className="btn btn-ghost btn-sm" disabled={enviando} onClick={() => setPedindoCorrecao(true)}>
+          Algo está errado
+        </button>
+      </div>
+      {pedindoCorrecao && (
+        <ReasonModal
+          title="Pedir correção"
+          description="Conte o que está diferente do combinado. A proposta volta para o seu corretor, que corrige e te envia de novo."
+          confirmLabel="Pedir correção"
+          processando={enviando}
+          erro={erro}
+          onConfirm={handlePedirCorrecao}
+          onCancel={() => { setPedindoCorrecao(false); setErro('') }}
         />
-        <span className="field-hint">Prazo do contrato, valor, garantia (fiador, seguro-fiança, caução ou título de capitalização) e qualquer condição que você queira propor.</span>
-      </div>
-      <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
-        {salvando ? 'Enviando…' : 'Confirmar e continuar'}
-      </button>
-    </form>
+      )}
+    </div>
   )
 }
 
@@ -329,7 +369,7 @@ function FormCadastro({ proposta, onAtualizar }) {
 
   return (
     <form onSubmit={handleSubmit} className="card card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-      <div className="page-eyebrow">Proposta aprovada — complete seu cadastro pra liberar os documentos</div>
+      <div className="page-eyebrow">Proposta validada — complete seu cadastro pra liberar os documentos</div>
       {erro && <div className="login-error">{erro}</div>}
       <div className="field">
         <label htmlFor="fc-tipo">Tipo de pessoa</label>

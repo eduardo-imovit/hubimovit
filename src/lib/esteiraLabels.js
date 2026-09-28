@@ -8,8 +8,9 @@ export function valorBR(v) {
 }
 
 export const STATUS_LABEL = {
-  aguardando_locatario: 'Aguardando seus dados',
-  aguardando_aprovacao_interna: 'Em revisão interna',
+  aguardando_locatario: 'Aguardando validação',
+  correcao_solicitada: 'Correção pedida',
+  aguardando_aprovacao_interna: 'Em revisão interna', // fluxo antigo: só aparece no histórico
   criada: 'Aguardando liberação da esteira',
   aguardando_docs: 'Aguardando documentos',
   docs_em_analise: 'Documentos em análise',
@@ -21,6 +22,7 @@ export const STATUS_LABEL = {
 
 export const STATUS_VARIANT = {
   aguardando_locatario: 'warning',
+  correcao_solicitada: 'danger',
   aguardando_aprovacao_interna: 'info',
   criada: 'info',
   aguardando_docs: 'warning',
@@ -53,8 +55,7 @@ export const DOC_STATUS_VARIANT = {
  * sem `acao`, é espera pela equipe.
  */
 export const ETAPAS_JORNADA = [
-  { chave: 'proposta', label: 'Proposta', acao: true, aguardando: 'Confirme seus dados e o valor da oferta.' },
-  { chave: 'aprovacao', label: 'Aprovação', acao: false, aguardando: 'Nossa equipe está revisando sua proposta.' },
+  { chave: 'proposta', label: 'Validação', acao: true, aguardando: 'Confira os termos da proposta e valide.' },
   { chave: 'cadastro', label: 'Cadastro', acao: true, aguardando: 'Complete seu cadastro para liberar os documentos.' },
   { chave: 'documentos', label: 'Documentos', acao: true, aguardando: 'Envie os documentos da lista.' },
   { chave: 'conclusao', label: 'Conclusão', acao: false, aguardando: 'Documentação aprovada. Estamos finalizando seu processo.' },
@@ -67,19 +68,19 @@ export const ETAPAS_JORNADA = [
  */
 export function etapaJornada(proposta) {
   switch (proposta.status) {
-    case 'aguardando_locatario': return 0
-    case 'aguardando_aprovacao_interna': return 1
+    case 'aguardando_locatario':
+    case 'correcao_solicitada': return 0
     case 'criada':
-    case 'aguardando_docs': return proposta.tipo_pessoa ? 3 : 2
-    case 'docs_em_analise': return 3
-    case 'docs_aprovados': return 4
+    case 'aguardando_docs': return proposta.tipo_pessoa ? 2 : 1
+    case 'docs_em_analise': return 2
+    case 'docs_aprovados': return 3
     case 'sincronizada': return ETAPAS_JORNADA.length
     default: return null
   }
 }
 
 // aguardando_cliente = proposta de venda esperando a assinatura do proponente
-const STATUS_COM_PRAZO = ['aguardando_locatario', 'aguardando_aprovacao_interna', 'criada', 'aguardando_docs', 'docs_em_analise', 'docs_aprovados', 'aguardando_cliente']
+const STATUS_COM_PRAZO = ['aguardando_locatario', 'criada', 'aguardando_docs', 'docs_em_analise', 'docs_aprovados', 'aguardando_cliente']
 
 /** Texto de prazo restante do link da proposta, só pros status onde o prazo ainda importa. */
 export function formatarPrazo(linkExpiraEm, status) {

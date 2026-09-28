@@ -69,7 +69,7 @@ Faltava um lugar único para:
 | RF19 | **Importar a escala de plantão (PDF) do mês**: o sistema lê a tabela (data, dia, manhã, tarde), casa os nomes com os corretores, mostra prévia e grava; a TV mostra o plantão da semana (§5.3) | gestao, marketing (import); todos (TV) | must | feito no localhost (24/09); falta push |
 | RF20 | **Home por nível**: busca, atalhos, pendências com número que levam à tela certa, hoje no escritório, avisos e links (§5.4) | todos com perfil | must | feito (24/09), commitado; falta push |
 | RF21 | **Proposta de venda (compra)**: corretor cria, proponente confirma e assina pelo portal `/venda`, a equipe recebe o PDF assinado; valores e condições ficam no banco para análise (§5.5) | corretor, adm, gestao; proponente | must | aprovado e publicado no banco/função em 28/09; frontend aguarda push (ver plano, Fase 9) |
-| RF22 | **Esteira de locação v4**: corretor gera a proposta negociada; locatário valida ou pede correção; ao validar abre a esteira e avisa o ADM, sem aprovação interna (§5.6). Substitui partes de RF10–RF12 | corretor; locatário; adm | must | **proposta, aguardando aprovação do Eduardo** (28/09) |
+| RF22 | **Esteira de locação v4**: gestor registra a proposta negociada (com observações); locatário valida ou pede correção; ao validar abre a esteira e avisa o ADM, sem aprovação interna (§5.6). Substitui partes de RF10–RF12 | corretor; locatário; adm | must | aprovado e implementado (28/09) |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -117,21 +117,21 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - **Regras:** link vale 7 dias; uma assinatura por proposta (depois de confirmada, não muda mais); só Adm/Gestão descartam; corretor vê só as dele; proponente vê só as do próprio e-mail.
 - **Decidido pelo Eduardo (28/09):** a assinatura desenhada no portal tem validade (sem certificado digital); aviso de proposta assinada vai para `daniel@` e `gabriela@`; **não** vai para o Imoview; o PDF é gerado ao fim da proposta e fica baixável direto na página (portal e `/admin/vendas`).
 
-### 5.6 Esteira de locação v4: o corretor negocia, o locatário só valida (pedido do Eduardo, 28/09) — **proposta, aguardando aprovação**
-- **Problema:** hoje o locatário digita a oferta e os detalhes no portal e a proposta ainda passa por aprovação interna. A negociação real já acontece antes, com o corretor. O sistema duplica esse trabalho e atrasa a abertura da esteira.
-- **Nova dinâmica:**
-  1. **Corretor gera a proposta completa** em `/admin/propostas`: locatário (nome, e-mail, telefone), imóvel, valor do anúncio, **valor negociado** e **detalhes da proposta** (prazo, garantia, entrada, condições). Ao finalizar, o locatário recebe o e-mail de alerta.
-  2. **Locatário valida** no portal: vê a proposta só para leitura e escolhe **"Validar proposta"** ou **"Algo está errado"** (com motivo).
-  3. "Algo está errado" → volta ao **corretor** (e-mail com o motivo), que corrige e reenvia → o locatário valida de novo.
-  4. **Ao validar, a esteira abre na hora:** sem aprovação interna. O ADM é sinalizado (e-mail) e o portal libera o cadastro e os documentos.
-  5. Locatário completa o **próprio cadastro** (PF/PJ, profissão, renda, cônjuge) e envia os documentos, como hoje.
-  6. **ADM valida os documentos e finaliza** o processo (zip + Imoview), como hoje.
-- **Sai:** a aprovação interna (`decisao_interna`, status `aguardando_aprovacao_interna`) e a digitação da oferta/detalhes pelo locatário.
-- **Perguntas em aberto (Eduardo):**
-  - Quem recebe o alerta "esteira aberta"? Hoje a lista é gabriel@, daniele@, administrativo@ e administrativo3@.
-  - A validação do locatário é um clique ("Li e concordo") ou uma assinatura desenhada, como na venda?
-  - O corretor pode editar a proposta depois de enviada e antes da validação? Nesse caso, reenviar o e-mail?
-  - O que fazer com as propostas que estiverem em "aguardando aprovação interna" no dia da troca: aprovar todas, ou a Gestão decide uma a uma antes?
+### 5.6 Esteira de locação v4: as partes negociam, o locatário só valida (pedido do Eduardo, 28/09) — **aprovado, implementado**
+- **Problema:** o locatário digitava a oferta no portal e a proposta ainda passava por aprovação interna. A negociação real já acontece antes, entre as partes; o sistema duplicava esse trabalho e atrasava a abertura da esteira.
+- **Fluxo (Eduardo):** locatário entra em contato → negocia → locador aceita os termos → **gestor gera a proposta registrando os termos** → sistema envia ao locatário → ele **valida ou pede correção** → validando, **entra na esteira**.
+  1. Em `/admin/propostas` o gestor (corretor, Admin ou Gestão) preenche: nome, e-mail e telefone do locatário, imóvel, valor do anúncio, **valor negociado** (obrigatório) e **observações** (os termos combinados: prazo, garantia, entrada, condições). Ao criar, o locatário recebe o e-mail "pronta para validar".
+  2. No portal, o locatário vê os termos só para leitura, marca "Li e confirmo que estes são os termos combinados" e **Valida**, ou clica **"Algo está errado"** e escreve o motivo.
+  3. Correção → status `correcao_solicitada`; e-mail a quem registrou a proposta (sem dono: gabriel@/daniele@). O gestor usa **"Corrigir e reenviar"**; o locatário recebe "proposta corrigida: valide de novo".
+  4. **Validar abre a esteira na hora** (`aguardando_docs`), sem aprovação interna; e-mail "Nova esteira aberta" para gabriel@, daniele@, administrativo@ e administrativo3@.
+  5. Locatário completa o próprio cadastro (PF/PJ, profissão, renda, cônjuge) e envia os documentos; ADM valida e finaliza, como antes.
+- **Regras:**
+  - O gestor pode editar e reenviar enquanto o locatário não validou (e-mail e imóvel não mudam: são a chave da proposta). Depois da validação, não.
+  - Prazo: 7 dias para validar (renovado a cada reenvio); ao validar, **30 dias** para cadastro e documentos. Antes, os 7 dias da criação valiam para o processo inteiro e expiravam propostas no meio da esteira.
+  - Correção pedida não expira: a bola está com o gestor.
+  - Não dá para criar outra proposta por cima de uma em andamento ou concluída (mesmo e-mail + imóvel); só por cima de descartada, expirada ou validação vencida. Antes, um prazo vencido bastava para sobrescrever até processo concluído.
+- **Sai:** aprovação interna (`decisao_interna`, status `aguardando_aprovacao_interna`) e a digitação de oferta/detalhes pelo locatário. A única proposta que estava na aprovação interna (teste do Daniel) volta para a validação do locatário.
+- **Decisões assumidas (28/09, o Eduardo pode rever):** validação por clique com confirmação (sem assinatura desenhada); alerta "esteira aberta" para a lista que já existia; 30 dias para a fase de documentos.
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.
@@ -169,7 +169,7 @@ Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = exec
 - Reprovar um documento não manda e-mail na hora. O e-mail sai só quando o ADM usa "Solicitar ajustes".
 - Soft-delete (`ativo = false`) na maioria das tabelas de conteúdo: dado "sumido" costuma ser isso.
 - Lead frio no bot do WhatsApp: 60 dias sem atualização (decisão de 24/09).
-- No portal, o locatário preenche **Detalhes da proposta** (prazo do contrato, valor, garantia e condições); no banco é a coluna `propostas_locacao.observacoes`. A abertura de cada esteira (locatário confirmou os dados) notifica também `administrativo@` e `administrativo3@` (24/09).
+- Os termos da proposta (valor negociado e **observações**) são registrados pelo gestor; o locatário só valida ou pede correção (v4, 28/09, §5.6). No banco: `valor_oferta` e `observacoes`. A abertura de cada esteira (locatário validou) notifica também `administrativo@` e `administrativo3@`.
 
 ## 7. Critérios de sucesso / aceite
 - Cada papel, com login de verdade, vê exatamente o que a tabela da seção 2 diz, e nada a mais. Conferir no banco, não só na tela.

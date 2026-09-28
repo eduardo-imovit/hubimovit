@@ -3,37 +3,37 @@ import { StatusBadge } from './StatusBadge'
 import { valorBR } from '../../lib/esteiraLabels'
 
 const AVISO_POR_STATUS = {
-  aguardando_locatario: 'Aguardando o locatário confirmar os dados dele (nome, telefone, oferta) — ainda não há o que revisar.',
-  criada: 'Aguardando liberação da esteira.',
-  aguardando_docs: 'Já passou da revisão interna — está na etapa de documentos.',
-  docs_em_analise: 'Já passou da revisão interna — documentos em análise.',
-  docs_aprovados: 'Já passou da revisão interna — documentos aprovados, pronta pra finalizar em Esteiras.',
+  aguardando_locatario: 'Enviada ao locatário: aguardando ele validar ou pedir correção.',
+  correcao_solicitada: 'O locatário pediu correção. Ajuste e reenvie para ele validar de novo.',
+  criada: 'Validada: aguardando liberação da esteira.',
+  aguardando_docs: 'Validada pelo locatário: está na etapa de cadastro e documentos.',
+  docs_em_analise: 'Validada pelo locatário: documentos em análise.',
+  docs_aprovados: 'Documentos aprovados, pronta para finalizar em Esteira.',
   sincronizada: 'Processo já concluído.',
-  rejeitada: 'Proposta rejeitada/descartada.',
+  rejeitada: 'Proposta descartada.',
   expirada: 'Prazo da proposta expirou.',
 }
 
 /**
- * Modal de detalhe de uma proposta -- usado tanto na fila de "Aguardando
- * revisão interna" quanto na tabela geral de Propostas (visualizar qualquer
- * uma, em qualquer estágio). Só oferece Aprovar/Pedir correção quando o
- * status realmente permite (a RPC decidir_aprovacao_interna exige
- * "aguardando_aprovacao_interna" -- fora disso ela rejeita).
+ * Detalhe de uma proposta de locação (qualquer estágio). Antes da validação do
+ * locatário oferece "Editar e reenviar" (esteira v4: não existe mais aprovação interna).
  */
-export default function PropostaDetalheModal({ proposta, processando, erro, onClose, onAprovar, onPedirCorrecao }) {
-  const podeDecidir = proposta.status_efetivo === 'aguardando_aprovacao_interna'
-
+export default function PropostaDetalheModal({ proposta, onClose, onEditar }) {
   return (
     <ModalPortal>
-      <div className="modal-overlay" onClick={() => !processando && onClose()}>
+      <div className="modal-overlay" onClick={onClose}>
         <div className="modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <div className="modal-title">{proposta.nome_cliente || proposta.email}</div>
-            <button type="button" className="modal-close" disabled={processando} onClick={onClose}>×</button>
+            <button type="button" className="modal-close" onClick={onClose}>×</button>
           </div>
           <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-            {erro && <div className="login-error">{erro}</div>}
             <StatusBadge status={proposta.status_efetivo} />
+            {proposta.status_efetivo === 'correcao_solicitada' && proposta.motivo_correcao && (
+              <div className="login-error" style={{ whiteSpace: 'pre-line' }}>
+                <strong>O locatário pediu:</strong> {proposta.motivo_correcao}
+              </div>
+            )}
             <div>
               <div className="page-eyebrow" style={{ marginBottom: 2 }}>Locatário</div>
               <div>{proposta.nome_cliente || '—'}</div>
@@ -46,37 +46,29 @@ export default function PropostaDetalheModal({ proposta, processando, erro, onCl
             </div>
             <div style={{ display: 'flex', gap: 'var(--space-5)' }}>
               <div>
-                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Valor pedido</div>
+                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Valor do anúncio</div>
                 <div>{valorBR(proposta.valor)}</div>
               </div>
               <div>
-                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Oferta do locatário</div>
+                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Valor negociado</div>
                 <div>{valorBR(proposta.valor_oferta)}</div>
               </div>
             </div>
             {proposta.observacoes && (
               <div>
-                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Detalhes da proposta (enviados pelo locatário)</div>
+                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Observações da proposta</div>
                 <div style={{ whiteSpace: 'pre-line' }}>{proposta.observacoes}</div>
               </div>
             )}
-            {!podeDecidir && (
-              <div className="stat-sub is-muted">{AVISO_POR_STATUS[proposta.status_efetivo] ?? 'Nenhuma ação de aprovação disponível neste estágio.'}</div>
-            )}
+            <div className="stat-sub is-muted">{AVISO_POR_STATUS[proposta.status_efetivo] ?? ''}</div>
           </div>
           <div className="modal-footer">
-            {podeDecidir && onPedirCorrecao ? (
-              <button type="button" className="btn btn-ghost btn-sm" disabled={processando} onClick={onPedirCorrecao}>
-                Pedir correção
-              </button>
-            ) : (
-              <button type="button" className="btn btn-ghost btn-sm" disabled={processando} onClick={onClose}>
-                Fechar
-              </button>
-            )}
-            {podeDecidir && onAprovar && (
-              <button type="button" className="btn btn-primary btn-sm" disabled={processando} onClick={onAprovar}>
-                {processando ? 'Aprovando…' : 'Aprovar'}
+            <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
+              Fechar
+            </button>
+            {onEditar && (
+              <button type="button" className="btn btn-primary btn-sm" onClick={onEditar}>
+                {proposta.status_efetivo === 'correcao_solicitada' ? 'Corrigir e reenviar' : 'Editar e reenviar'}
               </button>
             )}
           </div>

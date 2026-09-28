@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import SubnavPropostas from '../../components/layout/SubnavPropostas'
 import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
-import { criarProposta, decidirAprovacaoInterna, descartarProposta } from '../../lib/esteira'
+import { criarProposta, descartarProposta, editarProposta } from '../../lib/esteira'
 import { formatarPrazo, valorBR } from '../../lib/esteiraLabels'
 import { StatusBadge } from '../../components/esteira/StatusBadge'
 import ReasonModal from '../../components/esteira/ReasonModal'
@@ -10,41 +10,66 @@ import CurrencyInput from '../../components/esteira/CurrencyInput'
 import { usePerfil } from '../../hooks/usePerfil'
 import { pode } from '../../lib/acessos'
 
-const vazio = { nome_cliente: '', email: '', codigo_imovel: '', valor: '', imovel_titulo: '', imovel_endereco: '' }
+const vazio = {
+  nome_cliente: '', email: '', tel: '', codigo_imovel: '', valor: '', valor_oferta: '',
+  observacoes: '', imovel_titulo: '', imovel_endereco: '',
+}
 
+// Antes da validação do locatário a proposta ainda pode ser corrigida e reenviada.
+const EDITAVEIS = ['aguardando_locatario', 'correcao_solicitada']
+
+/**
+ * Propostas de locação (esteira v4, PRD §5.6): o locatário negocia antes; aqui o
+ * gestor registra a proposta com os termos e o sistema envia para o locatário
+ * validar. Se ele pedir correção, a proposta volta para cá com o motivo.
+ */
 export default function Propostas() {
   const { propostas, carregando, erro, recarregar } = usePropostasLocacao()
   const { perfil } = usePerfil()
-  // Corretor cria e acompanha as dele (o banco já filtra); decidir é da Admin/Gestão.
-  const podeDecidir = pode(perfil, 'esteiraDecidir')
+  // Corretor cria e acompanha as dele (o banco já filtra); descartar é da Admin/Gestão.
+  const podeDescartar = pode(perfil, 'esteiraDecidir')
   const [mostrarForm, setMostrarForm] = useState(false)
+  const [editando, setEditando] = useState(null)
   const [form, setForm] = useState(vazio)
   const [salvando, setSalvando] = useState(false)
   const [erroForm, setErroForm] = useState('')
   const [descartandoId, setDescartandoId] = useState(null)
   const [propostaDescartando, setPropostaDescartando] = useState(null)
   const [erroDescarte, setErroDescarte] = useState('')
-
   const [detalhando, setDetalhando] = useState(null)
-  const [rejeitando, setRejeitando] = useState(null)
-  const [processandoId, setProcessandoId] = useState(null)
-  const [erroAcao, setErroAcao] = useState('')
 
-  const pendentes = propostas.filter((p) => p.status_efetivo === 'aguardando_aprovacao_interna')
+  const correcoes = propostas.filter((p) => p.status_efetivo === 'correcao_solicitada')
 
-  async function handleDecisao(proposta, decisao, motivo) {
-    setErroAcao('')
-    setProcessandoId(proposta.id)
-    try {
-      await decidirAprovacaoInterna({ proposta_id: proposta.id, decisao, motivo })
-      setRejeitando(null)
-      setDetalhando(null)
-      await recarregar()
-    } catch (err) {
-      setErroAcao(err.message)
-    } finally {
-      setProcessandoId(null)
-    }
+  function abrirNova() {
+    setEditando(null)
+    setForm(vazio)
+    setErroForm('')
+    setMostrarForm(true)
+  }
+
+  function abrirEdicao(p) {
+    setEditando(p)
+    setForm({
+      nome_cliente: p.nome_cliente ?? '',
+      email: p.email,
+      tel: p.tel ?? '',
+      codigo_imovel: String(p.codigo_imovel),
+      valor: p.valor != null ? String(p.valor) : '',
+      valor_oferta: p.valor_oferta != null ? String(p.valor_oferta) : '',
+      observacoes: p.observacoes ?? '',
+      imovel_titulo: p.imovel_titulo ?? '',
+      imovel_endereco: p.imovel_endereco ?? '',
+    })
+    setErroForm('')
+    setDetalhando(null)
+    setMostrarForm(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function fecharForm() {
+    setMostrarForm(false)
+    setEditando(null)
+    setForm(vazio)
   }
 
   async function handleDescartar(motivo) {
@@ -65,17 +90,22 @@ export default function Propostas() {
     e.preventDefault()
     setErroForm('')
     setSalvando(true)
+    const termos = {
+      nome_cliente: form.nome_cliente,
+      tel: form.tel,
+      valor: Number(form.valor),
+      valor_oferta: Number(form.valor_oferta),
+      observacoes: form.observacoes.trim() || undefined,
+      imovel_titulo: form.imovel_titulo || undefined,
+      imovel_endereco: form.imovel_endereco || undefined,
+    }
     try {
-      await criarProposta({
-        nome_cliente: form.nome_cliente,
-        email: form.email,
-        codigo_imovel: Number(form.codigo_imovel),
-        valor: Number(form.valor),
-        imovel_titulo: form.imovel_titulo || undefined,
-        imovel_endereco: form.imovel_endereco || undefined,
-      })
-      setForm(vazio)
-      setMostrarForm(false)
+      if (editando) {
+        await editarProposta({ proposta_id: editando.id, ...termos })
+      } else {
+        await criarProposta({ ...termos, email: form.email, codigo_imovel: Number(form.codigo_imovel) })
+      }
+      fecharForm()
       await recarregar()
     } catch (err) {
       setErroForm(err.message)
@@ -90,54 +120,29 @@ export default function Propostas() {
       <header className="page-header">
         <div>
           <div className="page-title">Propostas de locação</div>
-          <div className="page-sub">Crie novas propostas de locação e acompanhe a aprovação do proprietário.</div>
+          <div className="page-sub">
+            Registre a proposta já negociada entre as partes. O locatário recebe por e-mail, valida e entra na esteira de documentos.
+          </div>
         </div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMostrarForm((v) => !v)}>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={mostrarForm ? fecharForm : abrirNova}>
           {mostrarForm ? 'Cancelar' : '+ Nova proposta'}
         </button>
       </header>
 
-      {pendentes.length > 0 && (
+      {correcoes.length > 0 && !mostrarForm && (
         <div className="card card-body" style={{ marginBottom: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          <div className="page-eyebrow">Aguardando revisão interna ({pendentes.length})</div>
-          {erroAcao && !rejeitando && !detalhando && <div className="login-error">{erroAcao}</div>}
+          <div className="page-eyebrow">Correções pedidas pelo locatário ({correcoes.length})</div>
           <div className="avisos-list">
-            {pendentes.map((p) => (
+            {correcoes.map((p) => (
               <div className="avisos-item" key={p.id}>
                 <div className="avisos-item-body">
-                  <button type="button" className="btn-link" style={{ font: 'inherit', fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)' }} onClick={() => setDetalhando(p)}>
-                    {p.nome_cliente || p.email}
-                  </button>
-                  <div className="avisos-item-sub">
-                    {p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}
-                    {p.valor_oferta != null ? ` · oferta: ${valorBR(p.valor_oferta)}` : ''}
-                  </div>
+                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)' }}>{p.nome_cliente || p.email}</div>
+                  <div className="avisos-item-sub">{p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}</div>
+                  {p.motivo_correcao && <div className="esteira-atividade-motivo" style={{ whiteSpace: 'pre-line' }}>“{p.motivo_correcao}”</div>}
                 </div>
-                <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetalhando(p)}>
-                    Ver detalhes
-                  </button>
-                  {podeDecidir && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn btn-primary btn-sm"
-                        disabled={processandoId === p.id}
-                        onClick={() => handleDecisao(p, 'aprovado')}
-                      >
-                        Aprovar
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        disabled={processandoId === p.id}
-                        onClick={() => setRejeitando(p)}
-                      >
-                        Pedir correção
-                      </button>
-                    </>
-                  )}
-                </div>
+                <button type="button" className="btn btn-primary btn-sm" onClick={() => abrirEdicao(p)}>
+                  Corrigir e reenviar
+                </button>
               </div>
             ))}
           </div>
@@ -146,35 +151,66 @@ export default function Propostas() {
 
       {mostrarForm && (
         <form onSubmit={handleSubmit} className="card card-body" style={{ marginBottom: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <div className="page-eyebrow">
+            {editando ? `Corrigir proposta — ${editando.nome_cliente || editando.email}` : 'Nova proposta (termos já negociados)'}
+          </div>
+          {editando?.motivo_correcao && (
+            <div className="login-error" style={{ whiteSpace: 'pre-line' }}>
+              <strong>O locatário pediu:</strong> {editando.motivo_correcao}
+            </div>
+          )}
           {erroForm && <div className="login-error">{erroForm}</div>}
           <div className="field">
             <label htmlFor="pp-nome">Nome do locatário</label>
             <input id="pp-nome" required value={form.nome_cliente} onChange={(e) => setForm({ ...form, nome_cliente: e.target.value })} />
           </div>
-          <div className="field">
-            <label htmlFor="pp-email">E-mail do locatário</label>
-            <input id="pp-email" type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </div>
-          <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-            <div className="field" style={{ flex: 1 }}>
-              <label htmlFor="pp-imovel">Código do imóvel</label>
-              <input id="pp-imovel" type="number" required value={form.codigo_imovel} onChange={(e) => setForm({ ...form, codigo_imovel: e.target.value })} />
+          <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            <div className="field" style={{ flex: '1 1 220px' }}>
+              <label htmlFor="pp-email">E-mail do locatário</label>
+              <input id="pp-email" type="email" required disabled={!!editando} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
-            <div className="field" style={{ flex: 1 }}>
-              <label htmlFor="pp-valor">Valor (R$)</label>
+            <div className="field" style={{ flex: '1 1 180px' }}>
+              <label htmlFor="pp-tel">Telefone do locatário</label>
+              <input id="pp-tel" required value={form.tel} onChange={(e) => setForm({ ...form, tel: e.target.value })} placeholder="(19) 99999-9999" />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            <div className="field" style={{ flex: '1 1 140px' }}>
+              <label htmlFor="pp-imovel">Código do imóvel</label>
+              <input id="pp-imovel" type="number" required disabled={!!editando} value={form.codigo_imovel} onChange={(e) => setForm({ ...form, codigo_imovel: e.target.value })} />
+            </div>
+            <div className="field" style={{ flex: '1 1 160px' }}>
+              <label htmlFor="pp-valor">Valor do anúncio (R$)</label>
               <CurrencyInput id="pp-valor" required value={form.valor} onChange={(valor) => setForm({ ...form, valor })} />
             </div>
+            <div className="field" style={{ flex: '1 1 160px' }}>
+              <label htmlFor="pp-oferta">Valor negociado (R$)</label>
+              <CurrencyInput id="pp-oferta" required value={form.valor_oferta} onChange={(valor_oferta) => setForm({ ...form, valor_oferta })} />
+            </div>
           </div>
           <div className="field">
-            <label htmlFor="pp-titulo">Título do imóvel (opcional)</label>
-            <input id="pp-titulo" value={form.imovel_titulo} onChange={(e) => setForm({ ...form, imovel_titulo: e.target.value })} placeholder="Apto 2 quartos, Jardim das Palmeiras" />
+            <label htmlFor="pp-obs">Observações da proposta</label>
+            <textarea
+              id="pp-obs"
+              rows={4}
+              value={form.observacoes}
+              onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+              placeholder="Ex.: contrato de 30 meses, condomínio incluso, garantia por seguro-fiança, entrada no dia 10/11, pintura por conta do locador."
+            />
+            <span className="field-hint">Os termos que as partes combinaram. O locatário vê exatamente este texto para validar.</span>
           </div>
-          <div className="field">
-            <label htmlFor="pp-endereco">Endereço (opcional)</label>
-            <input id="pp-endereco" value={form.imovel_endereco} onChange={(e) => setForm({ ...form, imovel_endereco: e.target.value })} />
+          <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            <div className="field" style={{ flex: '1 1 220px' }}>
+              <label htmlFor="pp-titulo">Título do imóvel (opcional)</label>
+              <input id="pp-titulo" value={form.imovel_titulo} onChange={(e) => setForm({ ...form, imovel_titulo: e.target.value })} placeholder="Apto 2 quartos, Jardim das Palmeiras" />
+            </div>
+            <div className="field" style={{ flex: '1 1 220px' }}>
+              <label htmlFor="pp-endereco">Endereço (opcional)</label>
+              <input id="pp-endereco" value={form.imovel_endereco} onChange={(e) => setForm({ ...form, imovel_endereco: e.target.value })} />
+            </div>
           </div>
           <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
-            {salvando ? 'Criando…' : 'Criar proposta'}
+            {salvando ? 'Enviando…' : editando ? 'Salvar e reenviar ao locatário' : 'Criar e enviar ao locatário'}
           </button>
         </form>
       )}
@@ -185,7 +221,7 @@ export default function Propostas() {
       {!carregando && !erro && propostas.length === 0 && (
         <div className="empty">
           <div className="empty-title">Nenhuma proposta ativa</div>
-          <div className="empty-sub">Propostas criadas aparecem aqui até serem sincronizadas.</div>
+          <div className="empty-sub">Propostas criadas aparecem aqui até o processo ser concluído.</div>
         </div>
       )}
 
@@ -196,7 +232,7 @@ export default function Propostas() {
               <tr>
                 <th>Locatário</th>
                 <th>Imóvel</th>
-                <th>Valor</th>
+                <th>Valor negociado</th>
                 <th>Status</th>
                 <th>Prazo</th>
                 <th></th>
@@ -209,7 +245,7 @@ export default function Propostas() {
                   <tr key={p.id}>
                     <td>{p.nome_cliente || p.email}</td>
                     <td>{p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}</td>
-                    <td>{valorBR(p.valor)}</td>
+                    <td>{valorBR(p.valor_oferta ?? p.valor)}</td>
                     <td><StatusBadge status={p.status_efetivo} /></td>
                     <td>{prazo ? <span className={`esteira-prazo ${prazo.urgente ? 'is-urgente' : 'is-ok'}`}>{prazo.texto}</span> : '—'}</td>
                     <td>
@@ -217,17 +253,12 @@ export default function Propostas() {
                         <button type="button" className="btn btn-ghost btn-sm" onClick={() => setDetalhando(p)}>
                           Visualizar
                         </button>
-                        {podeDecidir && p.status_efetivo === 'aguardando_aprovacao_interna' && (
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-sm"
-                            disabled={processandoId === p.id}
-                            onClick={() => handleDecisao(p, 'aprovado')}
-                          >
-                            {processandoId === p.id ? 'Aprovando…' : 'Aprovar'}
+                        {EDITAVEIS.includes(p.status_efetivo) && (
+                          <button type="button" className={`btn btn-sm ${p.status_efetivo === 'correcao_solicitada' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => abrirEdicao(p)}>
+                            {p.status_efetivo === 'correcao_solicitada' ? 'Corrigir' : 'Editar'}
                           </button>
                         )}
-                        {podeDecidir && !['rejeitada', 'expirada'].includes(p.status_efetivo) && (
+                        {podeDescartar && !['rejeitada', 'expirada'].includes(p.status_efetivo) && (
                           <button
                             type="button"
                             className="btn btn-ghost btn-sm"
@@ -250,23 +281,8 @@ export default function Propostas() {
       {detalhando && (
         <PropostaDetalheModal
           proposta={detalhando}
-          processando={processandoId === detalhando.id}
-          erro={erroAcao}
-          onClose={() => { setDetalhando(null); setErroAcao('') }}
-          onAprovar={podeDecidir ? () => handleDecisao(detalhando, 'aprovado') : undefined}
-          onPedirCorrecao={podeDecidir ? () => { setRejeitando(detalhando); setDetalhando(null) } : undefined}
-        />
-      )}
-
-      {rejeitando && (
-        <ReasonModal
-          title="Pedir correção"
-          description="O locatário vai ver esse motivo pra corrigir e reenviar."
-          confirmLabel="Pedir correção"
-          processando={processandoId === rejeitando.id}
-          erro={erroAcao}
-          onConfirm={(motivo) => handleDecisao(rejeitando, 'rejeitado', motivo)}
-          onCancel={() => { setRejeitando(null); setErroAcao('') }}
+          onClose={() => setDetalhando(null)}
+          onEditar={EDITAVEIS.includes(detalhando.status_efetivo) ? () => abrirEdicao(detalhando) : undefined}
         />
       )}
 

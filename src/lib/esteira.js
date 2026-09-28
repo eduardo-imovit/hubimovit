@@ -9,9 +9,10 @@ function chamarEsteira(evento, dados) {
 }
 
 export const criarProposta = (dados) => chamarEsteira('nova_proposta', dados)
-export const confirmarDadosLocatario = (dados) => chamarEsteira('confirmar_dados_locatario', dados)
+export const editarProposta = (dados) => chamarEsteira('editar_proposta', dados)
+export const validarProposta = (proposta_id) => chamarEsteira('validar_proposta', { proposta_id })
+export const pedirCorrecao = (proposta_id, motivo) => chamarEsteira('pedir_correcao', { proposta_id, motivo })
 export const completarCadastro = (dados) => chamarEsteira('completar_cadastro', dados)
-export const decidirAprovacaoInterna = (dados) => chamarEsteira('decisao_interna', dados)
 export const descartarProposta = (dados) => chamarEsteira('descartar_proposta', dados)
 export const registrarDocumentosEnviados = (proposta_id, documentos) =>
   chamarEsteira('docs_enviados', { proposta_id, documentos })

@@ -57,37 +57,22 @@ Corretor: em Propostas/Esteiras/Processos a RLS só devolve as propostas que ele
 ### Menu Propostas (pedido do Eduardo, 28/09)
 Locação e venda são processos separados. Navbar **Propostas ▾** → Locação ▸ / Venda ▸; o clique em "Propostas" abre `/propostas`, com um cartão por área. Dentro de cada área, o topo da página tem o caminho "Propostas › Locação" e abas: Locação = Propostas (`/admin/propostas`) · Esteira (`/admin/esteiras`) · Processos (`/admin/processos`); Venda = Propostas (`/admin/vendas`, só as que aguardam assinatura, e o botão de criar) · Processos (`/admin/vendas/processos`, histórico completo com o PDF). As URLs antigas foram mantidas porque os e-mails apontam para elas. Definição única em `src/lib/propostasNav.js`.
 
-### Esteira de locação (corretor, ADM, locatário)
+### Esteira de locação v4 (gestor, locatário, ADM) — PRD §5.6, 28/09
 Status em `propostas_locacao.status`:
 ```
-nova_proposta (corretor/adm)
-  └─> aguardando_locatario ──(locatário confirma dados + oferta)──> aguardando_aprovacao_interna
-        ▲                                                             │ decisao_interna (adm/gestao)
-        └──────────────── reprovado / pedir correção ─────────────────┤
-                                                                      └─ aprovado ─> criada
-criada ──(locatário completa cadastro: PF/PJ, cônjuge, renda)──> aguardando_docs
-aguardando_docs ──(envia todos os obrigatórios)──> docs_em_analise
+nova_proposta (gestor registra os termos: valor negociado + observações) ─> aguardando_locatario
+aguardando_locatario ──(locatário) "Validar proposta"──> aguardando_docs  ── e-mail "esteira aberta" à equipe; prazo +30 dias
+                     └─(locatário) "Algo está errado" + motivo──> correcao_solicitada ── e-mail a quem registrou
+correcao_solicitada ──(gestor) "Corrigir e reenviar"──> aguardando_locatario ── e-mail "proposta corrigida"; prazo +7 dias
+aguardando_locatario ──(gestor) "Editar e reenviar"──> aguardando_locatario (mesmo efeito)
+aguardando_docs ──(locatário completa cadastro)──> aguardando_docs ──(envia todos)──> docs_em_analise
 docs_em_analise ──decisao_adm por documento──┬─ todos aprovados ─> docs_aprovados
-                                             └─ algum reprovado ─> aguardando_docs
-                                                (ADM usa "Solicitar ajustes" → 1 e-mail com a lista)
+                                             └─ algum reprovado ─> aguardando_docs ("Solicitar ajustes" → 1 e-mail)
 docs_aprovados ──Finalizar (baixa .zip, limpa Storage) + sincronizar_imoview──> sincronizada
-Em qualquer etapa aberta: descartar ─> rejeitada · prazo do link vencido ─> expirada
+Em qualquer etapa aberta: descartar ─> rejeitada · validação vencida (7 dias) ─> expirada · correção pedida não expira
 ```
-Portal do locatário: 5 etapas com cadeado (Proposta → Aprovação → Cadastro → Documentos → Conclusão). A tela se atualiza sozinha a cada 20 s com a aba visível e avisa "Nova etapa liberada".
-
-### Esteira de locação v4 — proposta (PRD §5.6, RF22), aguardando aprovação
-Substitui o trecho inicial do fluxo acima (até `criada`); o resto não muda.
-```
-nova_proposta (corretor preenche tudo: locatário, imóvel, valor negociado, detalhes)
-  └─> aguardando_locatario ──e-mail──> locatário abre o portal (proposta só leitura)
-        ├─ "Validar proposta" ──> criada  ── e-mail ao ADM "esteira aberta"; portal libera Cadastro
-        └─ "Algo está errado" + motivo ──> correcao_solicitada ── e-mail ao corretor
-                correcao_solicitada ──(corretor corrige e reenvia)──> aguardando_locatario
-criada ──(locatário completa cadastro)──> aguardando_docs ──> … (igual ao atual) … ──> sincronizada
-```
-Portal: 4 etapas (Validação → Cadastro → Documentos → Conclusão); some a etapa "Aprovação".
-Telas afetadas: `/admin/propostas` (form completo + "Corrigir e reenviar" + selo "Correção pedida"), `PortalStatus` (etapa 1 vira leitura + 2 botões), `/admin/esteiras` (sem a fila de aprovação interna).
-E-mails: `nova_proposta` → locatário ("proposta pronta para validar"); `correcao_solicitada` → corretor (`criado_por`); validação → ADM (lista a confirmar).
+Portal do locatário: 4 etapas com cadeado (Validação → Cadastro → Documentos → Conclusão). Em `correcao_solicitada` mostra o motivo que ele mandou e avisa que o corretor vai reenviar. A tela se atualiza sozinha a cada 20 s.
+Propostas de locação (gestor): formulário completo; fila "Correções pedidas pelo locatário" no topo; "Editar"/"Corrigir" na linha e no detalhe enquanto não validou. Home: pendência "correção pedida" para Admin e para o corretor dono.
 
 ### Proposta de venda (corretor, ADM, proponente) — RF21, PRD §5.5
 Status em `propostas_venda.status`:
@@ -118,14 +103,16 @@ Configurações → aba → criar/editar/desativar item → aparece na Home e na
 
 ⚠ Os estados vazio/erro de cada tela não foram auditados. Vale uma passada tela a tela antes do próximo sprint de UI.
 
-## 5. Notificações e e-mails (Brevo, pela `esteira-locacao`)
+## 5. Notificações e e-mails (Brevo, pela `esteira-locacao`, v4)
 | Gatilho | Para quem | Conteúdo |
 |---|---|---|
-| `nova_proposta` | Locatário | Link do portal para confirmar dados |
-| `confirmar_dados_locatario` | `gabriel@`, `daniele@`, **`administrativo@`, `administrativo3@`** (lista `DESTINATARIOS_NOVA_ESTEIRA`, 24/09) | "Nova proposta aguardando revisão interna", com caixa **Detalhes da proposta** (valor ofertado × anúncio e o texto do locatário) |
-| `decisao_interna` | Locatário | Aprovada (segue para o cadastro) ou pedido de correção |
-| `completar_cadastro` / `docs_enviados` | ADM/Gestão | Documentos para analisar |
+| `nova_proposta` | Locatário | "Sua proposta de locação está pronta para validar", com os termos (valor negociado, observações) |
+| `editar_proposta` | Locatário | "Sua proposta foi corrigida: valide de novo", com os termos |
+| `pedir_correcao` | Quem registrou (`criado_por`); sem dono: `gabriel@`, `daniele@` | "Locatário pediu correção", com o motivo |
+| `validar_proposta` | `gabriel@`, `daniele@`, `administrativo@`, `administrativo3@` | "Nova esteira aberta", com os termos |
+| `docs_enviados` (todos enviados) | `gabriel@`, `daniele@` | Documentos para revisar |
 | `solicitar_ajustes` | Locatário | E-mail único com os documentos reprovados e os motivos |
+| `decisao_adm` (todos aprovados) | Locatário + `gabriel@`, `daniele@` | Documentação aprovada / pronta para o Imoview |
 | `sincronizar_imoview` | Locatário | Processo concluído |
 
-⚠ A lista acima é um resumo dos 9 templates de `supabase/functions/esteira-locacao/emails.ts`; confira destinatários exatos no código antes de mudar algo.
+Templates em `supabase/functions/esteira-locacao/emails.ts`.

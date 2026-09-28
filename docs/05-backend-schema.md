@@ -61,7 +61,7 @@ Não há FK entre `perfis` e `colaboradores_raw` (a ligação é por e-mail, qua
 |---|---|
 | Identidade | id uuid PK · codigo_imovel int! · email! (formato validado) · **unique (email, codigo_imovel)** · criado_por→perfis (set null) |
 | Link | token_link! unique · link_expira_em! |
-| Status | status! (`aguardando_locatario, aguardando_aprovacao_interna, criada, aguardando_docs, docs_em_analise, docs_aprovados, sincronizada, rejeitada, expirada`) |
+| Status | status! (`aguardando_locatario, correcao_solicitada, criada, aguardando_docs, docs_em_analise, docs_aprovados, sincronizada, rejeitada, expirada`) · motivo_correcao |
 | Imóvel | imovel_titulo, imovel_endereco, valor, valor_oferta |
 | Locatário | nome_cliente, tel, tipo_pessoa (`Física, Jurídica`), tem_conjuge, observacoes, profissao, cargo, tipo_renda, renda_pessoal, renda_familiar, nome_empresa |
 | Cônjuge | conjuge_nome, conjuge_email, conjuge_profissao, conjuge_renda |
@@ -78,11 +78,12 @@ Triggers: `trg_propostas_locacao_expira` (bloqueia avanço quando expirada), `tr
 
 **View `propostas_ativas`** (`security_invoker`): propostas + `status_efetivo` (considera expiração).
 
-**Mudanças previstas na esteira v4 (RF22, PRD §5.6) — aguardando aprovação, nada aplicado:**
-- `propostas_locacao.status`: entra `correcao_solicitada`; `aguardando_aprovacao_interna` deixa de ser usado (fica no `check` até migrar as linhas existentes).
-- Colunas: `motivo_correcao text` (último motivo do locatário). `valor_oferta` e `observacoes` passam a ser preenchidos pelo corretor na criação.
-- RPCs: `criar_proposta_locacao` recebe tel, valor_oferta e observacoes; nova `validar_proposta_locatario` (→ `criada`); nova `pedir_correcao_proposta` (→ `correcao_solicitada`, grava `status_historico` com motivo); nova `reenviar_proposta` (corretor dono ou adm/gestao → `aguardando_locatario`, renova `link_expira_em`). `confirmar_dados_locatario` e `decidir_aprovacao_interna` saem do fluxo.
-- Seguir o padrão da venda: o RPC recebe a identidade do chamador e só a `service_role` executa.
+**Esteira v4 (RF22, PRD §5.6) — migration `20260928140000_esteira_v4_validacao_locatario`:**
+- `status`: entra `correcao_solicitada`; sai `aguardando_aprovacao_interna` (check atualizado; o histórico antigo continua com o valor).
+- Coluna `motivo_correcao text` (último motivo do locatário). `tel`, `valor_oferta` (valor negociado) e `observacoes` passam a ser preenchidos pelo gestor na criação.
+- RPCs (só `service_role`; a Edge Function passa a identidade): `criar_proposta_locacao(p_criado_por, p_nome_cliente, p_email, p_tel, p_codigo_imovel, p_valor, p_valor_oferta, p_observacoes, p_imovel_titulo, p_imovel_endereco, p_ator)` grava `criado_por` e recusa sobrescrever proposta em andamento/concluída; `editar_proposta_locacao` (dono corretor ou adm/gestao, só antes da validação, renova +7 dias); `validar_proposta_locatario` (→ `aguardando_docs`, prazo +30 dias); `pedir_correcao_proposta` (→ `correcao_solicitada`). Removidos: `confirmar_dados_locatario`, `decidir_aprovacao_interna`.
+- `bloquear_avanco_expirado` passa a olhar o prazo novo (`new.link_expira_em`), para renovar destravar, e não expira `correcao_solicitada`.
+- View `propostas_ativas`: + `motivo_correcao`, `criado_por`; `status_efetivo` não expira `correcao_solicitada`.
 
 ### 2.3b Proposta de venda (RF21) — migration `20260925130000_propostas_venda`, aplicada em 28/09
 **`propostas_venda`**: id uuid PK · criado_por→perfis (set null) · codigo_imovel int! · imovel_titulo, imovel_endereco · nome_cliente!, email!, telefone · valor_referencia, valor_proposta, descricao_proposta · assinatura_path, documento_path (bucket `propostas-venda`) · status! (`aguardando_cliente, confirmada, descartada, expirada`) · link_expira_em! (+7 dias) · motivo · timestamp_criacao, atualizado_em (trigger `tocar_venda_updated_at`).
@@ -146,8 +147,9 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | `proteger_campos_perfil` | trigger | impede mudar o próprio role, e-mail e suspensão | update em perfis |
 | `decidir_solicitacao_acesso` | RPC definer | aprova/recusa pedido (só gestao) | Configurações |
 | `upsert_proposta_locacao`, `criar_proposta_locacao` | RPC definer | cria ou reinicia a proposta | Edge Function |
-| `confirmar_dados_locatario`, `completar_cadastro_locatario` | RPC definer | etapas do locatário (revogadas para anon) | Edge Function |
-| `decidir_aprovacao_interna`, `decidir_documento`, `descartar_proposta_locacao`, `marcar_sincronizado_imoview`, `registrar_documento_enviado(_arquivo)` | RPC definer | decisões da esteira | Edge Function |
+| `validar_proposta_locatario`, `pedir_correcao_proposta`, `completar_cadastro_locatario` | RPC definer | etapas do locatário (só service_role) | Edge Function |
+| `editar_proposta_locacao` | RPC definer | gestor corrige e reenvia antes da validação | Edge Function |
+| `decidir_documento`, `descartar_proposta_locacao`, `marcar_sincronizado_imoview`, `registrar_documento_enviado(_arquivo)` | RPC definer | decisões da esteira | Edge Function |
 | `aceitar_proprietario` | RPC definer | ⚠ legado (proprietário saiu do fluxo) | — |
 | `fn_atualiza_status` | função | muda status + histórico | RPCs |
 | `recalcular_status_proposta`, `bloquear_avanco_expirado`, `log_status_historico`, `tocar_updated_at` | triggers da esteira | | |
@@ -158,7 +160,7 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | `vw_atendimentos_base` | view | normaliza atendimentos (canal, fase, flags ruído/interno/negócio, dias) | base das outras |
 | `vw_kpis_mensais`, `vw_funil_acumulado`, `vw_aging_ativos`, `vw_cobertura_atividades`, `vw_corretores`, `vw_descartes`, `vw_origem_performance`, `vw_tempo_resposta` | views | agregados dos dashboards | dashboards |
 
-Edge Functions: `esteira-locacao` (eventos `nova_proposta, confirmar_dados_locatario, completar_cadastro, descartar_proposta, decisao_interna, docs_enviados, decisao_adm, solicitar_ajustes, sincronizar_imoview`), `gestao-colaboradores` (`suspender, reativar, excluir`), `spotify-auth`, `proposta-venda` (`nova_proposta, confirmar_proposta, descartar_proposta`; v1 em 28/09).
+Edge Functions: `esteira-locacao` (eventos `nova_proposta, editar_proposta, validar_proposta, pedir_correcao, completar_cadastro, descartar_proposta, docs_enviados, decisao_adm, solicitar_ajustes, sincronizar_imoview`), `gestao-colaboradores` (`suspender, reativar, excluir`), `spotify-auth`, `proposta-venda` (`nova_proposta, confirmar_proposta, descartar_proposta`; v1 em 28/09).
 
 ## 5. Migrations
 - Repo: `supabase/migrations/` (28 arquivos, de `20260821140000` a `20260923233000`).

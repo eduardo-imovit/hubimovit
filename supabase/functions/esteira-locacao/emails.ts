@@ -106,92 +106,76 @@ interface PropostaEmail {
 const moeda = (v: number | string | null | undefined) =>
   v == null || v === '' ? null : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
-/** Texto livre do locatário em HTML seguro, mantendo as quebras de linha. */
+/** Texto livre em HTML seguro, mantendo as quebras de linha. */
 const textoLivre = (t: string) => escapeHtml(t).replace(/\r?\n/g, '<br/>')
 
 const doImovel = (p: PropostaEmail, prefixo: string) =>
   p.imovel_titulo ? ` ${prefixo} <strong style="color:#000000">${escapeHtml(p.imovel_titulo)}</strong>` : ''
 
-/** 1. Corretor criou a proposta → locatário. */
-export function emailPropostaCriada(p: PropostaEmail, linkPortal: string) {
+/** Caixa com os termos registrados pelo gestor (só o que foi preenchido). */
+function detalhesDaProposta(p: PropostaEmail) {
+  const itens: string[] = []
+  const anuncio = moeda(p.valor)
+  const negociado = moeda(p.valor_oferta)
+  if (negociado) itens.push(`Valor negociado: <strong>${negociado}</strong>${anuncio && anuncio !== negociado ? ` (anúncio: ${anuncio})` : ''}`)
+  else if (anuncio) itens.push(`Valor do anúncio: <strong>${anuncio}</strong>`)
+  if (p.observacoes?.trim()) itens.push(`Observações: ${textoLivre(p.observacoes.trim())}`)
+  return itens.length ? { rotulo: 'Termos da proposta', itensHtml: itens } : undefined
+}
+
+/** 1. Gestor registrou (ou corrigiu) a proposta negociada → locatário valida. */
+export function emailPropostaParaValidar(p: PropostaEmail, linkPortal: string, atualizada = false) {
   return {
-    assunto: 'Sua proposta de locação foi criada',
+    assunto: atualizada ? 'Sua proposta de locação foi corrigida: valide de novo' : 'Sua proposta de locação está pronta para validar',
     html: emailImovit({
       badge: 'Proposta de locação',
-      titulo: 'Sua proposta foi criada',
+      titulo: atualizada ? 'Proposta corrigida' : 'Valide sua proposta',
       saudacaoNome: p.nome_cliente,
       paragrafosHtml: [
-        `Uma proposta de locação foi criada em seu nome${doImovel(p, 'para')}.`,
-        'Para continuar, acesse o portal com este mesmo e-mail e complete seus dados.',
+        atualizada
+          ? `Corrigimos a proposta de locação${doImovel(p, 'para')} conforme combinado.`
+          : `Registramos a proposta de locação${doImovel(p, 'para')} com os termos que você negociou.`,
+        'Acesse o portal com este mesmo e-mail, confira e valide. Se algo estiver diferente do combinado, é só pedir correção por lá.',
       ],
-      cta: { texto: 'Acessar minha proposta', url: linkPortal },
+      destaque: detalhesDaProposta(p),
+      cta: { texto: 'Validar minha proposta', url: linkPortal },
       assinatura: ASSINATURA_LOCATARIO,
     }),
   }
 }
 
-/** Caixa com o valor e os detalhes que o locatário escreveu (só o que foi preenchido). */
-function detalhesDaProposta(p: PropostaEmail) {
-  const itens: string[] = []
-  const anuncio = moeda(p.valor)
-  const oferta = moeda(p.valor_oferta)
-  if (oferta) itens.push(`Valor ofertado: <strong>${oferta}</strong>${anuncio && anuncio !== oferta ? ` (anúncio: ${anuncio})` : ''}`)
-  else if (anuncio) itens.push(`Valor do anúncio: <strong>${anuncio}</strong>`)
-  if (p.observacoes?.trim()) itens.push(`Detalhes: ${textoLivre(p.observacoes.trim())}`)
-  return itens.length ? { rotulo: 'Detalhes da proposta', itensHtml: itens } : undefined
-}
-
-/** 2. Locatário completou os dados → equipe interna. */
-export function emailRevisaoInterna(p: PropostaEmail, linkPropostas: string) {
+/** 2a. Locatário pediu correção → quem registrou a proposta. */
+export function emailCorrecaoPedida(p: PropostaEmail, motivo: string, linkPropostas: string) {
   return {
-    assunto: 'Nova proposta aguardando revisão interna',
+    assunto: 'Locatário pediu correção na proposta',
     html: emailImovit({
-      badge: 'Revisão interna',
-      titulo: 'Proposta aguardando revisão',
+      badge: 'Correção pedida',
+      titulo: 'Corrija e reenvie a proposta',
       paragrafosHtml: [
-        `<strong style="color:#000000">${escapeHtml(p.nome_cliente)}</strong> completou os dados da proposta${doImovel(p, 'para')}.`,
-        'Revise antes de liberar a etapa de documentos.',
+        `<strong style="color:#000000">${escapeHtml(p.nome_cliente)}</strong> pediu uma correção na proposta${doImovel(p, 'para')} antes de validar.`,
+        'Ajuste em Propostas de locação ("Corrigir e reenviar"); ele recebe um e-mail para validar de novo.',
       ],
-      destaque: detalhesDaProposta(p),
-      cta: { texto: 'Revisar proposta', url: linkPropostas },
+      destaque: { rotulo: 'O que o locatário pediu', itensHtml: [textoLivre(motivo)] },
+      cta: { texto: 'Corrigir proposta', url: linkPropostas },
       assinatura: ASSINATURA_INTERNA,
     }),
   }
 }
 
-/** 3a. Proposta aprovada na revisão interna → locatário. */
-export function emailPropostaAprovada(p: PropostaEmail, linkPortal: string) {
+/** 2b. Locatário validou → esteira aberta, avisa a equipe. */
+export function emailEsteiraAberta(p: PropostaEmail, linkEsteiras: string) {
   return {
-    assunto: 'Proposta aprovada: envie seus documentos',
+    assunto: 'Nova esteira aberta: proposta validada pelo locatário',
     html: emailImovit({
-      badge: 'Proposta aprovada',
-      titulo: 'Sua proposta foi aprovada',
-      saudacaoNome: p.nome_cliente,
+      badge: 'Esteira aberta',
+      titulo: 'Proposta validada',
       paragrafosHtml: [
-        `Sua proposta${doImovel(p, 'para')} foi aprovada pela nossa equipe.`,
-        'O próximo passo é enviar seus documentos pelo portal. Você pode enviar aos poucos; a lista mostra o que falta.',
+        `<strong style="color:#000000">${escapeHtml(p.nome_cliente)}</strong> validou a proposta${doImovel(p, 'para')}.`,
+        'A esteira de documentos está aberta: o locatário completa o cadastro e envia os documentos.',
       ],
-      cta: { texto: 'Enviar documentos', url: linkPortal },
-      assinatura: ASSINATURA_LOCATARIO,
-    }),
-  }
-}
-
-/** 3b. Proposta devolvida pra ajuste na revisão interna → locatário. */
-export function emailPropostaAjuste(p: PropostaEmail, motivo: string | null | undefined, linkPortal: string) {
-  return {
-    assunto: 'Revise os dados da sua proposta',
-    html: emailImovit({
-      badge: 'Ajuste necessário',
-      titulo: 'Revise sua proposta',
-      saudacaoNome: p.nome_cliente,
-      paragrafosHtml: [
-        `Nossa equipe pediu um ajuste nos dados da sua proposta${doImovel(p, 'para')}.`,
-        'Acesse o portal para corrigir e reenviar.',
-      ],
-      destaque: motivo ? { rotulo: 'O que ajustar', itensHtml: [escapeHtml(motivo)] } : undefined,
-      cta: { texto: 'Corrigir meus dados', url: linkPortal },
-      assinatura: ASSINATURA_LOCATARIO,
+      destaque: detalhesDaProposta(p),
+      cta: { texto: 'Acompanhar na esteira', url: linkEsteiras },
+      assinatura: ASSINATURA_INTERNA,
     }),
   }
 }

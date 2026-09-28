@@ -106,14 +106,14 @@ Código feito pelo OpenCode em 25/09 sem os docs; revisado e corrigido em 28/09 
 - [ ] Roteiro `docs/proposta-venda-teste.md` com um e-mail de teste (conferir também se o magic link volta para `/venda` — Redirect URLs do Supabase) de ponta a ponta
 - **Pronto quando:** uma proposta real vai do corretor à assinatura e o PDF abre em `/admin/vendas`; proponente e corretor não conseguem alterar nada fora do fluxo.
 
-## Fase 10 — Esteira de locação v4 (RF22, PRD §5.6) — aguardando aprovação
-- [ ] Eduardo aprova o PRD §5.6 e responde as perguntas em aberto
-- [ ] 10.1 Banco: migration (status `correcao_solicitada`, `motivo_correcao`, RPCs novos, migrar as propostas em `aguardando_aprovacao_interna`) testada em `BEGIN … ROLLBACK`
-- [ ] 10.2 `esteira-locacao`: `nova_proposta` completa; eventos `validar_proposta`, `pedir_correcao`, `reenviar_proposta`; e-mails novos (locatário, corretor, ADM); tirar `decisao_interna`/`confirmar_dados_locatario`
-- [ ] 10.3 Frontend: form completo em Propostas + "Corrigir e reenviar"; portal com validação só leitura e 4 etapas; Esteiras sem aprovação interna
-- [ ] 10.4 Teste de ponta a ponta com um e-mail de teste (inclui um ciclo de correção)
-- **Ordem de deploy:** migration → função → push, no mesmo dia (portal antigo + função nova quebram a etapa 1).
-- **Pronto quando:** uma proposta vai do corretor à esteira aberta só com a validação do locatário, e a correção volta ao corretor e retorna validada.
+## Fase 10 — Esteira de locação v4 (RF22, PRD §5.6)
+- [x] Eduardo definiu o fluxo (28/09): gestor registra os termos, locatário valida ou pede correção, validar abre a esteira
+- [x] 10.1 Banco: migration `20260928140000_esteira_v4_validacao_locatario`, testada em `BEGIN … ROLLBACK` (criar, duplicada, sem papel, sem valor, RPC pela API, correção, correção vencida, editar sem permissão, reenviar renovando prazo, validar, validar 2×, editar depois de validar, recriar por cima da esteira). O teste pegou um bug de NULL na permissão de editar, corrigido.
+- [x] 10.2 `esteira-locacao`: eventos `editar_proposta`, `validar_proposta`, `pedir_correcao`; saem `confirmar_dados_locatario` e `decisao_interna`; e-mails novos
+- [x] 10.3 Frontend: Propostas (form completo, correções pedidas, editar/reenviar), detalhe, portal (validação + pedir correção, 4 etapas), pendências da Home
+- [ ] 10.4 Deploy no mesmo momento: migration → função → push (portal antigo + função nova quebram a etapa 1)
+- [ ] 10.5 Teste de ponta a ponta com um e-mail de teste, incluindo um ciclo de correção
+- **Pronto quando:** uma proposta vai do gestor à esteira aberta só com a validação do locatário, e a correção volta ao gestor e retorna validada.
 
 ## Adiado conscientemente (rever quando o volume real crescer)
 - Backup: upgrade para o plano Pro do Supabase (~US$ 25/mês) ou dump periódico.

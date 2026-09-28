@@ -31,7 +31,7 @@ async function pendenciasGestao(hoje) {
   return out
 }
 
-/** Pendências do Admin: documentos esperando decisão e propostas esperando aprovação interna. */
+/** Pendências do Admin: documentos esperando decisão e correções pedidas pelo locatário. */
 async function pendenciasAdm() {
   const propostas = await dados(supabase.from('propostas_locacao').select('id, status'))
   const abertas = propostas.filter((p) => !ENCERRADAS.includes(p.status))
@@ -40,8 +40,8 @@ async function pendenciasAdm() {
     const docs = await dados(supabase.from('documentos_enviados').select('id, proposta_id').eq('status', 'enviado').in('proposta_id', abertas.map((p) => p.id)))
     if (docs.length) out.push({ tom: 'atencao', n: docs.length, texto: plural(docs.length, 'documento esperando sua decisão', 'documentos esperando sua decisão'), to: '/admin/esteiras', acao: 'Revisar' })
   }
-  const aprovacao = abertas.filter((p) => p.status === 'aguardando_aprovacao_interna').length
-  if (aprovacao) out.push({ tom: 'atencao', n: aprovacao, texto: plural(aprovacao, 'proposta aguardando aprovação interna', 'propostas aguardando aprovação interna'), to: '/admin/propostas', acao: 'Aprovar' })
+  const correcoes = abertas.filter((p) => p.status === 'correcao_solicitada').length
+  if (correcoes) out.push({ tom: 'atencao', n: correcoes, texto: plural(correcoes, 'proposta com correção pedida pelo locatário', 'propostas com correção pedida pelo locatário'), to: '/admin/propostas', acao: 'Corrigir' })
   return out
 }
 
@@ -50,6 +50,8 @@ async function pendenciasCorretor(email, hoje) {
   const out = []
   const propostas = await dados(supabase.from('propostas_locacao').select('id, status, link_expira_em, updated_at'))
   const abertas = propostas.filter((p) => !ENCERRADAS.includes(p.status))
+  const correcoes = abertas.filter((p) => p.status === 'correcao_solicitada').length
+  if (correcoes) out.push({ tom: 'ruim', n: correcoes, texto: plural(correcoes, 'locatário pediu correção na sua proposta', 'locatários pediram correção nas suas propostas'), to: '/admin/propostas', acao: 'Corrigir' })
   const vencendo = abertas.filter((p) => p.link_expira_em && p.link_expira_em.slice(0, 10) <= somarDias(hoje, 3)).length
   if (vencendo) out.push({ tom: 'ruim', n: vencendo, texto: plural(vencendo, 'proposta com link vencendo em até 3 dias', 'propostas com link vencendo em até 3 dias'), to: '/admin/esteiras', acao: 'Ver' })
   const paradas = abertas.filter((p) => p.updated_at && p.updated_at.slice(0, 10) < somarDias(hoje, -7)).length
