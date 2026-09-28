@@ -99,12 +99,21 @@
 
 ## Fase 9 — Proposta de venda (RF21, PRD §5.5)
 Código feito pelo OpenCode em 25/09 sem os docs; revisado e corrigido em 28/09 (RPCs falhavam sempre chamadas pela função; UPDATE direto liberado para proponente/corretor; histórico do descarte errado). Migration testada em produção com `BEGIN … ROLLBACK` (20 cenários de papel/permissão passando).
-- [ ] Eduardo aprova o PRD §5.5 e responde as perguntas em aberto
+- [x] Eduardo aprova o PRD §5.5 e responde as perguntas em aberto (28/09)
 - [ ] Aplicar a migration `20260925130000_propostas_venda` (conector MCP)
 - [ ] Publicar a Edge Function `proposta-venda` (secrets: as mesmas da `esteira-locacao`)
 - [ ] Commit do frontend + push (só depois da migration e da função, senão o menu "Vendas" aparece quebrado)
 - [ ] Roteiro `docs/proposta-venda-teste.md` com um e-mail de teste de ponta a ponta
 - **Pronto quando:** uma proposta real vai do corretor à assinatura e o PDF abre em `/admin/vendas`; proponente e corretor não conseguem alterar nada fora do fluxo.
+
+## Fase 10 — Esteira de locação v4 (RF22, PRD §5.6) — aguardando aprovação
+- [ ] Eduardo aprova o PRD §5.6 e responde as perguntas em aberto
+- [ ] 10.1 Banco: migration (status `correcao_solicitada`, `motivo_correcao`, RPCs novos, migrar as propostas em `aguardando_aprovacao_interna`) testada em `BEGIN … ROLLBACK`
+- [ ] 10.2 `esteira-locacao`: `nova_proposta` completa; eventos `validar_proposta`, `pedir_correcao`, `reenviar_proposta`; e-mails novos (locatário, corretor, ADM); tirar `decisao_interna`/`confirmar_dados_locatario`
+- [ ] 10.3 Frontend: form completo em Propostas + "Corrigir e reenviar"; portal com validação só leitura e 4 etapas; Esteiras sem aprovação interna
+- [ ] 10.4 Teste de ponta a ponta com um e-mail de teste (inclui um ciclo de correção)
+- **Ordem de deploy:** migration → função → push, no mesmo dia (portal antigo + função nova quebram a etapa 1).
+- **Pronto quando:** uma proposta vai do corretor à esteira aberta só com a validação do locatário, e a correção volta ao corretor e retorna validada.
 
 ## Adiado conscientemente (rever quando o volume real crescer)
 - Backup: upgrade para o plano Pro do Supabase (~US$ 25/mês) ou dump periódico.
@@ -125,3 +134,4 @@ Código feito pelo OpenCode em 25/09 sem os docs; revisado e corrigido em 28/09 
 | 2026-09-24 | Plano criado (retroativo) | Adoção do framework de documentação |
 | 2026-09-24 | Fase 5b (painéis Comercial e Operacional) | Cards atuais com rótulos e fórmulas enganosos; catálogo alinhado com o Eduardo |
 | 2026-09-28 | Fase 9 (proposta de venda) | Pedido da direção em 25/09, feito sem docs; documentado e corrigido antes de aplicar |
+| 2026-09-28 | Fase 10 (esteira v4) | Eduardo: negociação acontece antes, com o corretor; o locatário só valida; sai a aprovação interna |

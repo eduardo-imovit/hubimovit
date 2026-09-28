@@ -71,6 +71,20 @@ Em qualquer etapa aberta: descartar ─> rejeitada · prazo do link vencido ─>
 ```
 Portal do locatário: 5 etapas com cadeado (Proposta → Aprovação → Cadastro → Documentos → Conclusão). A tela se atualiza sozinha a cada 20 s com a aba visível e avisa "Nova etapa liberada".
 
+### Esteira de locação v4 — proposta (PRD §5.6, RF22), aguardando aprovação
+Substitui o trecho inicial do fluxo acima (até `criada`); o resto não muda.
+```
+nova_proposta (corretor preenche tudo: locatário, imóvel, valor negociado, detalhes)
+  └─> aguardando_locatario ──e-mail──> locatário abre o portal (proposta só leitura)
+        ├─ "Validar proposta" ──> criada  ── e-mail ao ADM "esteira aberta"; portal libera Cadastro
+        └─ "Algo está errado" + motivo ──> correcao_solicitada ── e-mail ao corretor
+                correcao_solicitada ──(corretor corrige e reenvia)──> aguardando_locatario
+criada ──(locatário completa cadastro)──> aguardando_docs ──> … (igual ao atual) … ──> sincronizada
+```
+Portal: 4 etapas (Validação → Cadastro → Documentos → Conclusão); some a etapa "Aprovação".
+Telas afetadas: `/admin/propostas` (form completo + "Corrigir e reenviar" + selo "Correção pedida"), `PortalStatus` (etapa 1 vira leitura + 2 botões), `/admin/esteiras` (sem a fila de aprovação interna).
+E-mails: `nova_proposta` → locatário ("proposta pronta para validar"); `correcao_solicitada` → corretor (`criado_por`); validação → ADM (lista a confirmar).
+
 ### Proposta de venda (corretor, ADM, proponente) — RF21, PRD §5.5
 Status em `propostas_venda.status`:
 ```
@@ -81,7 +95,7 @@ aguardando_cliente / confirmada ──descartar (adm/gestao)──> descartada
 aguardando_cliente com link vencido (7 dias) ─> expirada (calculado na leitura)
 ```
 Ordem no portal ao assinar: envia `assinatura.png` → Edge Function confirma → gera o PDF → envia `documento.pdf` → RPC `registrar_documento_venda`. Se o PDF falhar, a proposta continua confirmada, só sem `documento_path`.
-E-mails (Brevo, pela `proposta-venda`): criação → proponente; assinatura → `gabriel@`, `daniele@`.
+E-mails (Brevo, pela `proposta-venda`): criação → proponente; assinatura → `daniel@`, `gabriela@` (gabriela@ não tem login no Hub; é só caixa de e-mail).
 
 ### Gestão: suspender colaborador
 Configurações → Usuários & Acessos → Suspender (confirmação) → o acesso cai na hora; a pessoa vê "acesso suspenso" e só tem o botão Sair. Excluir avisa que não tem volta e sugere Suspender.

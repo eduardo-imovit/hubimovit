@@ -68,7 +68,8 @@ Faltava um lugar único para:
 | RF18 | **Painel de Performance**: história do investimento em mídia até o negócio, com orçamento, campanhas e recomendações (§5.0b) | gestao, marketing | must | em construção (24/09) |
 | RF19 | **Importar a escala de plantão (PDF) do mês**: o sistema lê a tabela (data, dia, manhã, tarde), casa os nomes com os corretores, mostra prévia e grava; a TV mostra o plantão da semana (§5.3) | gestao, marketing (import); todos (TV) | must | feito no localhost (24/09); falta push |
 | RF20 | **Home por nível**: busca, atalhos, pendências com número que levam à tela certa, hoje no escritório, avisos e links (§5.4) | todos com perfil | must | feito (24/09), commitado; falta push |
-| RF21 | **Proposta de venda (compra)**: corretor cria, proponente confirma e assina pelo portal `/venda`, a equipe recebe o PDF assinado; valores e condições ficam no banco para análise (§5.5) | corretor, adm, gestao; proponente | must | código pronto e revisado (28/09); **migration e função não aplicadas**, fora do git; aguardando aprovação do Eduardo |
+| RF21 | **Proposta de venda (compra)**: corretor cria, proponente confirma e assina pelo portal `/venda`, a equipe recebe o PDF assinado; valores e condições ficam no banco para análise (§5.5) | corretor, adm, gestao; proponente | must | aprovado em 28/09; migration e função **ainda não aplicadas** (ver plano, Fase 9) |
+| RF22 | **Esteira de locação v4**: corretor gera a proposta negociada; locatário valida ou pede correção; ao validar abre a esteira e avisa o ADM, sem aprovação interna (§5.6). Substitui partes de RF10–RF12 | corretor; locatário; adm | must | **proposta, aguardando aprovação do Eduardo** (28/09) |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -111,10 +112,26 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 
 ### 5.5 Proposta de venda (pedido da direção, 25/09; documentado retroativamente em 28/09)
 - **Problema:** a proposta de compra hoje é informal (WhatsApp/papel); não fica registro assinado nem dado para análise (valor ofertado × referência, condições).
-- **Fluxo:** corretor (ou Adm/Gestão) cria em `/admin/vendas` com nome e e-mail do proponente, código do imóvel e valor de referência → proponente recebe e-mail "Sua proposta de compra foi criada" → entra em `/venda/entrar` por magic link → preenche telefone, valor da proposta e descrição (condições), assina no quadro → "Assinar proposta" → o navegador gera o PDF → a equipe (`gabriel@`, `daniele@`) recebe "Nova proposta de compra assinada" e abre o PDF em `/admin/vendas`.
+- **Fluxo:** corretor (ou Adm/Gestão) cria em `/admin/vendas` com nome e e-mail do proponente, código do imóvel e valor de referência → proponente recebe e-mail "Sua proposta de compra foi criada" → entra em `/venda/entrar` por magic link → preenche telefone, valor da proposta e descrição (condições), assina no quadro → "Assinar proposta" → o navegador gera o PDF e o proponente **baixa a via dele direto na página** (botão "Baixar proposta assinada (PDF)", disponível sempre que voltar) → a equipe (`daniel@`, `gabriela@`) recebe "Nova proposta de compra assinada" e baixa o mesmo PDF em `/admin/vendas`.
 - **Diferença para a locação:** sem aprovação interna, sem cadastro, sem documentos, sem esteira e sem sincronizar com o Imoview. Paralela: não toca em `propostas_locacao` nem na `esteira-locacao`.
 - **Regras:** link vale 7 dias; uma assinatura por proposta (depois de confirmada, não muda mais); só Adm/Gestão descartam; corretor vê só as dele; proponente vê só as do próprio e-mail.
-- **Perguntas em aberto (Eduardo):** a assinatura desenhada basta, ou o documento precisa de validade jurídica (ex.: assinatura eletrônica com certificado)? Quem mais recebe o e-mail de proposta assinada? A proposta de venda deve ir para o Imoview?
+- **Decidido pelo Eduardo (28/09):** a assinatura desenhada no portal tem validade (sem certificado digital); aviso de proposta assinada vai para `daniel@` e `gabriela@`; **não** vai para o Imoview; o PDF é gerado ao fim da proposta e fica baixável direto na página (portal e `/admin/vendas`).
+
+### 5.6 Esteira de locação v4: o corretor negocia, o locatário só valida (pedido do Eduardo, 28/09) — **proposta, aguardando aprovação**
+- **Problema:** hoje o locatário digita a oferta e os detalhes no portal e a proposta ainda passa por aprovação interna. A negociação real já acontece antes, com o corretor. O sistema duplica esse trabalho e atrasa a abertura da esteira.
+- **Nova dinâmica:**
+  1. **Corretor gera a proposta completa** em `/admin/propostas`: locatário (nome, e-mail, telefone), imóvel, valor do anúncio, **valor negociado** e **detalhes da proposta** (prazo, garantia, entrada, condições). Ao finalizar, o locatário recebe o e-mail de alerta.
+  2. **Locatário valida** no portal: vê a proposta só para leitura e escolhe **"Validar proposta"** ou **"Algo está errado"** (com motivo).
+  3. "Algo está errado" → volta ao **corretor** (e-mail com o motivo), que corrige e reenvia → o locatário valida de novo.
+  4. **Ao validar, a esteira abre na hora:** sem aprovação interna. O ADM é sinalizado (e-mail) e o portal libera o cadastro e os documentos.
+  5. Locatário completa o **próprio cadastro** (PF/PJ, profissão, renda, cônjuge) e envia os documentos, como hoje.
+  6. **ADM valida os documentos e finaliza** o processo (zip + Imoview), como hoje.
+- **Sai:** a aprovação interna (`decisao_interna`, status `aguardando_aprovacao_interna`) e a digitação da oferta/detalhes pelo locatário.
+- **Perguntas em aberto (Eduardo):**
+  - Quem recebe o alerta "esteira aberta"? Hoje a lista é gabriel@, daniele@, administrativo@ e administrativo3@.
+  - A validação do locatário é um clique ("Li e concordo") ou uma assinatura desenhada, como na venda?
+  - O corretor pode editar a proposta depois de enviada e antes da validação? Nesse caso, reenviar o e-mail?
+  - O que fazer com as propostas que estiverem em "aguardando aprovação interna" no dia da troca: aprovar todas, ou a Gestão decide uma a uma antes?
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.

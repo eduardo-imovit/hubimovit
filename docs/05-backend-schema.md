@@ -78,6 +78,12 @@ Triggers: `trg_propostas_locacao_expira` (bloqueia avanço quando expirada), `tr
 
 **View `propostas_ativas`** (`security_invoker`): propostas + `status_efetivo` (considera expiração).
 
+**Mudanças previstas na esteira v4 (RF22, PRD §5.6) — aguardando aprovação, nada aplicado:**
+- `propostas_locacao.status`: entra `correcao_solicitada`; `aguardando_aprovacao_interna` deixa de ser usado (fica no `check` até migrar as linhas existentes).
+- Colunas: `motivo_correcao text` (último motivo do locatário). `valor_oferta` e `observacoes` passam a ser preenchidos pelo corretor na criação.
+- RPCs: `criar_proposta_locacao` recebe tel, valor_oferta e observacoes; nova `validar_proposta_locatario` (→ `criada`); nova `pedir_correcao_proposta` (→ `correcao_solicitada`, grava `status_historico` com motivo); nova `reenviar_proposta` (corretor dono ou adm/gestao → `aguardando_locatario`, renova `link_expira_em`). `confirmar_dados_locatario` e `decidir_aprovacao_interna` saem do fluxo.
+- Seguir o padrão da venda: o RPC recebe a identidade do chamador e só a `service_role` executa.
+
 ### 2.3b Proposta de venda (RF21) — migration `20260925130000_propostas_venda`, **não aplicada**
 **`propostas_venda`**: id uuid PK · criado_por→perfis (set null) · codigo_imovel int! · imovel_titulo, imovel_endereco · nome_cliente!, email!, telefone · valor_referencia, valor_proposta, descricao_proposta · assinatura_path, documento_path (bucket `propostas-venda`) · status! (`aguardando_cliente, confirmada, descartada, expirada`) · link_expira_em! (+7 dias) · motivo · timestamp_criacao, atualizado_em (trigger `tocar_venda_updated_at`).
 
