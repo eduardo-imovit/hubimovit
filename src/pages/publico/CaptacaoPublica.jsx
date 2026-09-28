@@ -76,7 +76,8 @@ export default function CaptacaoPublica() {
   const docRef = useRef(null)
 
   useEffect(() => {
-    if (!token) {
+    // sem código ou no formato antigo (/captacao/47): nem chega a consultar
+    if (!token || !/^[A-Za-z0-9_-]{10,40}$/.test(token)) {
       setErroCarga('Este link de captação não é válido. Peça um novo ao seu corretor.')
       return
     }
