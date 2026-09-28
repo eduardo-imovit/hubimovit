@@ -21,9 +21,9 @@ export const EQUIPE = [
 
   { grupo: 'Bastidores', nome: 'Danielle Marchilli', nomeCrm: 'Danielle Cipriano Marchilli', area: 'Gestão administrativa', foto: f('danielle-marchilli') },
   { grupo: 'Bastidores', nome: 'Gabriela Jonsson', area: 'Contratos', foto: f('gabriela-jonsson') },
-  { grupo: 'Bastidores', nome: 'Daniele Manteli', nomeCrm: 'Daniele Cristine Manteli', area: 'Relacionamento', foto: f('daniele-manteli') },
+  { grupo: 'Bastidores', nome: 'Daniele Manteli', nomeCrm: 'Daniele Cristine Manteli', area: 'Administrativo', foto: f('daniele-manteli') },
   { grupo: 'Bastidores', nome: 'Gabriele Alves', nomeCrm: 'Gabriele de Oliveira Alves', area: 'Administrativo', foto: f('gabriele-alves') },
-  { grupo: 'Bastidores', nome: 'Roberta Barreto', area: 'Administrativo', foto: f('roberta-barreto') },
+  { grupo: 'Bastidores', nome: 'Roberta Barreto', area: 'Relacionamento e cultura', foto: f('roberta-barreto') },
   { grupo: 'Bastidores', nome: 'Ana Celia Andrade', nomeCrm: 'Ana Celia de Sousa Andrade', area: 'Financeiro', foto: f('ana-celia') },
   { grupo: 'Bastidores', nome: 'Caroline Costa', nomeCrm: 'Caroline Camilo Costa', area: 'Conteúdo e marca', foto: f('caroline-costa') },
   { grupo: 'Bastidores', nome: 'Eduardo Jesus', area: 'Dados e marketing', foto: f('eduardo-jesus') },
