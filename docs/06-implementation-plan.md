@@ -145,7 +145,9 @@ Código feito pelo OpenCode em 25/09 sem os docs; revisado e corrigido em 28/09 
 - [x] 11.4a Publicado (28/09): migration, função `captacao` v1, push `687a800` (Vercel `index-CMo3-Uqs.js`); página pública conferida em produção
 - [ ] 11.4 Teste com um envio real (ficou para o fim, junto da bateria final)
 - [x] 11.5 Links do Tally de Captação e Feedback desativados em `biblioteca_links` (`ativo=false`, reversível)
-- Depois: Apresentação Imovit e Sobre a CasaDezoito (páginas públicas); Avaliação; Guia de visita; Relatório do imóvel.
+- [x] 11.6 Apresentação Imovit (`/apresentacao/:token`, evento `consultor` na função `captacao`) + Materiais para clientes (`/materiais`) + link da CasaDezoito — código pronto (28/09)
+- [ ] 11.7 Eduardo revisar o texto da apresentação → publicar
+- Depois: Avaliação; Guia de visita; Relatório do imóvel.
 
 ## Adiado conscientemente (rever quando o volume real crescer)
 - Backup: upgrade para o plano Pro do Supabase (~US$ 25/mês) ou dump periódico.

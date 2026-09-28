@@ -148,7 +148,11 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
      - Ao assinar: o proprietário **baixa o PDF da autorização** na hora; a equipe recebe **e-mail**; a captação entra na lista **Captações** do Hub (PDF baixável, marcar "cadastrada no Imoview").
   2. **Feedback de visita** (substitui o Tally "Feedback da visita"). Quem preenche é o **corretor**, no Hub: código do imóvel, olhar do visitante, curadoria de ajustes, termômetro de interesse (1 a 5), corretor e nota do consultor. Gera um **PDF no padrão Imovit** para o corretor mandar ao proprietário (sem e-mail automático). Fica o histórico.
 - **Home:** "Links úteis" vira **Ferramentas**: os formulários do Hub primeiro; os links externos ficam enquanto não migram e **somem aos poucos**.
-- **Depois (fora da 1ª entrega):** Apresentação Imovit e Sobre a CasaDezoito como **páginas públicas com link**; Avaliação de imóvel com comparáveis informados pelo corretor (scraping de portais como ZAP/VivaReal é proibido pelos termos de uso e bloqueado; automatizar só com fonte autorizada); Guia de visita; Relatório do imóvel.
+- **2ª entrega (28/09, decisões do Eduardo):**
+  - **Apresentação Imovit**: página pública `/apresentacao/<código do corretor>` (o mesmo código da captação), texto escrito a partir de "A Alma da Imovit" e do Perfil de Comunicação (abertura "Lares com a sua alma", essência, como trabalhamos, o que fazemos, a CasaDezoito) e **cartão do consultor** com WhatsApp no fim. Sem código: termina em "Fale com a Imovit" + Instagram. Fotos: lounge e fachada da CasaDezoito.
+  - **Sobre a CasaDezoito**: não se recria; é o link do site `www.casadezoito.com.br`.
+  - Os dois ficam em Ferramentas → **Materiais para clientes**, com "Copiar link" / "Abrir".
+- **Depois:** Avaliação de imóvel com comparáveis informados pelo corretor (scraping de portais como ZAP/VivaReal é proibido pelos termos de uso e bloqueado; automatizar só com fonte autorizada); Guia de visita; Relatório do imóvel.
 - **Decidido (28/09):** o aviso de captação vai **só para o corretor**; a captação é **só registro** (sem revisão), o corretor é o responsável pelo processo; os dados ficam no banco para visualizar em Captações.
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)

@@ -307,6 +307,7 @@ export function FerramentasHub() {
         <ul>
           <li><Link to="/captacoes">Captação de imóvel <span className="is-muted">· seu link para o proprietário</span></Link></li>
           <li><Link to="/feedback-visita">Feedback de visita <span className="is-muted">· PDF para o proprietário</span></Link></li>
+          <li><Link to="/materiais">Materiais para clientes <span className="is-muted">· Apresentação Imovit e CasaDezoito</span></Link></li>
         </ul>
       </div>
     </div>

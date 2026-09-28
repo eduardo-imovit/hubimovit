@@ -12,6 +12,8 @@
 //   formulario -- nome do corretor do token e o texto oficial da declaração,
 //                 que a página exibe tal como será gravado (sem lista de nomes)
 //   enviar     -- grava a captação; honeypot `site` precisa vir vazio
+//   consultor  -- nome e WhatsApp do corretor do token, para o cartão da
+//                 Apresentação Imovit (/apresentacao/<token>, mesmo código)
 //
 // Deploy: supabase functions deploy captacao (verify_jwt: a página pública
 // chama com a anon key, que é um JWT válido)
@@ -87,7 +89,11 @@ const enviarSchema = z.object({
   assinatura: z.string().startsWith('data:image/png;base64,').max(400000),
 })
 
-const eventoSchema = z.discriminatedUnion('evento', [z.object({ evento: z.literal('formulario'), token }), enviarSchema])
+const eventoSchema = z.discriminatedUnion('evento', [
+  z.object({ evento: z.literal('formulario'), token }),
+  z.object({ evento: z.literal('consultor'), token }),
+  enviarSchema,
+])
 
 /** Corretor ativo dono do token, ou null (link inválido ou corretor inativo). */
 async function corretorDoToken(t: string) {
@@ -96,7 +102,7 @@ async function corretorDoToken(t: string) {
   if (!link) return null
   const { data: corretor, error: erroCorretor } = await supabase
     .from('colaboradores_raw')
-    .select('id_corretor_crm, nome_completo, email_oficial')
+    .select('id_corretor_crm, nome_completo, email_oficial, telefone_whats')
     .eq('id_corretor_crm', link.corretor_crm_id)
     .eq('ativo', true)
     .limit(1)
@@ -176,6 +182,10 @@ Deno.serve(async (req) => {
 
     if (evento.evento === 'formulario') {
       return json({ declaracao: DECLARACAO, corretor: corretor.nome_completo })
+    }
+
+    if (evento.evento === 'consultor') {
+      return json({ nome: corretor.nome_completo, whatsapp: corretor.telefone_whats ?? null })
     }
 
     // enviar

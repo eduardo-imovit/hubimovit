@@ -21,3 +21,11 @@ export const enviarCaptacao = (dados) => chamarFuncao('captacao', { evento: 'env
 
 /** Link fixo de captação de um corretor (código aleatório de captacao_links). */
 export const linkCaptacao = (token) => `${window.location.origin}/captacao/${token}`
+
+/** Nome e WhatsApp do consultor dono do código (cartão da Apresentação Imovit). */
+export const carregarConsultor = (token) => chamarFuncao('captacao', { evento: 'consultor', token })
+
+/** Apresentação Imovit personalizada do corretor (mesmo código da captação). */
+export const linkApresentacao = (token) => `${window.location.origin}/apresentacao/${token}`
+
+export const SITE_CASADEZOITO = 'https://www.casadezoito.com.br/'

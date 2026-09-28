@@ -19,6 +19,8 @@ import PropostasInicio from './pages/PropostasInicio'
 import Captacoes from './pages/admin/Captacoes'
 import FeedbackVisita from './pages/FeedbackVisita'
 import CaptacaoPublica from './pages/publico/CaptacaoPublica'
+import ApresentacaoImovit from './pages/publico/ApresentacaoImovit'
+import MateriaisClientes from './pages/MateriaisClientes'
 import Esteiras from './pages/admin/Esteiras'
 import Processos from './pages/admin/Processos'
 import PortalLogin from './pages/portal/PortalLogin'
@@ -63,10 +65,14 @@ export default function App() {
         <Route path="/admin/processos" element={<ProtectedRoute papeis={ACESSO.esteira}><Processos /></ProtectedRoute>} />
         <Route path="/captacoes" element={<ProtectedRoute papeis={ACESSO.formularios}><Captacoes /></ProtectedRoute>} />
         <Route path="/feedback-visita" element={<ProtectedRoute papeis={ACESSO.formularios}><FeedbackVisita /></ProtectedRoute>} />
+        <Route path="/materiais" element={<ProtectedRoute papeis={ACESSO.formularios}><MateriaisClientes /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
         {/* público (proprietário, sem login): link fixo de captação do corretor (código aleatório) */}
         <Route path="/captacao" element={<CaptacaoPublica />} />
         <Route path="/captacao/:token" element={<CaptacaoPublica />} />
+        {/* público (leads): Apresentação Imovit, personalizada pelo código do corretor */}
+        <Route path="/apresentacao" element={<ApresentacaoImovit />} />
+        <Route path="/apresentacao/:token" element={<ApresentacaoImovit />} />
         <Route path="/portal/entrar" element={<PortalLogin />} />
         <Route path="/portal" element={<PortalStatus />} />
         <Route path="/venda/entrar" element={<PortalVendaLogin />} />
