@@ -4,12 +4,13 @@
 ## 1. Mapa de telas
 ```
 /login ─┬─> / (Home) ── todos com perfil
-        │     ├─ Navbar ─┬─ Locação ▾   Propostas · Esteiras · Processos     (gestao, adm, corretor)
+        │     ├─ Navbar ─┬─ Propostas ▾ ─> /propostas (escolher)             (gestao, adm, corretor)
+        │     │          │   ├─ Locação ▸  Propostas · Esteira · Processos
+        │     │          │   └─ Venda ▸    Propostas · Processos            — áreas separadas (28/09)
         │     │          ├─ Dash ▾      Negócio ▸ Visão Geral · Leads        (gestao, marketing)
         │     │          │              Performance ▸ Performance · Campanhas
         │     │          │              Funil
         │     │          │              Kanban ▸ Quadro · Dados · Atividades (gestao, adm)
-        │     │          ├─ Vendas      /admin/vendas                         (gestao, adm, corretor) — RF21, não publicado
         │     │          ├─ TV Display                                         (gestao, adm, marketing, tvaccess)
         │     │          └─ Configurações                                      (gestao, marketing)
         │     └─ rodapé da navbar: foto + nome + nível ─> /perfil (todos)
@@ -52,6 +53,9 @@ Corretor: em Propostas/Esteiras/Processos a RLS só devolve as propostas que ele
 2. Vê só Home e Perfil. Em Perfil, pede um nível com motivo.
 3. A Gestão vê o pedido em Configurações → Usuários & Acessos e aprova ou recusa (`decidir_solicitacao_acesso`).
 4. O menu se monta de novo pelo novo nível (evento `hub:perfil-atualizado`).
+
+### Menu Propostas (pedido do Eduardo, 28/09)
+Locação e venda são processos separados. Navbar **Propostas ▾** → Locação ▸ / Venda ▸; o clique em "Propostas" abre `/propostas`, com um cartão por área. Dentro de cada área, o topo da página tem o caminho "Propostas › Locação" e abas: Locação = Propostas (`/admin/propostas`) · Esteira (`/admin/esteiras`) · Processos (`/admin/processos`); Venda = Propostas (`/admin/vendas`, só as que aguardam assinatura, e o botão de criar) · Processos (`/admin/vendas/processos`, histórico completo com o PDF). As URLs antigas foram mantidas porque os e-mails apontam para elas. Definição única em `src/lib/propostasNav.js`.
 
 ### Esteira de locação (corretor, ADM, locatário)
 Status em `propostas_locacao.status`:

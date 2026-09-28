@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import SubnavPropostas from '../../components/layout/SubnavPropostas'
 import JSZip from 'jszip'
 import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
 import { useDocumentosEsteira } from '../../hooks/useDocumentosEsteira'
@@ -32,10 +33,10 @@ export default function Esteiras() {
 
   return (
     <div>
+      <SubnavPropostas area="locacao" />
       <header className="page-header">
         <div>
-          <div className="page-eyebrow">Admin</div>
-          <div className="page-title">Esteiras</div>
+          <div className="page-title">Esteira de locação</div>
           <div className="page-sub">Documentos enviados por cada locatário, e a revisão de cada um.</div>
         </div>
       </header>

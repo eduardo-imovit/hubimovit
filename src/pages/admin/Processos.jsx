@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import SubnavPropostas from '../../components/layout/SubnavPropostas'
 import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
 import { useHistoricoProposta } from '../../hooks/useHistoricoProposta'
 import { STATUS_LABEL, formatarPrazo } from '../../lib/esteiraLabels'
@@ -24,10 +25,10 @@ export default function Processos() {
 
   return (
     <div>
+      <SubnavPropostas area="locacao" />
       <header className="page-header">
         <div>
-          <div className="page-eyebrow">Admin</div>
-          <div className="page-title">Processos</div>
+          <div className="page-title">Processos de locação</div>
           <div className="page-sub">Visão consolidada de todos os processos de locação, do início até a conclusão.</div>
         </div>
       </header>

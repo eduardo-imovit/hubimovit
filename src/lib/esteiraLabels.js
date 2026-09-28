@@ -78,7 +78,8 @@ export function etapaJornada(proposta) {
   }
 }
 
-const STATUS_COM_PRAZO = ['aguardando_locatario', 'aguardando_aprovacao_interna', 'criada', 'aguardando_docs', 'docs_em_analise', 'docs_aprovados']
+// aguardando_cliente = proposta de venda esperando a assinatura do proponente
+const STATUS_COM_PRAZO = ['aguardando_locatario', 'aguardando_aprovacao_interna', 'criada', 'aguardando_docs', 'docs_em_analise', 'docs_aprovados', 'aguardando_cliente']
 
 /** Texto de prazo restante do link da proposta, só pros status onde o prazo ainda importa. */
 export function formatarPrazo(linkExpiraEm, status) {

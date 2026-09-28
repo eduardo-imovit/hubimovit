@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import SubnavPropostas from '../../components/layout/SubnavPropostas'
 import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
 import { criarProposta, decidirAprovacaoInterna, descartarProposta } from '../../lib/esteira'
 import { formatarPrazo, valorBR } from '../../lib/esteiraLabels'
@@ -85,10 +86,10 @@ export default function Propostas() {
 
   return (
     <div>
+      <SubnavPropostas area="locacao" />
       <header className="page-header">
         <div>
-          <div className="page-eyebrow">Admin</div>
-          <div className="page-title">Propostas</div>
+          <div className="page-title">Propostas de locação</div>
           <div className="page-sub">Crie novas propostas de locação e acompanhe a aprovação do proprietário.</div>
         </div>
         <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMostrarForm((v) => !v)}>

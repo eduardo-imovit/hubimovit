@@ -31,6 +31,7 @@ export const ACESSO = {
   esteiraDecidir: ['gestao', 'adm'], // aprovar, descartar, decidir documentos, solicitar ajustes, finalizar
   vendas: ['gestao', 'adm', 'corretor'], // Propostas de venda (corretor: só as dele)
   vendasDecidir: ['gestao', 'adm'], // descartar proposta de venda
+  propostas: ['gestao', 'adm', 'corretor'], // menu Propostas (locação ou venda)
   kanban: ['gestao', 'adm'],
   dash: ['gestao', 'marketing'],
   configuracoes: ['gestao', 'marketing'],

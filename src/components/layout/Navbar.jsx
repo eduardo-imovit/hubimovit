@@ -1,21 +1,10 @@
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useSession } from '../../hooks/useSession'
 import { usePerfil } from '../../hooks/usePerfil'
 import WeatherWidget from './WeatherWidget'
 import { PAPEL_LABEL, pode } from '../../lib/acessos'
-
-const linksLocacao = [
-  {
-    to: '/admin/propostas',
-    label: 'Locação',
-    children: [
-      { to: '/admin/propostas', label: 'Propostas' },
-      { to: '/admin/esteiras', label: 'Esteiras' },
-      { to: '/admin/processos', label: 'Processos' },
-    ],
-  },
-]
+import { AREAS_PROPOSTAS } from '../../lib/propostasNav'
 
 /** Dash reúne Kanban (gestão/admin) e dashboards (gestão/marketing) num único item de navbar. */
 function buildLinksDash({ verKanban, verDash }) {
@@ -69,7 +58,13 @@ function ItemMenu({ item }) {
 export default function Navbar() {
   const { session } = useSession()
   const { perfil } = usePerfil()
+  const { pathname } = useLocation()
+  const emPropostas = pathname === '/propostas' || pathname.startsWith('/admin/')
   const linksDash = buildLinksDash({ verKanban: pode(perfil, 'kanban'), verDash: pode(perfil, 'dash') })
+  // Propostas ▾ → Locação ▸ / Venda ▸ (processos separados, ver lib/propostasNav)
+  const areasPropostas = AREAS_PROPOSTAS
+    .filter((a) => pode(perfil, a.acesso))
+    .map((a) => ({ label: a.label, children: a.paginas }))
   const email = session?.user?.email ?? ''
   const nomeExibido = perfil?.nome || email
   const iniciais = (perfil?.nome || email).split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase()
@@ -109,26 +104,18 @@ export default function Navbar() {
           </div>
         ))}
 
-        {pode(perfil, 'vendas') && (
-          <NavLink to="/admin/vendas" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
-            Vendas
-          </NavLink>
-        )}
-
-        {pode(perfil, 'esteira') && linksLocacao.map((link) => (
-          <div className="navbar-item" key={link.to}>
-            <NavLink to={link.to} end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
-              {link.label} <span className="navbar-caret">▾</span>
+        {areasPropostas.length > 0 && (
+          <div className="navbar-item">
+            <NavLink to="/propostas" className={`navbar-link${emPropostas ? ' is-active' : ''}`}>
+              Propostas <span className="navbar-caret">▾</span>
             </NavLink>
             <div className="navbar-dropdown">
-              {link.children.map((child) => (
-                <NavLink key={child.to} to={child.to} end className={({ isActive }) => (isActive ? 'is-active' : '')}>
-                  {child.label}
-                </NavLink>
+              {areasPropostas.map((area) => (
+                <ItemMenu key={area.label} item={area} />
               ))}
             </div>
           </div>
-        ))}
+        )}
 
         {pode(perfil, 'configuracoes') && (
           <NavLink to="/configuracoes" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>

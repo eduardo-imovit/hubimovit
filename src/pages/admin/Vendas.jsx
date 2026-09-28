@@ -8,6 +8,7 @@ import VendaDetalheModal from '../../components/venda/VendaDetalheModal'
 import { usePerfil } from '../../hooks/usePerfil'
 import { pode } from '../../lib/acessos'
 import { supabase } from '../../lib/supabaseClient'
+import SubnavPropostas from '../../components/layout/SubnavPropostas'
 
 const vazio = { nome_cliente: '', email: '', codigo_imovel: '', valor: '', imovel_titulo: '', imovel_endereco: '' }
 
@@ -18,12 +19,22 @@ const LABEL = {
   expirada: 'Prazo expirado',
 }
 
+/** Mesmo cálculo da view propostas_venda_ativas (Processos lê a tabela direto). */
+function statusEfetivo(p) {
+  if (p.status_efetivo) return p.status_efetivo
+  if (p.status === 'aguardando_cliente' && new Date(p.link_expira_em) < new Date()) return 'expirada'
+  return p.status
+}
+
 /**
- * Propostas de VENDA (compra) — página própria. A página de locação
- * (Propostas.jsx) não é tocada.
+ * Propostas de VENDA (compra), área separada da locação.
+ * modo="propostas": em andamento (aguardando assinatura) + criar nova.
+ * modo="processos": histórico completo (assinadas, descartadas, expiradas) com o PDF.
  */
-export default function Vendas() {
-  const { propostas, carregando, erro, recarregar } = usePropostasVenda()
+export default function Vendas({ modo = 'propostas' }) {
+  const emProcessos = modo === 'processos'
+  const { propostas: todas, carregando, erro, recarregar } = usePropostasVenda(!emProcessos)
+  const propostas = emProcessos ? todas : todas.filter((p) => p.status === 'aguardando_cliente')
   const { perfil } = usePerfil()
   const podeDescartar = pode(perfil, 'vendasDecidir')
   const [mostrarForm, setMostrarForm] = useState(false)
@@ -88,15 +99,21 @@ export default function Vendas() {
 
   return (
     <div>
+      <SubnavPropostas area="venda" />
       <header className="page-header">
         <div>
-          <div className="page-eyebrow">Admin</div>
-          <div className="page-title">Propostas de venda</div>
-          <div className="page-sub">Crie propostas de compra e receba de volta assinadas pelo proponente.</div>
+          <div className="page-title">{emProcessos ? 'Processos de venda' : 'Propostas de venda'}</div>
+          <div className="page-sub">
+            {emProcessos
+              ? 'Todas as propostas de compra, do envio à assinatura. Abra uma assinada para baixar o PDF.'
+              : 'Crie propostas de compra e acompanhe até o proponente assinar. Assinadas vão para Processos.'}
+          </div>
         </div>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMostrarForm((v) => !v)}>
-          {mostrarForm ? 'Cancelar' : '+ Nova proposta'}
-        </button>
+        {!emProcessos && (
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setMostrarForm((v) => !v)}>
+            {mostrarForm ? 'Cancelar' : '+ Nova proposta'}
+          </button>
+        )}
       </header>
 
       {mostrarForm && (
@@ -139,8 +156,10 @@ export default function Vendas() {
 
       {!carregando && !erro && propostas.length === 0 && (
         <div className="empty">
-          <div className="empty-title">Nenhuma proposta de venda</div>
-          <div className="empty-sub">Propostas criadas aparecem aqui até serem assinadas.</div>
+          <div className="empty-title">{emProcessos ? 'Nenhum processo de venda' : 'Nenhuma proposta aguardando assinatura'}</div>
+          <div className="empty-sub">
+            {emProcessos ? 'Toda proposta de venda criada aparece aqui, até a assinatura.' : 'Propostas criadas aparecem aqui até serem assinadas.'}
+          </div>
         </div>
       )}
 
@@ -159,13 +178,14 @@ export default function Vendas() {
             </thead>
             <tbody>
               {propostas.map((p) => {
-                const prazo = formatarPrazo(p.link_expira_em, p.status_efetivo)
+                const efetivo = statusEfetivo(p)
+                const prazo = efetivo === 'aguardando_cliente' ? formatarPrazo(p.link_expira_em, efetivo) : null
                 return (
                   <tr key={p.id}>
                     <td>{p.nome_cliente || p.email}</td>
                     <td>{p.imovel_titulo || `Imóvel ${p.codigo_imovel}`}</td>
                     <td>{valorBR(p.valor_proposta ?? p.valor_referencia)}</td>
-                    <td>{LABEL[p.status_efetivo] ?? p.status_efetivo}</td>
+                    <td>{LABEL[efetivo] ?? efetivo}</td>
                     <td>{prazo ? prazo.texto : '—'}</td>
                     <td>
                       <button type="button" className="btn btn-ghost btn-sm" onClick={() => abrirDetalhe(p)}>

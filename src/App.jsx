@@ -15,6 +15,7 @@ import PainelPerformance from './pages/PainelPerformance'
 import Configuracoes from './pages/Configuracoes'
 import Propostas from './pages/admin/Propostas'
 import Vendas from './pages/admin/Vendas'
+import PropostasInicio from './pages/PropostasInicio'
 import Esteiras from './pages/admin/Esteiras'
 import Processos from './pages/admin/Processos'
 import PortalLogin from './pages/portal/PortalLogin'
@@ -52,7 +53,9 @@ export default function App() {
         <Route path="/dashboard/*" element={<Redirecionar para="/dashboard/gestao" />} />
         <Route path="/configuracoes" element={<ProtectedRoute papeis={ACESSO.configuracoes}><Configuracoes /></ProtectedRoute>} />
         <Route path="/admin/propostas" element={<ProtectedRoute papeis={ACESSO.esteira}><Propostas /></ProtectedRoute>} />
-        <Route path="/admin/vendas" element={<ProtectedRoute papeis={ACESSO.vendas}><Vendas /></ProtectedRoute>} />
+        <Route path="/propostas" element={<ProtectedRoute papeis={ACESSO.propostas}><PropostasInicio /></ProtectedRoute>} />
+        <Route path="/admin/vendas" element={<ProtectedRoute papeis={ACESSO.vendas}><Vendas key="propostas" modo="propostas" /></ProtectedRoute>} />
+        <Route path="/admin/vendas/processos" element={<ProtectedRoute papeis={ACESSO.vendas}><Vendas key="processos" modo="processos" /></ProtectedRoute>} />
         <Route path="/admin/esteiras" element={<ProtectedRoute papeis={ACESSO.esteira}><Esteiras /></ProtectedRoute>} />
         <Route path="/admin/processos" element={<ProtectedRoute papeis={ACESSO.esteira}><Processos /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
