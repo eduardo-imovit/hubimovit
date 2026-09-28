@@ -13,10 +13,10 @@ export const EQUIPE = [
   { grupo: 'Consultoria', nome: 'Rachel Bittencourt', area: 'Vendas', foto: f('rachel-bittencourt') },
   { grupo: 'Consultoria', nome: 'Patrícia Macedo', area: 'Vendas', foto: f('patricia-macedo') },
   { grupo: 'Consultoria', nome: 'Gabriel Betti', area: 'Vendas', foto: f('gabriel-betti') },
-  { grupo: 'Consultoria', nome: 'Sandra Nobre', area: 'Consultoria', foto: f('sandra-nobre') },
   { grupo: 'Consultoria', nome: 'Gabriel Rosa', area: 'Gestão comercial · Locação', foto: f('gabriel-rosa') },
   { grupo: 'Consultoria', nome: 'Daniela Margadona', nomeCrm: 'Daniela Borges Margadona', area: 'Locação', foto: f('daniela-margadona') },
   { grupo: 'Consultoria', nome: 'Lucas Velloso', area: 'Locação', foto: f('lucas-velloso') },
+  { grupo: 'Consultoria', nome: 'Sandra Nobre', area: 'Locação', foto: f('sandra-nobre') },
   { grupo: 'Consultoria', nome: 'Gabriel Simon', area: 'Locação', foto: f('gabriel-simon') },
 
   { grupo: 'Bastidores', nome: 'Danielle Marchilli', nomeCrm: 'Danielle Cipriano Marchilli', area: 'Gestão administrativa', foto: f('danielle-marchilli') },
