@@ -39,7 +39,7 @@ Faltava um lugar único para:
 - Dashboards: **Painel da Gestão** e **Painel de Performance** (§5.0 e §5.0b). As páginas antigas (visão geral, funil, campanhas, performance com PDF, leads) foram removidas em 24/09.
 - Configurações: conteúdo da Home, agenda do fotógrafo, datas, usuários e acessos.
 - Esteira de locação: propostas, esteira (documentos), processos, portal do locatário, e-mails pelo Brevo, sincronização com o Imoview.
-- Proposta de venda (RF21, §5.5): criação pelo corretor, assinatura pelo proponente no portal `/venda`, PDF para a equipe. Ainda não publicada.
+- Proposta de venda (RF21, §5.5): criação pelo corretor, assinatura pelo proponente no portal `/venda`, PDF para a equipe. Banco e função no ar (28/09); frontend aguarda push.
 
 ### Fora (não é o Hub)
 - Editar dados do CRM: o Hub só **lê** o que o n8n traz do Imoview.
@@ -68,7 +68,7 @@ Faltava um lugar único para:
 | RF18 | **Painel de Performance**: história do investimento em mídia até o negócio, com orçamento, campanhas e recomendações (§5.0b) | gestao, marketing | must | em construção (24/09) |
 | RF19 | **Importar a escala de plantão (PDF) do mês**: o sistema lê a tabela (data, dia, manhã, tarde), casa os nomes com os corretores, mostra prévia e grava; a TV mostra o plantão da semana (§5.3) | gestao, marketing (import); todos (TV) | must | feito no localhost (24/09); falta push |
 | RF20 | **Home por nível**: busca, atalhos, pendências com número que levam à tela certa, hoje no escritório, avisos e links (§5.4) | todos com perfil | must | feito (24/09), commitado; falta push |
-| RF21 | **Proposta de venda (compra)**: corretor cria, proponente confirma e assina pelo portal `/venda`, a equipe recebe o PDF assinado; valores e condições ficam no banco para análise (§5.5) | corretor, adm, gestao; proponente | must | aprovado em 28/09; migration e função **ainda não aplicadas** (ver plano, Fase 9) |
+| RF21 | **Proposta de venda (compra)**: corretor cria, proponente confirma e assina pelo portal `/venda`, a equipe recebe o PDF assinado; valores e condições ficam no banco para análise (§5.5) | corretor, adm, gestao; proponente | must | aprovado e publicado no banco/função em 28/09; frontend aguarda push (ver plano, Fase 9) |
 | RF22 | **Esteira de locação v4**: corretor gera a proposta negociada; locatário valida ou pede correção; ao validar abre a esteira e avisa o ADM, sem aprovação interna (§5.6). Substitui partes de RF10–RF12 | corretor; locatário; adm | must | **proposta, aguardando aprovação do Eduardo** (28/09) |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 

@@ -84,7 +84,7 @@ Triggers: `trg_propostas_locacao_expira` (bloqueia avanço quando expirada), `tr
 - RPCs: `criar_proposta_locacao` recebe tel, valor_oferta e observacoes; nova `validar_proposta_locatario` (→ `criada`); nova `pedir_correcao_proposta` (→ `correcao_solicitada`, grava `status_historico` com motivo); nova `reenviar_proposta` (corretor dono ou adm/gestao → `aguardando_locatario`, renova `link_expira_em`). `confirmar_dados_locatario` e `decidir_aprovacao_interna` saem do fluxo.
 - Seguir o padrão da venda: o RPC recebe a identidade do chamador e só a `service_role` executa.
 
-### 2.3b Proposta de venda (RF21) — migration `20260925130000_propostas_venda`, **não aplicada**
+### 2.3b Proposta de venda (RF21) — migration `20260925130000_propostas_venda`, aplicada em 28/09
 **`propostas_venda`**: id uuid PK · criado_por→perfis (set null) · codigo_imovel int! · imovel_titulo, imovel_endereco · nome_cliente!, email!, telefone · valor_referencia, valor_proposta, descricao_proposta · assinatura_path, documento_path (bucket `propostas-venda`) · status! (`aguardando_cliente, confirmada, descartada, expirada`) · link_expira_em! (+7 dias) · motivo · timestamp_criacao, atualizado_em (trigger `tocar_venda_updated_at`).
 
 **`propostas_venda_historico`**: proposta_id→propostas_venda (cascade), status_anterior, status_novo!, ator (e-mail), motivo, timestamp_registro.
@@ -134,7 +134,7 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | Bucket | Público | Regras |
 |---|---|---|
 | `esteira-documentos` | não | ler: `pode_acessar_documento_esteira(name)`; enviar/atualizar: `pode_enviar_documento_esteira(name)` (locatário da proposta ou adm/gestao) |
-| `propostas-venda` | não | ler: `pode_ler_arquivo_venda(name)`; enviar/atualizar: `pode_enviar_arquivo_venda(name)`: só o proponente, `assinatura.png` enquanto `aguardando_cliente` e no prazo, `documento.pdf` uma vez depois de `confirmada` (não aplicado) |
+| `propostas-venda` | não | ler: `pode_ler_arquivo_venda(name)`; enviar/atualizar: `pode_enviar_arquivo_venda(name)`: só o proponente, `assinatura.png` enquanto `aguardando_cliente` e no prazo, `documento.pdf` uma vez depois de `confirmada` |
 | `banners` | sim | escrever/remover: `pode_editar_conteudo()` |
 | `avatares` | sim | cada um só escreve na pasta `<uid>/` |
 | `videos` | sim | ⚠ sem uso no Hub |
@@ -158,7 +158,7 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | `vw_atendimentos_base` | view | normaliza atendimentos (canal, fase, flags ruído/interno/negócio, dias) | base das outras |
 | `vw_kpis_mensais`, `vw_funil_acumulado`, `vw_aging_ativos`, `vw_cobertura_atividades`, `vw_corretores`, `vw_descartes`, `vw_origem_performance`, `vw_tempo_resposta` | views | agregados dos dashboards | dashboards |
 
-Edge Functions: `esteira-locacao` (eventos `nova_proposta, confirmar_dados_locatario, completar_cadastro, descartar_proposta, decisao_interna, docs_enviados, decisao_adm, solicitar_ajustes, sincronizar_imoview`), `gestao-colaboradores` (`suspender, reativar, excluir`), `spotify-auth`, `proposta-venda` (`nova_proposta, confirmar_proposta, descartar_proposta`; **não publicada**).
+Edge Functions: `esteira-locacao` (eventos `nova_proposta, confirmar_dados_locatario, completar_cadastro, descartar_proposta, decisao_interna, docs_enviados, decisao_adm, solicitar_ajustes, sincronizar_imoview`), `gestao-colaboradores` (`suspender, reativar, excluir`), `spotify-auth`, `proposta-venda` (`nova_proposta, confirmar_proposta, descartar_proposta`; v1 em 28/09).
 
 ## 5. Migrations
 - Repo: `supabase/migrations/` (28 arquivos, de `20260821140000` a `20260923233000`).

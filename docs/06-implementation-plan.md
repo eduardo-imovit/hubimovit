@@ -100,10 +100,10 @@
 ## Fase 9 — Proposta de venda (RF21, PRD §5.5)
 Código feito pelo OpenCode em 25/09 sem os docs; revisado e corrigido em 28/09 (RPCs falhavam sempre chamadas pela função; UPDATE direto liberado para proponente/corretor; histórico do descarte errado). Migration testada em produção com `BEGIN … ROLLBACK` (20 cenários de papel/permissão passando).
 - [x] Eduardo aprova o PRD §5.5 e responde as perguntas em aberto (28/09)
-- [ ] Aplicar a migration `20260925130000_propostas_venda` (conector MCP)
-- [ ] Publicar a Edge Function `proposta-venda` (secrets: as mesmas da `esteira-locacao`)
-- [ ] Commit do frontend + push (só depois da migration e da função, senão o menu "Vendas" aparece quebrado)
-- [ ] Roteiro `docs/proposta-venda-teste.md` com um e-mail de teste de ponta a ponta
+- [x] Aplicar a migration `20260925130000_propostas_venda` (conector MCP) — 28/09
+- [x] Publicar a Edge Function `proposta-venda` — v1 em 28/09
+- [x] Commit do frontend (`fde1332`) — [ ] push (Eduardo)
+- [ ] Roteiro `docs/proposta-venda-teste.md` com um e-mail de teste (conferir também se o magic link volta para `/venda` — Redirect URLs do Supabase) de ponta a ponta
 - **Pronto quando:** uma proposta real vai do corretor à assinatura e o PDF abre em `/admin/vendas`; proponente e corretor não conseguem alterar nada fora do fluxo.
 
 ## Fase 10 — Esteira de locação v4 (RF22, PRD §5.6) — aguardando aprovação
