@@ -4,6 +4,7 @@ import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
 import { useHistoricoProposta } from '../../hooks/useHistoricoProposta'
 import { STATUS_LABEL, formatarPrazo } from '../../lib/esteiraLabels'
 import { StatusBadge } from '../../components/esteira/StatusBadge'
+import TermosProposta from '../../components/esteira/TermosProposta'
 
 function formatarData(iso) {
   return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -93,6 +94,12 @@ function TimelineProcesso({ proposta }) {
       <div className="page-eyebrow">
         {proposta.imovel_titulo || `Imóvel ${proposta.codigo_imovel}`} · {proposta.nome_cliente || proposta.email}
       </div>
+      <details>
+        <summary className="page-eyebrow" style={{ marginBottom: 0, cursor: 'pointer' }}>Condições negociadas</summary>
+        <div style={{ marginTop: 'var(--space-3)' }}>
+          <TermosProposta proposta={proposta} />
+        </div>
+      </details>
       {carregando && <div className="hub-loading">Carregando…</div>}
       {!carregando && (
         <div className="timeline">

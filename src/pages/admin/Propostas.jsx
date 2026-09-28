@@ -2,17 +2,19 @@ import { useState } from 'react'
 import SubnavPropostas from '../../components/layout/SubnavPropostas'
 import { usePropostasLocacao } from '../../hooks/usePropostasLocacao'
 import { criarProposta, descartarProposta, editarProposta } from '../../lib/esteira'
-import { formatarPrazo, valorBR } from '../../lib/esteiraLabels'
+import { GARANTIAS, formatarPrazo, valorBR } from '../../lib/esteiraLabels'
 import { StatusBadge } from '../../components/esteira/StatusBadge'
 import ReasonModal from '../../components/esteira/ReasonModal'
 import PropostaDetalheModal from '../../components/esteira/PropostaDetalheModal'
 import CurrencyInput from '../../components/esteira/CurrencyInput'
 import { usePerfil } from '../../hooks/usePerfil'
+import { useCorretores } from '../../hooks/useCorretores'
 import { pode } from '../../lib/acessos'
 
 const vazio = {
-  nome_cliente: '', email: '', tel: '', codigo_imovel: '', valor: '', valor_oferta: '',
-  observacoes: '', imovel_titulo: '', imovel_endereco: '',
+  nome_cliente: '', email: '', tel: '', codigo_imovel: '', imovel_titulo: '', imovel_endereco: '',
+  corretor_responsavel: '', valor: '', valor_oferta: '', garantia: '', data_posse: '', prazo_meses: '30',
+  dia_vencimento: '', clausula_rescisao: '', negociacao_especifica: '', observacoes: '', taxa_administracao: '',
 }
 
 // Antes da validação do locatário a proposta ainda pode ser corrigida e reenviada.
@@ -26,6 +28,7 @@ const EDITAVEIS = ['aguardando_locatario', 'correcao_solicitada']
 export default function Propostas() {
   const { propostas, carregando, erro, recarregar } = usePropostasLocacao()
   const { perfil } = usePerfil()
+  const corretores = useCorretores()
   // Corretor cria e acompanha as dele (o banco já filtra); descartar é da Admin/Gestão.
   const podeDescartar = pode(perfil, 'esteiraDecidir')
   const [mostrarForm, setMostrarForm] = useState(false)
@@ -41,8 +44,10 @@ export default function Propostas() {
   const correcoes = propostas.filter((p) => p.status_efetivo === 'correcao_solicitada')
 
   function abrirNova() {
+    // Sugere como responsável o corretor do CRM com o mesmo e-mail de quem está criando.
+    const eu = corretores.find((c) => c.email_oficial?.toLowerCase() === perfil?.email?.toLowerCase())
     setEditando(null)
-    setForm(vazio)
+    setForm({ ...vazio, corretor_responsavel: eu?.nome_completo ?? '' })
     setErroForm('')
     setMostrarForm(true)
   }
@@ -59,6 +64,14 @@ export default function Propostas() {
       observacoes: p.observacoes ?? '',
       imovel_titulo: p.imovel_titulo ?? '',
       imovel_endereco: p.imovel_endereco ?? '',
+      corretor_responsavel: p.corretor_responsavel ?? '',
+      garantia: p.garantia ?? '',
+      data_posse: p.data_posse ?? '',
+      prazo_meses: p.prazo_meses != null ? String(p.prazo_meses) : '30',
+      dia_vencimento: p.dia_vencimento != null ? String(p.dia_vencimento) : '',
+      clausula_rescisao: p.clausula_rescisao ?? '',
+      negociacao_especifica: p.negociacao_especifica ?? '',
+      taxa_administracao: p.taxa_administracao != null ? String(p.taxa_administracao) : '',
     })
     setErroForm('')
     setDetalhando(null)
@@ -90,14 +103,23 @@ export default function Propostas() {
     e.preventDefault()
     setErroForm('')
     setSalvando(true)
+    const texto = (v) => v.trim() || undefined
     const termos = {
       nome_cliente: form.nome_cliente,
       tel: form.tel,
-      valor: Number(form.valor),
-      valor_oferta: Number(form.valor_oferta),
-      observacoes: form.observacoes.trim() || undefined,
       imovel_titulo: form.imovel_titulo || undefined,
       imovel_endereco: form.imovel_endereco || undefined,
+      corretor_responsavel: form.corretor_responsavel.trim(),
+      valor: Number(form.valor),
+      valor_oferta: Number(form.valor_oferta),
+      garantia: form.garantia,
+      data_posse: form.data_posse,
+      prazo_meses: Number(form.prazo_meses),
+      dia_vencimento: Number(form.dia_vencimento),
+      clausula_rescisao: texto(form.clausula_rescisao),
+      negociacao_especifica: texto(form.negociacao_especifica),
+      observacoes: texto(form.observacoes),
+      taxa_administracao: form.taxa_administracao === '' ? undefined : Number(String(form.taxa_administracao).replace(',', '.')),
     }
     try {
       if (editando) {
@@ -179,35 +201,72 @@ export default function Propostas() {
               <label htmlFor="pp-imovel">Código do imóvel</label>
               <input id="pp-imovel" type="number" required disabled={!!editando} value={form.codigo_imovel} onChange={(e) => setForm({ ...form, codigo_imovel: e.target.value })} />
             </div>
+            <div className="field" style={{ flex: '2 1 220px' }}>
+              <label htmlFor="pp-titulo">Título do imóvel (opcional)</label>
+              <input id="pp-titulo" value={form.imovel_titulo} onChange={(e) => setForm({ ...form, imovel_titulo: e.target.value })} placeholder="Apto 2 quartos, Jardim das Palmeiras" />
+            </div>
+          </div>
+          <div className="field">
+            <label htmlFor="pp-endereco">Endereço (opcional)</label>
+            <input id="pp-endereco" value={form.imovel_endereco} onChange={(e) => setForm({ ...form, imovel_endereco: e.target.value })} />
+          </div>
+
+          <div className="page-eyebrow" style={{ marginTop: 'var(--space-3)' }}>Condições negociadas</div>
+          <div className="field">
+            <label htmlFor="pp-corretor">Corretor responsável pela negociação</label>
+            <input id="pp-corretor" required list="pp-corretores" value={form.corretor_responsavel} onChange={(e) => setForm({ ...form, corretor_responsavel: e.target.value })} placeholder="Escolha ou digite o nome" />
+            <datalist id="pp-corretores">
+              {corretores.map((c) => <option key={c.nome_completo} value={c.nome_completo} />)}
+            </datalist>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+            <div className="field" style={{ flex: '1 1 160px' }}>
+              <label htmlFor="pp-oferta">Valor da locação (negociado, R$)</label>
+              <CurrencyInput id="pp-oferta" required value={form.valor_oferta} onChange={(valor_oferta) => setForm({ ...form, valor_oferta })} />
+            </div>
             <div className="field" style={{ flex: '1 1 160px' }}>
               <label htmlFor="pp-valor">Valor do anúncio (R$)</label>
               <CurrencyInput id="pp-valor" required value={form.valor} onChange={(valor) => setForm({ ...form, valor })} />
             </div>
+            <div className="field" style={{ flex: '1 1 180px' }}>
+              <label htmlFor="pp-garantia">Tipo de garantia</label>
+              <select id="pp-garantia" required value={form.garantia} onChange={(e) => setForm({ ...form, garantia: e.target.value })}>
+                <option value="" disabled>Escolha…</option>
+                {GARANTIAS.map((g) => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
             <div className="field" style={{ flex: '1 1 160px' }}>
-              <label htmlFor="pp-oferta">Valor negociado (R$)</label>
-              <CurrencyInput id="pp-oferta" required value={form.valor_oferta} onChange={(valor_oferta) => setForm({ ...form, valor_oferta })} />
+              <label htmlFor="pp-posse">Data da posse</label>
+              <input id="pp-posse" type="date" required value={form.data_posse} onChange={(e) => setForm({ ...form, data_posse: e.target.value })} />
+            </div>
+            <div className="field" style={{ flex: '1 1 140px' }}>
+              <label htmlFor="pp-prazo">Prazo contratual (meses)</label>
+              <input id="pp-prazo" type="number" min="1" max="360" required value={form.prazo_meses} onChange={(e) => setForm({ ...form, prazo_meses: e.target.value })} />
+            </div>
+            <div className="field" style={{ flex: '1 1 140px' }}>
+              <label htmlFor="pp-vencimento">Vencimento do aluguel (dia)</label>
+              <input id="pp-vencimento" type="number" min="1" max="31" required value={form.dia_vencimento} onChange={(e) => setForm({ ...form, dia_vencimento: e.target.value })} placeholder="10" />
             </div>
           </div>
           <div className="field">
-            <label htmlFor="pp-obs">Observações da proposta</label>
-            <textarea
-              id="pp-obs"
-              rows={4}
-              value={form.observacoes}
-              onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
-              placeholder="Ex.: contrato de 30 meses, condomínio incluso, garantia por seguro-fiança, entrada no dia 10/11, pintura por conta do locador."
-            />
-            <span className="field-hint">Os termos que as partes combinaram. O locatário vê exatamente este texto para validar.</span>
+            <label htmlFor="pp-rescisao">Cláusula de rescisão (opcional)</label>
+            <textarea id="pp-rescisao" rows={2} value={form.clausula_rescisao} onChange={(e) => setForm({ ...form, clausula_rescisao: e.target.value })} placeholder="Ex.: multa de 3 aluguéis, proporcional ao tempo restante; isenta após 12 meses." />
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-            <div className="field" style={{ flex: '1 1 220px' }}>
-              <label htmlFor="pp-titulo">Título do imóvel (opcional)</label>
-              <input id="pp-titulo" value={form.imovel_titulo} onChange={(e) => setForm({ ...form, imovel_titulo: e.target.value })} placeholder="Apto 2 quartos, Jardim das Palmeiras" />
-            </div>
-            <div className="field" style={{ flex: '1 1 220px' }}>
-              <label htmlFor="pp-endereco">Endereço (opcional)</label>
-              <input id="pp-endereco" value={form.imovel_endereco} onChange={(e) => setForm({ ...form, imovel_endereco: e.target.value })} />
-            </div>
+          <div className="field">
+            <label htmlFor="pp-negociacao">Negociação específica (opcional)</label>
+            <textarea id="pp-negociacao" rows={2} value={form.negociacao_especifica} onChange={(e) => setForm({ ...form, negociacao_especifica: e.target.value })} placeholder="Ex.: carência de 1 mês, desconto no primeiro aluguel." />
+          </div>
+          <div className="field">
+            <label htmlFor="pp-obs">Outros combinados e benfeitorias (opcional)</label>
+            <textarea id="pp-obs" rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} placeholder="Ex.: pintura por conta do locador, troca do box antes da posse." />
+            <span className="field-hint">O locatário vê exatamente estas condições para validar.</span>
+          </div>
+          <div className="field" style={{ maxWidth: 260 }}>
+            <label htmlFor="pp-taxa">Taxa de administração (%, opcional)</label>
+            <input id="pp-taxa" inputMode="decimal" value={form.taxa_administracao} onChange={(e) => setForm({ ...form, taxa_administracao: e.target.value })} placeholder="8" />
+            <span className="field-hint">Responsabilidade do proprietário. Não aparece para o locatário.</span>
           </div>
           <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
             {salvando ? 'Enviando…' : editando ? 'Salvar e reenviar ao locatário' : 'Criar e enviar ao locatário'}

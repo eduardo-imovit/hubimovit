@@ -110,6 +110,7 @@ Código feito pelo OpenCode em 25/09 sem os docs; revisado e corrigido em 28/09 
 - [x] Eduardo definiu o fluxo (28/09): gestor registra os termos, locatário valida ou pede correção, validar abre a esteira
 - [x] 10.1 Banco: migration `20260928140000_esteira_v4_validacao_locatario`, testada em `BEGIN … ROLLBACK` (criar, duplicada, sem papel, sem valor, RPC pela API, correção, correção vencida, editar sem permissão, reenviar renovando prazo, validar, validar 2×, editar depois de validar, recriar por cima da esteira). O teste pegou um bug de NULL na permissão de editar, corrigido.
 - [x] 10.2 `esteira-locacao`: eventos `editar_proposta`, `validar_proposta`, `pedir_correcao`; saem `confirmar_dados_locatario` e `decisao_interna`; e-mails novos
+- [x] 10.2b Condições negociadas (modelo do e-mail da equipe): colunas novas + `propostas_locacao_interno` para a taxa; testado em transação (termos obrigatórios, taxa invisível ao locatário, visível à gestão, editar atualiza tudo)
 - [x] 10.3 Frontend: Propostas (form completo, correções pedidas, editar/reenviar), detalhe, portal (validação + pedir correção, 4 etapas), pendências da Home
 - [ ] 10.4 Deploy no mesmo momento: migration → função → push (portal antigo + função nova quebram a etapa 1)
 - [ ] 10.5 Teste de ponta a ponta com um e-mail de teste, incluindo um ciclo de correção

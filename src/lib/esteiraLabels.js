@@ -7,6 +7,9 @@ export function valorBR(v) {
   return v != null ? `R$ ${Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'
 }
 
+/** Tipos de garantia aceitos (mesma lista do check no banco e do zod na Edge Function). */
+export const GARANTIAS = ['Seguro-fiança', 'Fiador', 'Caução', 'Título de capitalização', 'Outra']
+
 export const STATUS_LABEL = {
   aguardando_locatario: 'Aguardando validação',
   correcao_solicitada: 'Correção pedida',

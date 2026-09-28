@@ -1,6 +1,6 @@
 import ModalPortal from './ModalPortal'
 import { StatusBadge } from './StatusBadge'
-import { valorBR } from '../../lib/esteiraLabels'
+import TermosProposta from './TermosProposta'
 
 const AVISO_POR_STATUS = {
   aguardando_locatario: 'Enviada ao locatário: aguardando ele validar ou pedir correção.',
@@ -22,7 +22,7 @@ export default function PropostaDetalheModal({ proposta, onClose, onEditar }) {
   return (
     <ModalPortal>
       <div className="modal-overlay" onClick={onClose}>
-        <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
             <div className="modal-title">{proposta.nome_cliente || proposta.email}</div>
             <button type="button" className="modal-close" onClick={onClose}>×</button>
@@ -44,22 +44,10 @@ export default function PropostaDetalheModal({ proposta, onClose, onEditar }) {
               <div>{proposta.imovel_titulo || `Imóvel ${proposta.codigo_imovel}`}</div>
               {proposta.imovel_endereco && <div style={{ color: 'var(--grafite-soft)' }}>{proposta.imovel_endereco}</div>}
             </div>
-            <div style={{ display: 'flex', gap: 'var(--space-5)' }}>
-              <div>
-                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Valor do anúncio</div>
-                <div>{valorBR(proposta.valor)}</div>
-              </div>
-              <div>
-                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Valor negociado</div>
-                <div>{valorBR(proposta.valor_oferta)}</div>
-              </div>
+            <div>
+              <div className="page-eyebrow" style={{ marginBottom: 'var(--space-2)' }}>Condições negociadas</div>
+              <TermosProposta proposta={proposta} incluirTaxa />
             </div>
-            {proposta.observacoes && (
-              <div>
-                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Observações da proposta</div>
-                <div style={{ whiteSpace: 'pre-line' }}>{proposta.observacoes}</div>
-              </div>
-            )}
             <div className="stat-sub is-muted">{AVISO_POR_STATUS[proposta.status_efetivo] ?? ''}</div>
           </div>
           <div className="modal-footer">

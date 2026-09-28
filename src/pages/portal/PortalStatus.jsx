@@ -5,11 +5,12 @@ import { useHistoricoProposta } from '../../hooks/useHistoricoProposta'
 import { useDocumentosEsteira } from '../../hooks/useDocumentosEsteira'
 import { supabase } from '../../lib/supabaseClient'
 import { completarCadastro, pedirCorrecao, registrarDocumentosEnviados, validarProposta } from '../../lib/esteira'
-import { ETAPAS_JORNADA, STATUS_LABEL, STATUS_VARIANT, etapaJornada, formatarPrazo, valorBR } from '../../lib/esteiraLabels'
+import { ETAPAS_JORNADA, STATUS_LABEL, STATUS_VARIANT, etapaJornada, formatarPrazo } from '../../lib/esteiraLabels'
 import { StatusBadge, DocStatusBadge } from '../../components/esteira/StatusBadge'
 import JornadaLocatario from '../../components/esteira/JornadaLocatario'
 import CurrencyInput from '../../components/esteira/CurrencyInput'
 import ReasonModal from '../../components/esteira/ReasonModal'
+import TermosProposta from '../../components/esteira/TermosProposta'
 import PortalShell from '../../components/portal/PortalShell'
 import DefinirSenha from '../../components/portal/DefinirSenha'
 
@@ -271,24 +272,10 @@ function ValidarProposta({ proposta, onAtualizar }) {
         <div>{proposta.nome_cliente}</div>
         <div style={{ color: 'var(--grafite-soft)' }}>{proposta.email}{proposta.tel ? ` · ${proposta.tel}` : ''}</div>
       </div>
-      <div style={{ display: 'flex', gap: 'var(--space-5)', flexWrap: 'wrap' }}>
-        <div>
-          <div className="page-eyebrow" style={{ marginBottom: 2 }}>Valor do aluguel</div>
-          <div style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--weight-medium)' }}>{valorBR(proposta.valor_oferta ?? proposta.valor)}</div>
-        </div>
-        {proposta.valor != null && proposta.valor_oferta != null && Number(proposta.valor) !== Number(proposta.valor_oferta) && (
-          <div>
-            <div className="page-eyebrow" style={{ marginBottom: 2 }}>Valor anunciado</div>
-            <div style={{ color: 'var(--grafite-soft)' }}>{valorBR(proposta.valor)}</div>
-          </div>
-        )}
+      <div>
+        <div className="page-eyebrow" style={{ marginBottom: 'var(--space-2)' }}>Condições negociadas</div>
+        <TermosProposta proposta={proposta} />
       </div>
-      {proposta.observacoes && (
-        <div>
-          <div className="page-eyebrow" style={{ marginBottom: 2 }}>Termos combinados</div>
-          <div style={{ whiteSpace: 'pre-line' }}>{proposta.observacoes}</div>
-        </div>
-      )}
       <div className="field" style={{ flexDirection: 'row', alignItems: 'center', gap: 'var(--space-2)' }}>
         <input id="pv-concordo" type="checkbox" checked={concordo} onChange={(e) => setConcordo(e.target.checked)} style={{ width: 'auto' }} />
         <label htmlFor="pv-concordo" style={{ textTransform: 'none', letterSpacing: 0 }}>Li e confirmo que estes são os termos combinados.</label>

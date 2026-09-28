@@ -60,7 +60,7 @@ Locação e venda são processos separados. Navbar **Propostas ▾** → Locaç�
 ### Esteira de locação v4 (gestor, locatário, ADM) — PRD §5.6, 28/09
 Status em `propostas_locacao.status`:
 ```
-nova_proposta (gestor registra os termos: valor negociado + observações) ─> aguardando_locatario
+nova_proposta (gestor registra as condições negociadas) ─> aguardando_locatario
 aguardando_locatario ──(locatário) "Validar proposta"──> aguardando_docs  ── e-mail "esteira aberta" à equipe; prazo +30 dias
                      └─(locatário) "Algo está errado" + motivo──> correcao_solicitada ── e-mail a quem registrou
 correcao_solicitada ──(gestor) "Corrigir e reenviar"──> aguardando_locatario ── e-mail "proposta corrigida"; prazo +7 dias
@@ -72,7 +72,8 @@ docs_aprovados ──Finalizar (baixa .zip, limpa Storage) + sincronizar_imoview
 Em qualquer etapa aberta: descartar ─> rejeitada · validação vencida (7 dias) ─> expirada · correção pedida não expira
 ```
 Portal do locatário: 4 etapas com cadeado (Validação → Cadastro → Documentos → Conclusão). Em `correcao_solicitada` mostra o motivo que ele mandou e avisa que o corretor vai reenviar. A tela se atualiza sozinha a cada 20 s.
-Propostas de locação (gestor): formulário completo; fila "Correções pedidas pelo locatário" no topo; "Editar"/"Corrigir" na linha e no detalhe enquanto não validou. Home: pendência "correção pedida" para Admin e para o corretor dono.
+Condições negociadas (componente `TermosProposta`): no detalhe da proposta, no painel da Esteira e em Processos (equipe, com a taxa de administração, exceto Processos) e no portal (locatário, sem a taxa).
+Propostas de locação (gestor): formulário com locatário, imóvel e condições negociadas (corretor responsável, valor, garantia, posse, prazo, vencimento, rescisão, negociação específica, outros combinados, taxa); fila "Correções pedidas pelo locatário" no topo; "Editar"/"Corrigir" na linha e no detalhe enquanto não validou. Home: pendência "correção pedida" para Admin e para o corretor dono.
 
 ### Proposta de venda (corretor, ADM, proponente) — RF21, PRD §5.5
 Status em `propostas_venda.status`:

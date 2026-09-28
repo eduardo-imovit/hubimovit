@@ -7,6 +7,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { decidirDocumento, marcarSincronizada, solicitarAjustes } from '../../lib/esteira'
 import { formatarPrazo } from '../../lib/esteiraLabels'
 import { StatusBadge, DocStatusBadge } from '../../components/esteira/StatusBadge'
+import TermosProposta from '../../components/esteira/TermosProposta'
 import ReasonModal from '../../components/esteira/ReasonModal'
 import ModalPortal from '../../components/esteira/ModalPortal'
 import { usePerfil } from '../../hooks/usePerfil'
@@ -201,6 +202,13 @@ function ChecklistEsteira({ proposta, onAtualizar }) {
           <StatusBadge status={proposta.status_efetivo} />
           {prazo && <span className={`esteira-prazo ${prazo.urgente ? 'is-urgente' : 'is-ok'}`}>{prazo.texto}</span>}
         </div>
+
+        <details className="card card-body">
+          <summary className="page-eyebrow" style={{ marginBottom: 0, cursor: 'pointer' }}>Condições negociadas</summary>
+          <div style={{ marginTop: 'var(--space-3)' }}>
+            <TermosProposta proposta={proposta} incluirTaxa />
+          </div>
+        </details>
 
         <div className="card card-body">
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>

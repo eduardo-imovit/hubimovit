@@ -81,29 +81,46 @@ const CORS_HEADERS = {
 // Schemas de entrada — um por evento, união discriminada por `evento`
 // -----------------------------------------------------------------------------
 
+// Termos da negociação (modelo do e-mail que o gestor já mandava). A taxa de
+// administração vai para propostas_locacao_interno (o locatário não lê).
+const termosSchema = {
+  tel: z.string().trim().min(1),
+  valor: z.number().positive(),
+  valor_oferta: z.number().positive(),
+  corretor_responsavel: z.string().trim().min(1),
+  garantia: z.enum(['Seguro-fiança', 'Fiador', 'Caução', 'Título de capitalização', 'Outra']),
+  data_posse: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  prazo_meses: z.number().int().min(1).max(360),
+  dia_vencimento: z.number().int().min(1).max(31),
+  clausula_rescisao: z.string().optional(),
+  negociacao_especifica: z.string().optional(),
+  observacoes: z.string().optional(),
+  taxa_administracao: z.number().min(0).max(100).optional(),
+}
+
+const CHAVES_TERMOS = Object.keys(termosSchema) as (keyof typeof termosSchema)[]
+
+function termosDoEvento(evento: Record<string, unknown>) {
+  return Object.fromEntries(CHAVES_TERMOS.filter((k) => evento[k] !== undefined).map((k) => [k, evento[k]]))
+}
+
 const eventoSchema = z.discriminatedUnion('evento', [
   z.object({
     evento: z.literal('nova_proposta'),
     nome_cliente: z.string().min(1),
     email: z.string().email(),
-    tel: z.string().min(1),
     codigo_imovel: z.number().int().positive(),
-    valor: z.number().positive(),
-    valor_oferta: z.number().positive(),
-    observacoes: z.string().optional(),
     imovel_titulo: z.string().optional(),
     imovel_endereco: z.string().optional(),
+    ...termosSchema,
   }),
   z.object({
     evento: z.literal('editar_proposta'),
     proposta_id: z.string().uuid(),
     nome_cliente: z.string().min(1),
-    tel: z.string().min(1),
-    valor: z.number().positive(),
-    valor_oferta: z.number().positive(),
-    observacoes: z.string().optional(),
     imovel_titulo: z.string().optional(),
     imovel_endereco: z.string().optional(),
+    ...termosSchema,
   }),
   z.object({
     evento: z.literal('validar_proposta'),
@@ -308,11 +325,8 @@ async function handleNovaProposta(evento: Extract<Evento, { evento: 'nova_propos
     p_criado_por: ator.id,
     p_nome_cliente: evento.nome_cliente,
     p_email: evento.email,
-    p_tel: evento.tel,
     p_codigo_imovel: evento.codigo_imovel,
-    p_valor: evento.valor,
-    p_valor_oferta: evento.valor_oferta,
-    p_observacoes: evento.observacoes ?? null,
+    p_termos: termosDoEvento(evento),
     p_imovel_titulo: evento.imovel_titulo ?? null,
     p_imovel_endereco: evento.imovel_endereco ?? null,
     p_ator: ator.email,
@@ -331,10 +345,7 @@ async function handleEditarProposta(evento: Extract<Evento, { evento: 'editar_pr
     p_ator_id: ator.id,
     p_ator: ator.email,
     p_nome_cliente: evento.nome_cliente,
-    p_tel: evento.tel,
-    p_valor: evento.valor,
-    p_valor_oferta: evento.valor_oferta,
-    p_observacoes: evento.observacoes ?? null,
+    p_termos: termosDoEvento(evento),
     p_imovel_titulo: evento.imovel_titulo ?? null,
     p_imovel_endereco: evento.imovel_endereco ?? null,
   })
@@ -353,7 +364,9 @@ async function handleValidarProposta(evento: Extract<Evento, { evento: 'validar_
   })
   if (error) throw error
 
-  const email = emailEsteiraAberta(data, linkEsteiras())
+  const { data: interno } = await supabase
+    .from('propostas_locacao_interno').select('taxa_administracao').eq('proposta_id', data.id).maybeSingle()
+  const email = emailEsteiraAberta({ ...data, taxa_administracao: interno?.taxa_administracao ?? null }, linkEsteiras())
   await notificar(DESTINATARIOS_NOVA_ESTEIRA, email.assunto, email.html)
 
   return { proposta: data }

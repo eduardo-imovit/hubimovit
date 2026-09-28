@@ -120,8 +120,11 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 ### 5.6 Esteira de locação v4: as partes negociam, o locatário só valida (pedido do Eduardo, 28/09) — **aprovado, implementado**
 - **Problema:** o locatário digitava a oferta no portal e a proposta ainda passava por aprovação interna. A negociação real já acontece antes, entre as partes; o sistema duplicava esse trabalho e atrasava a abertura da esteira.
 - **Fluxo (Eduardo):** locatário entra em contato → negocia → locador aceita os termos → **gestor gera a proposta registrando os termos** → sistema envia ao locatário → ele **valida ou pede correção** → validando, **entra na esteira**.
-  1. Em `/admin/propostas` o gestor (corretor, Admin ou Gestão) preenche: nome, e-mail e telefone do locatário, imóvel, valor do anúncio, **valor negociado** (obrigatório) e **observações** (os termos combinados: prazo, garantia, entrada, condições). Ao criar, o locatário recebe o e-mail "pronta para validar".
-  2. No portal, o locatário vê os termos só para leitura, marca "Li e confirmo que estes são os termos combinados" e **Valida**, ou clica **"Algo está errado"** e escreve o motivo.
+  1. Em `/admin/propostas` o gestor (corretor, Admin ou Gestão) preenche o locatário (nome, e-mail, telefone), o imóvel e as **condições negociadas**, no mesmo modelo do e-mail que a equipe já mandava (28/09):
+     - obrigatórias: **corretor responsável** (lista do CRM, sugerindo quem cria), **valor da locação** (negociado) e valor do anúncio, **tipo de garantia** (seguro-fiança, fiador, caução, título de capitalização, outra), **data da posse**, **prazo contratual** (meses, sugere 30), **dia de vencimento do aluguel**;
+     - opcionais: **cláusula de rescisão**, **negociação específica**, **outros combinados e benfeitorias**, **taxa de administração** (%).
+     Ao criar, o locatário recebe o e-mail "pronta para validar" com as condições.
+  2. No portal, o locatário vê as condições só para leitura (tudo, **menos a taxa de administração**), marca "Li e confirmo que estes são os termos combinados" e **Valida**, ou clica **"Algo está errado"** e escreve o motivo.
   3. Correção → status `correcao_solicitada`; e-mail a quem registrou a proposta (sem dono: gabriel@/daniele@). O gestor usa **"Corrigir e reenviar"**; o locatário recebe "proposta corrigida: valide de novo".
   4. **Validar abre a esteira na hora** (`aguardando_docs`), sem aprovação interna; e-mail "Nova esteira aberta" para gabriel@, daniele@, administrativo@ e administrativo3@.
   5. Locatário completa o próprio cadastro (PF/PJ, profissão, renda, cônjuge) e envia os documentos; ADM valida e finaliza, como antes.
@@ -131,6 +134,7 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
   - Correção pedida não expira: a bola está com o gestor.
   - Não dá para criar outra proposta por cima de uma em andamento ou concluída (mesmo e-mail + imóvel); só por cima de descartada, expirada ou validação vencida. Antes, um prazo vencido bastava para sobrescrever até processo concluído.
 - **Sai:** aprovação interna (`decisao_interna`, status `aguardando_aprovacao_interna`) e a digitação de oferta/detalhes pelo locatário. A única proposta que estava na aprovação interna (teste do Daniel) volta para a validação do locatário.
+- **Taxa de administração:** é responsabilidade do proprietário (acordo Imovit × proprietário). Aparece para a equipe (Propostas, Esteira, e-mail "esteira aberta"), nunca para o locatário: fica em `propostas_locacao_interno`, que o locatário não consegue ler nem pela API.
 - **Decisões assumidas (28/09, o Eduardo pode rever):** validação por clique com confirmação (sem assinatura desenhada); alerta "esteira aberta" para a lista que já existia; 30 dias para a fase de documentos.
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)

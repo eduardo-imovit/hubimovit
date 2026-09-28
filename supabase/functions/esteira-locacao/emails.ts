@@ -101,7 +101,17 @@ interface PropostaEmail {
   valor?: number | string | null
   valor_oferta?: number | string | null
   observacoes?: string | null
+  corretor_responsavel?: string | null
+  garantia?: string | null
+  data_posse?: string | null
+  prazo_meses?: number | null
+  dia_vencimento?: number | null
+  clausula_rescisao?: string | null
+  negociacao_especifica?: string | null
+  taxa_administracao?: number | string | null
 }
+
+const dataBR = (iso: string | null | undefined) => (iso ? iso.slice(0, 10).split('-').reverse().join('/') : null)
 
 const moeda = (v: number | string | null | undefined) =>
   v == null || v === '' ? null : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -112,15 +122,30 @@ const textoLivre = (t: string) => escapeHtml(t).replace(/\r?\n/g, '<br/>')
 const doImovel = (p: PropostaEmail, prefixo: string) =>
   p.imovel_titulo ? ` ${prefixo} <strong style="color:#000000">${escapeHtml(p.imovel_titulo)}</strong>` : ''
 
-/** Caixa com os termos registrados pelo gestor (só o que foi preenchido). */
-function detalhesDaProposta(p: PropostaEmail) {
+/**
+ * Caixa com os termos registrados pelo gestor, na ordem do modelo que a equipe
+ * já usava. `interno` inclui a taxa de administração (acordo com o proprietário):
+ * só para e-mails da equipe, nunca para o locatário.
+ */
+function detalhesDaProposta(p: PropostaEmail, interno = false) {
   const itens: string[] = []
+  const linha = (rotulo: string, valor: string | null | undefined, multilinha = false) => {
+    if (valor == null || String(valor).trim() === '') return
+    itens.push(`${rotulo}: ${multilinha ? textoLivre(String(valor).trim()) : `<strong>${escapeHtml(String(valor))}</strong>`}`)
+  }
   const anuncio = moeda(p.valor)
   const negociado = moeda(p.valor_oferta)
-  if (negociado) itens.push(`Valor negociado: <strong>${negociado}</strong>${anuncio && anuncio !== negociado ? ` (anúncio: ${anuncio})` : ''}`)
-  else if (anuncio) itens.push(`Valor do anúncio: <strong>${anuncio}</strong>`)
-  if (p.observacoes?.trim()) itens.push(`Observações: ${textoLivre(p.observacoes.trim())}`)
-  return itens.length ? { rotulo: 'Termos da proposta', itensHtml: itens } : undefined
+  linha('Corretor responsável', p.corretor_responsavel)
+  if (negociado) itens.push(`Valor da locação: <strong>${negociado}</strong>${anuncio && anuncio !== negociado ? ` (anúncio: ${anuncio})` : ''}`)
+  linha('Tipo de garantia', p.garantia)
+  linha('Data da posse', dataBR(p.data_posse))
+  linha('Prazo contratual', p.prazo_meses ? `${p.prazo_meses} meses` : null)
+  linha('Cláusula de rescisão', p.clausula_rescisao, true)
+  linha('Negociação específica', p.negociacao_especifica, true)
+  linha('Outros combinados e benfeitorias', p.observacoes, true)
+  linha('Vencimento do aluguel', p.dia_vencimento ? `todo dia ${p.dia_vencimento}` : null)
+  if (interno) linha('Taxa de administração (proprietário)', p.taxa_administracao != null && p.taxa_administracao !== '' ? `${String(p.taxa_administracao).replace('.', ',')}%` : null)
+  return itens.length ? { rotulo: 'Condições negociadas', itensHtml: itens } : undefined
 }
 
 /** 1. Gestor registrou (ou corrigiu) a proposta negociada → locatário valida. */
@@ -173,7 +198,7 @@ export function emailEsteiraAberta(p: PropostaEmail, linkEsteiras: string) {
         `<strong style="color:#000000">${escapeHtml(p.nome_cliente)}</strong> validou a proposta${doImovel(p, 'para')}.`,
         'A esteira de documentos está aberta: o locatário completa o cadastro e envia os documentos.',
       ],
-      destaque: detalhesDaProposta(p),
+      destaque: detalhesDaProposta(p, true),
       cta: { texto: 'Acompanhar na esteira', url: linkEsteiras },
       assinatura: ASSINATURA_INTERNA,
     }),
