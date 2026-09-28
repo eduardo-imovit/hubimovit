@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { buscar } from '../../lib/homeNiveis'
-import MeuLinkCaptacao from '../formularios/MeuLinkCaptacao'
 import { useEventosCalendario } from '../../hooks/useEventosCalendario'
 import { usePlantao } from '../../hooks/usePlantao'
 import { somarDias } from '../../lib/paineis'
@@ -309,7 +308,6 @@ export function FerramentasHub() {
           <li><Link to="/captacoes">Captação de imóvel <span className="is-muted">· seu link para o proprietário</span></Link></li>
           <li><Link to="/feedback-visita">Feedback de visita <span className="is-muted">· PDF para o proprietário</span></Link></li>
         </ul>
-        <div style={{ marginTop: 'var(--space-2)' }}><MeuLinkCaptacao compacto /></div>
       </div>
     </div>
   )

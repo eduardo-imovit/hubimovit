@@ -8,7 +8,7 @@ import { linkCaptacao } from '../../lib/captacao'
  * corretor no CRM (colaboradores_raw.email_oficial). Cada um vê só o seu
  * (pedido do Eduardo, 28/09: não expor o link do time inteiro).
  */
-export default function MeuLinkCaptacao({ compacto = false }) {
+export default function MeuLinkCaptacao() {
   const { perfil } = usePerfil()
   const corretores = useCorretores()
   const [copiado, setCopiado] = useState(false)
@@ -38,7 +38,7 @@ export default function MeuLinkCaptacao({ compacto = false }) {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
-      {!compacto && <div className="avisos-item-sub" style={{ wordBreak: 'break-all', flex: '1 1 240px' }}>{url}</div>}
+      <div className="avisos-item-sub" style={{ wordBreak: 'break-all', flex: '1 1 240px' }}>{url}</div>
       <button type="button" className="btn btn-primary btn-sm" onClick={copiar}>
         {copiado ? 'Link copiado!' : 'Copiar meu link de captação'}
       </button>
