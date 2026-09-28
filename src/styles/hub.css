@@ -91,6 +91,26 @@
   padding: var(--space-2) var(--space-3);
 }
 .login-submit { width: 100%; margin-top: var(--space-2); }
+.login-ok {
+  font-size: var(--text-xs);
+  color: var(--success);
+  background: var(--success-soft);
+  border-radius: var(--radius-sm);
+  padding: var(--space-2) var(--space-3);
+}
+.login-confirmar { text-align: left; font-size: var(--text-sm); color: var(--grafite-mid); }
+.login-confirmar p { margin: 0; }
+.login-confirmar-icone {
+  width: 48px; height: 48px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--info-soft);
+  color: var(--info);
+  font-size: 24px;
+}
+.login-confirmar-titulo { margin: 0; font-size: var(--text-lg); color: var(--grafite); }
+.login-confirmar-passos { margin: 0; padding-left: 1.2em; display: grid; gap: var(--space-1); list-style: decimal; }
+.login-confirmar-dica { font-size: var(--text-xs); color: var(--grafite-soft); margin: 0; }
 
 /* ------- KPI GRID ------- */
 .kpi-grid {

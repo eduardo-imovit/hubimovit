@@ -22,7 +22,7 @@
 ## 2. Telas
 | Tela | Rota | Papéis | Objetivo | Ações principais |
 |---|---|---|---|---|
-| Login | `/login` | público | Entrar | Entrar, esqueci a senha; explica quando o bloqueio é suspensão |
+| Login | `/login` | público | Entrar | Entrar, criar conta, esqueci a senha; explica quando o bloqueio é suspensão. Depois do cadastro (ou login sem confirmar) mostra **"Confirme seu e-mail"** com reenvio do link |
 | Redefinir senha | `/redefinir-senha` | público (link do e-mail) | Nova senha | Salvar |
 | Home | `/` | todos com perfil | Porta de entrada por nível (PRD §5.4) | Buscar; atalhos; pendências que levam à tela certa; plantão e compromissos; avisos e links |
 | Agenda | `/agenda` | todos com perfil | Calendário completo (saiu da Home) | Navegar mês/semana/dia |
@@ -46,7 +46,7 @@ Corretor: em Propostas/Esteiras/Processos a RLS só devolve as propostas que ele
 ## 3. Fluxos por papel
 
 ### Novo colaborador: do cadastro ao nível
-1. Cria a conta com e-mail `@imovit.com.br` → perfil `user` ("Sem nível").
+1. Cria a conta com e-mail `@imovit.com.br` → tela "Confirme seu e-mail" → clica no link do e-mail → entra → perfil `user` ("Sem nível").
 2. Vê só Home e Perfil. Em Perfil, pede um nível com motivo.
 3. A Gestão vê o pedido em Configurações → Usuários & Acessos e aprova ou recusa (`decidir_solicitacao_acesso`).
 4. O menu se monta de novo pelo novo nível (evento `hub:perfil-atualizado`).
@@ -90,7 +90,7 @@ Configurações → aba → criar/editar/desativar item → aparece na Home e na
 | Gatilho | Para quem | Conteúdo |
 |---|---|---|
 | `nova_proposta` | Locatário | Link do portal para confirmar dados |
-| `confirmar_dados_locatario` | ADM/Gestão | Proposta aguardando aprovação interna |
+| `confirmar_dados_locatario` | `gabriel@`, `daniele@`, **`administrativo@`, `administrativo3@`** (lista `DESTINATARIOS_NOVA_ESTEIRA`, 24/09) | "Nova proposta aguardando revisão interna", com caixa **Detalhes da proposta** (valor ofertado × anúncio e o texto do locatário) |
 | `decisao_interna` | Locatário | Aprovada (segue para o cadastro) ou pedido de correção |
 | `completar_cadastro` / `docs_enviados` | ADM/Gestão | Documentos para analisar |
 | `solicitar_ajustes` | Locatário | E-mail único com os documentos reprovados e os motivos |

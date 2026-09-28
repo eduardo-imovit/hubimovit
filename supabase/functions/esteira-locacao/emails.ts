@@ -98,7 +98,16 @@ export function emailImovit({ badge, titulo, saudacaoNome, paragrafosHtml, desta
 interface PropostaEmail {
   nome_cliente?: string | null
   imovel_titulo?: string | null
+  valor?: number | string | null
+  valor_oferta?: number | string | null
+  observacoes?: string | null
 }
+
+const moeda = (v: number | string | null | undefined) =>
+  v == null || v === '' ? null : Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+/** Texto livre do locatário em HTML seguro, mantendo as quebras de linha. */
+const textoLivre = (t: string) => escapeHtml(t).replace(/\r?\n/g, '<br/>')
 
 const doImovel = (p: PropostaEmail, prefixo: string) =>
   p.imovel_titulo ? ` ${prefixo} <strong style="color:#000000">${escapeHtml(p.imovel_titulo)}</strong>` : ''
@@ -121,6 +130,17 @@ export function emailPropostaCriada(p: PropostaEmail, linkPortal: string) {
   }
 }
 
+/** Caixa com o valor e os detalhes que o locatário escreveu (só o que foi preenchido). */
+function detalhesDaProposta(p: PropostaEmail) {
+  const itens: string[] = []
+  const anuncio = moeda(p.valor)
+  const oferta = moeda(p.valor_oferta)
+  if (oferta) itens.push(`Valor ofertado: <strong>${oferta}</strong>${anuncio && anuncio !== oferta ? ` (anúncio: ${anuncio})` : ''}`)
+  else if (anuncio) itens.push(`Valor do anúncio: <strong>${anuncio}</strong>`)
+  if (p.observacoes?.trim()) itens.push(`Detalhes: ${textoLivre(p.observacoes.trim())}`)
+  return itens.length ? { rotulo: 'Detalhes da proposta', itensHtml: itens } : undefined
+}
+
 /** 2. Locatário completou os dados → equipe interna. */
 export function emailRevisaoInterna(p: PropostaEmail, linkPropostas: string) {
   return {
@@ -132,6 +152,7 @@ export function emailRevisaoInterna(p: PropostaEmail, linkPropostas: string) {
         `<strong style="color:#000000">${escapeHtml(p.nome_cliente)}</strong> completou os dados da proposta${doImovel(p, 'para')}.`,
         'Revise antes de liberar a etapa de documentos.',
       ],
+      destaque: detalhesDaProposta(p),
       cta: { texto: 'Revisar proposta', url: linkPropostas },
       assinatura: ASSINATURA_INTERNA,
     }),

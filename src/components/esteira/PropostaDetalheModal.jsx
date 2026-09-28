@@ -56,8 +56,8 @@ export default function PropostaDetalheModal({ proposta, processando, erro, onCl
             </div>
             {proposta.observacoes && (
               <div>
-                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Observações do locatário</div>
-                <div>{proposta.observacoes}</div>
+                <div className="page-eyebrow" style={{ marginBottom: 2 }}>Detalhes da proposta (enviados pelo locatário)</div>
+                <div style={{ whiteSpace: 'pre-line' }}>{proposta.observacoes}</div>
               </div>
             )}
             {!podeDecidir && (

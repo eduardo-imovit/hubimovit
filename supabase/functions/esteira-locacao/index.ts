@@ -245,6 +245,13 @@ async function exigirEmailProposta(
 
 const REMETENTE = { name: 'Hub Imovit', email: 'relacionamento@imovit.com.br' }
 const DESTINATARIOS_REVISAO_INTERNA = ['gabriel@imovit.com.br', 'daniele@imovit.com.br']
+// Nova proposta entrando na esteira (locatário confirmou os dados): também o
+// administrativo, que acompanha a abertura de cada esteira (pedido do Eduardo, 24/09).
+const DESTINATARIOS_NOVA_ESTEIRA = [
+  ...DESTINATARIOS_REVISAO_INTERNA,
+  'administrativo@imovit.com.br',
+  'administrativo3@imovit.com.br',
+]
 
 // Lido a cada envio (não no carregamento do módulo): uma instância já quente
 // continuaria com o valor antigo depois de alguém trocar a secret APP_URL.
@@ -322,7 +329,7 @@ async function handleConfirmarDadosLocatario(evento: Extract<Evento, { evento: '
   if (error) throw error
 
   const email = emailRevisaoInterna(data, linkPropostas())
-  await notificar(DESTINATARIOS_REVISAO_INTERNA, email.assunto, email.html)
+  await notificar(DESTINATARIOS_NOVA_ESTEIRA, email.assunto, email.html)
 
   return { proposta: data }
 }

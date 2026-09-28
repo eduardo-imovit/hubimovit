@@ -143,6 +143,7 @@ Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = exec
 - Reprovar um documento não manda e-mail na hora. O e-mail sai só quando o ADM usa "Solicitar ajustes".
 - Soft-delete (`ativo = false`) na maioria das tabelas de conteúdo: dado "sumido" costuma ser isso.
 - Lead frio no bot do WhatsApp: 60 dias sem atualização (decisão de 24/09).
+- No portal, o locatário preenche **Detalhes da proposta** (prazo do contrato, valor, garantia e condições); no banco é a coluna `propostas_locacao.observacoes`. A abertura de cada esteira (locatário confirmou os dados) notifica também `administrativo@` e `administrativo3@` (24/09).
 
 ## 7. Critérios de sucesso / aceite
 - Cada papel, com login de verdade, vê exatamente o que a tabela da seção 2 diz, e nada a mais. Conferir no banco, não só na tela.

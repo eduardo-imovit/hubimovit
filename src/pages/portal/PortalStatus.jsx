@@ -259,8 +259,15 @@ function FormConfirmarDados({ proposta, onAtualizar }) {
         <CurrencyInput id="pf-valor-oferta" value={form.valor_oferta} onChange={(valor_oferta) => setForm({ ...form, valor_oferta })} />
       </div>
       <div className="field">
-        <label htmlFor="pf-observacoes">Observações (opcional)</label>
-        <textarea id="pf-observacoes" rows={3} value={form.observacoes} onChange={(e) => setForm({ ...form, observacoes: e.target.value })} />
+        <label htmlFor="pf-observacoes">Detalhes da proposta</label>
+        <textarea
+          id="pf-observacoes"
+          rows={4}
+          value={form.observacoes}
+          onChange={(e) => setForm({ ...form, observacoes: e.target.value })}
+          placeholder="Ex.: contrato de 30 meses, aluguel de R$ 3.500 com condomínio incluso, garantia por seguro-fiança, entrada no dia 10/11."
+        />
+        <span className="field-hint">Prazo do contrato, valor, garantia (fiador, seguro-fiança, caução ou título de capitalização) e qualquer condição que você queira propor.</span>
       </div>
       <button type="submit" className="btn btn-primary btn-sm" disabled={salvando}>
         {salvando ? 'Enviando…' : 'Confirmar e continuar'}
