@@ -16,8 +16,8 @@ export const VAGAS = ['0', '1', '2', '3', '4 ou mais']
 export const TIPOS_VAGA = ['Coberta', 'Livre', 'Ambas']
 export const LAZER = ['Academia', 'Churrasqueira', 'Hidromassagem', 'Home cinema', 'Piscina', 'Playground', 'Quadra poliesportiva', 'Quadra de tênis', 'Sala de massagem', 'Salão de festas', 'Salão de jogos', 'Sauna', 'Espaço gourmet', 'Garage band', 'Quadra de squash', 'Quadra de beach tênis']
 
-export const carregarFormularioCaptacao = () => chamarFuncao('captacao', { evento: 'formulario' })
+export const carregarFormularioCaptacao = (token) => chamarFuncao('captacao', { evento: 'formulario', token })
 export const enviarCaptacao = (dados) => chamarFuncao('captacao', { evento: 'enviar', ...dados })
 
-/** Link fixo de captação de um corretor (id do CRM). */
-export const linkCaptacao = (idCorretor) => `${window.location.origin}/captacao/${idCorretor}`
+/** Link fixo de captação de um corretor (código aleatório de captacao_links). */
+export const linkCaptacao = (token) => `${window.location.origin}/captacao/${token}`

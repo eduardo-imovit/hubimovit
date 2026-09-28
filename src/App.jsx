@@ -64,9 +64,9 @@ export default function App() {
         <Route path="/captacoes" element={<ProtectedRoute papeis={ACESSO.formularios}><Captacoes /></ProtectedRoute>} />
         <Route path="/feedback-visita" element={<ProtectedRoute papeis={ACESSO.formularios}><FeedbackVisita /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
-        {/* público (proprietário, sem login): link fixo de captação do corretor */}
+        {/* público (proprietário, sem login): link fixo de captação do corretor (código aleatório) */}
         <Route path="/captacao" element={<CaptacaoPublica />} />
-        <Route path="/captacao/:corretorId" element={<CaptacaoPublica />} />
+        <Route path="/captacao/:token" element={<CaptacaoPublica />} />
         <Route path="/portal/entrar" element={<PortalLogin />} />
         <Route path="/portal" element={<PortalStatus />} />
         <Route path="/venda/entrar" element={<PortalVendaLogin />} />

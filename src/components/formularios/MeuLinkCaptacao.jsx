@@ -1,30 +1,26 @@
-import { useState } from 'react'
-import { usePerfil } from '../../hooks/usePerfil'
-import { useCorretores } from '../../hooks/useCorretores'
+import { useEffect, useState } from 'react'
+import { supabase } from '../../lib/supabaseClient'
 import { linkCaptacao } from '../../lib/captacao'
 
 /**
- * Link de captação de quem está logado: o e-mail do login identifica o
- * corretor no CRM (colaboradores_raw.email_oficial). Cada um vê só o seu
- * (pedido do Eduardo, 28/09: não expor o link do time inteiro).
+ * Link de captação de quem está logado. O RPC meu_link_captacao acha o
+ * corretor pelo e-mail do login (colaboradores_raw.email_oficial) e devolve o
+ * código aleatório dele; ninguém vê o link de outro corretor.
  */
 export default function MeuLinkCaptacao() {
-  const { perfil } = usePerfil()
-  const corretores = useCorretores()
+  const [token, setToken] = useState(undefined)
   const [copiado, setCopiado] = useState(false)
 
-  if (!perfil || !corretores.length) return null
-  const eu = corretores.find((c) => c.email_oficial?.toLowerCase() === perfil.email?.toLowerCase())
+  useEffect(() => {
+    supabase.rpc('meu_link_captacao').then(({ data }) => setToken(data ?? null))
+  }, [])
 
-  if (!eu) {
-    return (
-      <div className="avisos-item-sub">
-        Seu e-mail ({perfil.email}) não está no cadastro de corretores do CRM, então não há link de captação para você.
-      </div>
-    )
+  if (token === undefined) return <div className="avisos-item-sub">Carregando seu link…</div>
+  if (!token) {
+    return <div className="avisos-item-sub">Seu e-mail não está no cadastro de corretores do CRM, então não há link de captação para você.</div>
   }
 
-  const url = linkCaptacao(eu.id_corretor_crm)
+  const url = linkCaptacao(token)
 
   async function copiar() {
     try {

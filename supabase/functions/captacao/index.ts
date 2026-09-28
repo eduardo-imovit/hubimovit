@@ -1,15 +1,16 @@
 // =============================================================================
 // Captação de imóvel — formulário público do proprietário (RF23, PRD §5.7).
 //
-// O proprietário abre o link fixo do corretor (/captacao/<id do corretor no
-// CRM>), sem login, preenche e assina. Esta função é a única porta de escrita
+// O proprietário abre o link fixo do corretor (/captacao/<token>, código
+// aleatório de captacao_links; antes era o id do CRM, sequencial e fácil de
+// trocar), sem login, preenche e assina. Esta função é a única porta de escrita
 // na tabela `captacoes` (anon não tem grant): valida o payload, confere o
 // corretor na lista do CRM, grava com a declaração que foi exibida e avisa o
 // corretor por e-mail. Só registro: o corretor é o responsável pelo processo.
 //
 // Eventos:
-//   formulario -- lista de corretores ativos (nome + id) e o texto oficial da
-//                 declaração, que a página exibe tal como será gravado
+//   formulario -- nome do corretor do token e o texto oficial da declaração,
+//                 que a página exibe tal como será gravado (sem lista de nomes)
 //   enviar     -- grava a captação; honeypot `site` precisa vir vazio
 //
 // Deploy: supabase functions deploy captacao (verify_jwt: a página pública
@@ -48,11 +49,12 @@ const texto = (max = 200) => z.string().trim().max(max)
 const opcional = (max = 200) => texto(max).optional().transform((v) => (v ? v : null))
 const valor = z.number().nonnegative().max(1e10).optional().nullable()
 
+const token = z.string().regex(/^[A-Za-z0-9_-]{10,40}$/)
+
 const enviarSchema = z.object({
   evento: z.literal('enviar'),
   site: z.string().max(0).optional(), // honeypot: robô preenche, gente não vê
-  corretor_crm_id: z.number().int().positive().optional().nullable(),
-  corretor: texto(120).optional(),
+  token,
   proprietario_nome: texto(160).min(3),
   proprietario_email: z.string().trim().email().max(160),
   proprietario_telefone: texto(40).min(8),
@@ -85,16 +87,22 @@ const enviarSchema = z.object({
   assinatura: z.string().startsWith('data:image/png;base64,').max(400000),
 })
 
-const eventoSchema = z.discriminatedUnion('evento', [z.object({ evento: z.literal('formulario') }), enviarSchema])
+const eventoSchema = z.discriminatedUnion('evento', [z.object({ evento: z.literal('formulario'), token }), enviarSchema])
 
-async function corretoresAtivos() {
-  const { data, error } = await supabase
+/** Corretor ativo dono do token, ou null (link inválido ou corretor inativo). */
+async function corretorDoToken(t: string) {
+  const { data: link, error } = await supabase.from('captacao_links').select('corretor_crm_id').eq('token', t).maybeSingle()
+  if (error) throw error
+  if (!link) return null
+  const { data: corretor, error: erroCorretor } = await supabase
     .from('colaboradores_raw')
     .select('id_corretor_crm, nome_completo, email_oficial')
+    .eq('id_corretor_crm', link.corretor_crm_id)
     .eq('ativo', true)
-    .order('nome_completo')
-  if (error) throw error
-  return data ?? []
+    .limit(1)
+    .maybeSingle()
+  if (erroCorretor) throw erroCorretor
+  return corretor
 }
 
 function appUrl() {
@@ -163,25 +171,19 @@ Deno.serve(async (req) => {
   const evento = parsed.data
 
   try {
-    const corretores = await corretoresAtivos()
+    const corretor = await corretorDoToken(evento.token)
+    if (!corretor) return json({ erro: 'Este link de captação não é válido. Peça um novo ao seu corretor.' }, 404)
 
     if (evento.evento === 'formulario') {
-      return json({
-        declaracao: DECLARACAO,
-        corretores: corretores.map((c) => ({ id: c.id_corretor_crm, nome: c.nome_completo })),
-      })
+      return json({ declaracao: DECLARACAO, corretor: corretor.nome_completo })
     }
 
     // enviar
-    const corretor = evento.corretor_crm_id
-      ? corretores.find((c) => c.id_corretor_crm === evento.corretor_crm_id)
-      : corretores.find((c) => c.nome_completo === evento.corretor)
-    if (!corretor) return json({ erro: 'Escolha o corretor responsável' }, 400)
     if (evento.exclusividade && !evento.exclusividade_periodo) {
       return json({ erro: 'Informe o período da exclusividade' }, 400)
     }
 
-    const { evento: _e, site: _s, corretor: _c, corretor_crm_id: _id, ...dados } = evento
+    const { evento: _e, site: _s, token: _t, ...dados } = evento
     const registro = {
       ...dados,
       exclusividade_periodo: evento.exclusividade ? evento.exclusividade_periodo : null,

@@ -20,7 +20,7 @@ const ETAPAS = [
 ]
 
 const inicial = {
-  corretor: '', proprietario_nome: '', proprietario_email: '', proprietario_telefone: '', proprietario_cpf: '',
+  proprietario_nome: '', proprietario_email: '', proprietario_telefone: '', proprietario_cpf: '',
   tipo_imovel: '', finalidade: '', exclusividade: '', exclusividade_periodo: '',
   logradouro: '', numero: '', bairro: '', cep: '', apto_sala: '', bloco: '', quadra: '',
   valor_venda: '', valor_locacao: '', valor_condominio: '', iptu_mensal: '',
@@ -63,7 +63,7 @@ function Opcoes({ id, opcoes, valor, onChange }) {
  * `captacao` e baixa o PDF da autorização gerado no navegador.
  */
 export default function CaptacaoPublica() {
-  const { corretorId } = useParams()
+  const { token } = useParams()
   const [config, setConfig] = useState(null)
   const [erroCarga, setErroCarga] = useState('')
   const [form, setForm] = useState(inicial)
@@ -76,18 +76,19 @@ export default function CaptacaoPublica() {
   const docRef = useRef(null)
 
   useEffect(() => {
-    carregarFormularioCaptacao()
+    if (!token) {
+      setErroCarga('Este link de captação não é válido. Peça um novo ao seu corretor.')
+      return
+    }
+    carregarFormularioCaptacao(token)
       .then(setConfig)
       .catch((e) => setErroCarga(e.message))
-  }, [])
-
-  const corretorFixo = config?.corretores.find((c) => String(c.id) === corretorId) ?? null
+  }, [token])
   const set = (patch) => setForm((f) => ({ ...f, ...patch }))
 
   function validarEtapa(i) {
     const f = form
     if (i === 0) {
-      if (!corretorFixo && !f.corretor) return 'Escolha o corretor responsável.'
       if (f.proprietario_nome.trim().length < 3) return 'Informe seu nome completo.'
       if (!/^\S+@\S+\.\S+$/.test(f.proprietario_email.trim())) return 'Informe um e-mail válido.'
       if (f.proprietario_telefone.replace(/\D/g, '').length < 10) return 'Informe um telefone com DDD.'
@@ -127,8 +128,7 @@ export default function CaptacaoPublica() {
       const f = form
       const dados = {
         site: f.site || undefined,
-        corretor_crm_id: corretorFixo?.id ?? undefined,
-        corretor: corretorFixo ? undefined : f.corretor,
+        token,
         proprietario_nome: f.proprietario_nome.trim(),
         proprietario_email: f.proprietario_email.trim(),
         proprietario_telefone: f.proprietario_telefone.trim(),
@@ -167,7 +167,7 @@ export default function CaptacaoPublica() {
     }
   }
 
-  if (erroCarga) return <Moldura><div className="hub-error">Não foi possível abrir o formulário: {erroCarga}</div></Moldura>
+  if (erroCarga) return <Moldura><div className="hub-error">{erroCarga}</div></Moldura>
   if (!config) return <Moldura><div className="hub-loading">Carregando…</div></Moldura>
 
   if (enviada) {
@@ -235,20 +235,10 @@ export default function CaptacaoPublica() {
                 <input id="cp-cpf" required inputMode="numeric" value={form.proprietario_cpf} onChange={(ev) => set({ proprietario_cpf: ev.target.value })} placeholder="000.000.000-00" />
               </div>
             </div>
-            {corretorFixo ? (
-              <div className="field">
-                <label>Corretor responsável</label>
-                <div>{corretorFixo.nome}</div>
-              </div>
-            ) : (
-              <div className="field">
-                <label htmlFor="cp-corretor">Corretor responsável</label>
-                <select id="cp-corretor" required value={form.corretor} onChange={(ev) => set({ corretor: ev.target.value })}>
-                  <option value="" disabled>Escolha…</option>
-                  {config.corretores.map((c) => <option key={c.id} value={c.nome}>{c.nome}</option>)}
-                </select>
-              </div>
-            )}
+            <div className="field">
+              <label>Corretor responsável</label>
+              <div>{config.corretor}</div>
+            </div>
           </>
         )}
 
