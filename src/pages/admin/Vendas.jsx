@@ -42,7 +42,6 @@ export default function Vendas({ modo = 'propostas' }) {
   const [salvando, setSalvando] = useState(false)
   const [erroForm, setErroForm] = useState('')
   const [detalhando, setDetalhando] = useState(null)
-  const [docUrl, setDocUrl] = useState('')
   const [descartando, setDescartando] = useState(null)
   const [processando, setProcessando] = useState(false)
   const [erroAcao, setErroAcao] = useState('')
@@ -70,16 +69,19 @@ export default function Vendas({ modo = 'propostas' }) {
     }
   }
 
-  async function abrirDetalhe(p) {
+  function abrirDetalhe(p) {
     setDetalhando(p)
-    setDocUrl('')
     setErroAcao('')
-    if (p.documento_path) {
-      const { data } = await supabase.storage
-        .from('propostas-venda')
-        .createSignedUrl(p.documento_path, 300, { download: `proposta-compra-${p.codigo_imovel}-${p.id.slice(0, 8)}.pdf` })
-      if (data?.signedUrl) setDocUrl(data.signedUrl)
-    }
+  }
+
+  // URL assinada gerada na hora do clique (vale 60 s), já como download com nome.
+  async function baixarPdf(p) {
+    setErroAcao('')
+    const { data, error } = await supabase.storage
+      .from('propostas-venda')
+      .createSignedUrl(p.documento_path, 60, { download: `proposta-compra-${p.codigo_imovel}-${p.id.slice(0, 8)}.pdf` })
+    if (error || !data?.signedUrl) return setErroAcao('Não foi possível baixar o PDF. Tente de novo.')
+    window.location.assign(data.signedUrl)
   }
 
   async function handleDescartar(motivo) {
@@ -153,6 +155,7 @@ export default function Vendas({ modo = 'propostas' }) {
 
       {carregando && <div className="hub-loading">Carregando…</div>}
       {erro && <div className="hub-error">Não foi possível carregar as propostas: {erro}</div>}
+      {erroAcao && !detalhando && !descartando && <div className="hub-error">{erroAcao}</div>}
 
       {!carregando && !erro && propostas.length === 0 && (
         <div className="empty">
@@ -187,10 +190,15 @@ export default function Vendas({ modo = 'propostas' }) {
                     <td>{valorBR(p.valor_proposta ?? p.valor_referencia)}</td>
                     <td>{LABEL[efetivo] ?? efetivo}</td>
                     <td>{prazo ? prazo.texto : '—'}</td>
-                    <td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
                       <button type="button" className="btn btn-ghost btn-sm" onClick={() => abrirDetalhe(p)}>
                         Visualizar
                       </button>
+                      {p.documento_path && (
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => baixarPdf(p)}>
+                          PDF
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )
@@ -203,7 +211,7 @@ export default function Vendas({ modo = 'propostas' }) {
       {detalhando && (
         <VendaDetalheModal
           proposta={detalhando}
-          documentoUrl={docUrl}
+          onBaixarPdf={baixarPdf}
           erro={erroAcao}
           processando={processando}
           podeDescartar={podeDescartar}

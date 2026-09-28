@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useSession } from '../../hooks/useSession'
+import { usePerfil } from '../../hooks/usePerfil'
+import { pode } from '../../lib/acessos'
 import { confirmarPropostaVenda } from '../../lib/vendas'
 import { valorBR } from '../../lib/esteiraLabels'
 import CurrencyInput from '../../components/esteira/CurrencyInput'
@@ -16,6 +18,15 @@ import DocumentoVenda from '../../components/venda/DocumentoVenda'
 export default function PortalVenda() {
   const { session, carregando: carregandoSessao } = useSession()
   const email = session?.user?.email ?? ''
+  // Equipe testando com o próprio e-mail volta ao painel; o cliente não tem painel no Hub.
+  const { perfil } = usePerfil()
+  const ehEquipe = pode(perfil, 'vendas')
+  const navigate = useNavigate()
+
+  async function concluirESair() {
+    await supabase.auth.signOut()
+    navigate('/venda/entrar', { replace: true })
+  }
   const [propostas, setPropostas] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState(null)
@@ -222,6 +233,11 @@ export default function PortalVenda() {
                     <button type="button" className="btn btn-primary btn-sm" onClick={() => handleGerarPdfDepois(p)} disabled={!urls[p.id]?.assinatura}>
                       Gerar PDF da proposta
                     </button>
+                  )}
+                  {ehEquipe ? (
+                    <Link to="/admin/vendas/processos" className="btn btn-ghost btn-sm">Voltar ao painel</Link>
+                  ) : (
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={concluirESair}>Concluir e sair</button>
                   )}
                 </div>
                 {/* bloco oculto p/ gerar o PDF */}

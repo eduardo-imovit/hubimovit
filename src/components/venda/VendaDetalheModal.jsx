@@ -12,11 +12,14 @@ const LABEL = {
  * Detalhe interno da proposta de venda (só leitura + ações da equipe).
  * Arquivo próprio — PropostaDetalheModal (locação) não é tocado.
  */
-export default function VendaDetalheModal({ proposta, onClose, onDescartar, podeDescartar, processando, erro, documentoUrl }) {
+export default function VendaDetalheModal({ proposta, onClose, onDescartar, onBaixarPdf, podeDescartar, processando, erro }) {
   const status = proposta.status_efetivo ?? proposta.status
   return (
     <ModalPortal>
-      <div className="modal">
+      {/* .modal-overlay é quem posiciona o modal na tela; sem ele o modal ia
+          para o fim do <body>, fora da vista, e "Visualizar" parecia não fazer nada. */}
+      <div className="modal-overlay" onClick={() => !processando && onClose()}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <div className="page-eyebrow">Proposta de compra</div>
@@ -34,8 +37,13 @@ export default function VendaDetalheModal({ proposta, onClose, onDescartar, pode
           {proposta.descricao_proposta && (
             <div><strong>Descrição:</strong><div style={{ whiteSpace: 'pre-wrap' }}>{proposta.descricao_proposta}</div></div>
           )}
-          {documentoUrl && (
-            <a className="btn btn-ghost btn-sm" href={documentoUrl}>Baixar proposta assinada (PDF)</a>
+          {proposta.documento_path && (
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => onBaixarPdf(proposta)}>
+              Baixar proposta assinada (PDF)
+            </button>
+          )}
+          {status === 'confirmada' && !proposta.documento_path && (
+            <div className="page-sub">Assinada, mas o PDF ainda não foi gerado. O proponente gera pelo portal (botão "Gerar PDF da proposta").</div>
           )}
           {podeDescartar && status === 'aguardando_cliente' && (
             <button type="button" className="btn btn-ghost btn-sm" disabled={processando} onClick={onDescartar}>
@@ -43,6 +51,7 @@ export default function VendaDetalheModal({ proposta, onClose, onDescartar, pode
             </button>
           )}
         </div>
+      </div>
       </div>
     </ModalPortal>
   )
