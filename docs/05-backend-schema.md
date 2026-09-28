@@ -178,6 +178,9 @@ Edge Functions: `esteira-locacao` (eventos `nova_proposta, editar_proposta, vali
 - **Pendência:** gerar uma migration-base (dump do schema atual) para o repo voltar a ser a fonte da verdade. Ver o plano, Fase 2.
 
 ## 6. Convenções para mudanças novas
+- **Equipe × logado:** dado interno usa `is_team()` (tem perfil e não está suspenso) ou papéis; nunca `true` para `authenticated`, porque cliente do portal também é `authenticated`.
+- **Gatilhos SECURITY DEFINER:** nunca decidir permissão por `current_user` (é sempre o dono da função); usar `auth.role()`/`auth.uid()`.
+- **Mudança pelo SQL Editor vira migration no repo no mesmo dia.**
 - Tabela nova: RLS ligada na mesma migration, policies explícitas e grants revistos (o Supabase dá tudo para anon por padrão).
 - View nova: `with (security_invoker = true)`.
 - Função `security definer`: `set search_path = public` e `revoke execute ... from anon` quando não for pública.
