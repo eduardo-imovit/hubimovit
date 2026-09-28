@@ -112,8 +112,9 @@ Código feito pelo OpenCode em 25/09 sem os docs; revisado e corrigido em 28/09 
 - [x] 10.2 `esteira-locacao`: eventos `editar_proposta`, `validar_proposta`, `pedir_correcao`; saem `confirmar_dados_locatario` e `decisao_interna`; e-mails novos
 - [x] 10.2b Condições negociadas (modelo do e-mail da equipe): colunas novas + `propostas_locacao_interno` para a taxa; testado em transação (termos obrigatórios, taxa invisível ao locatário, visível à gestão, editar atualiza tudo)
 - [x] 10.3 Frontend: Propostas (form completo, correções pedidas, editar/reenviar), detalhe, portal (validação + pedir correção, 4 etapas), pendências da Home
-- [ ] 10.4 Deploy no mesmo momento: migration → função → push (portal antigo + função nova quebram a etapa 1)
-- [ ] 10.5 Teste de ponta a ponta com um e-mail de teste, incluindo um ciclo de correção
+- [x] 10.4 Teste antes da produção (28/09): etapa A aditiva no banco + função paralela `esteira-locacao-v4` (links para localhost, avisos só para o Eduardo) + localhost via `VITE_FUNCAO_ESTEIRA`. O Eduardo validou "Gabriel Teste" com as condições e a taxa, e ela entrou na esteira
+- [x] 10.5 Publicado (28/09): etapa B (limpeza) → `esteira-locacao` v20 → push `62c6113` (Vercel `index-6tlexV5k.js`); função de teste desativada (responde 410)
+- [ ] 10.6 Ciclo de correção ("Algo está errado" → corrigir e reenviar) com uma proposta real (coberto nos testes do banco, não no navegador)
 - **Pronto quando:** uma proposta vai do gestor à esteira aberta só com a validação do locatário, e a correção volta ao gestor e retorna validada.
 
 ## Adiado conscientemente (rever quando o volume real crescer)
