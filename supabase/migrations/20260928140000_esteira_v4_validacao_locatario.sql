@@ -5,7 +5,7 @@
 --   validando, entra direto na esteira (aguardando_docs). Sai a aprovação interna.
 --
 -- Mudanças:
---   * status novo `correcao_solicitada` (bola com o gestor); sai
+--   * status novo `correcao_solicitada` (bola com o gestor); na limpeza sai
 --     `aguardando_aprovacao_interna` (a única proposta nele, de teste, volta
 --     para a validação do locatário);
 --   * coluna `motivo_correcao`;
@@ -16,13 +16,19 @@
 --   * criar_proposta_locacao recebe os termos (jsonb) e grava criado_por; não
 --     sobrescreve mais uma proposta em andamento (usar editar);
 --   * RPCs novos: editar_proposta_locacao, validar_proposta_locatario,
---     pedir_correcao_proposta. Saem confirmar_dados_locatario e decidir_aprovacao_interna;
+--     pedir_correcao_proposta. Na limpeza saem confirmar_dados_locatario,
+--     decidir_aprovacao_interna e o criar_proposta_locacao antigo;
 --   * bloquear_avanco_expirado passa a olhar o prazo NOVO (senão reenviar/renovar
 --     uma proposta vencida era marcado como expirada na mesma hora);
 --   * validar renova o prazo por 30 dias para a fase de cadastro/documentos
 --     (antes os 7 dias da criação valiam para o processo inteiro).
 -- Padrão dos RPCs: só a service_role executa (Edge Function esteira-locacao,
 -- que valida o JWT e passa a identidade do chamador como parâmetro).
+--
+-- ETAPA A (aditiva): o site antigo continua funcionando com ela aplicada (RPCs
+-- antigos e o status aguardando_aprovacao_interna seguem existindo), o que
+-- permite testar a v4 no localhost contra a função paralela esteira-locacao-v4
+-- antes de publicar. A limpeza vem em 20260928150000_esteira_v4_limpeza.sql.
 -- =============================================================================
 
 alter table propostas_locacao add column if not exists motivo_correcao text;
@@ -64,17 +70,11 @@ create policy propostas_locacao_interno_select on propostas_locacao_interno for 
     or exists (select 1 from propostas_locacao p where p.id = proposta_id and p.criado_por = auth.uid())
   );
 
--- 1. Proposta presa na aprovação interna volta para a validação do locatário.
-select set_config('app.ator', 'migracao_esteira_v4', true);
-select set_config('app.motivo', 'Aprovação interna saiu do fluxo (esteira v4): volta para a validação do locatário', true);
-update propostas_locacao set status = 'aguardando_locatario' where status = 'aguardando_aprovacao_interna';
-select set_config('app.motivo', '', true);
-
--- 2. Status válidos
+-- 2. Status válidos (transição: aguardando_aprovacao_interna sai na etapa de limpeza)
 alter table propostas_locacao drop constraint if exists propostas_locacao_status_valido;
 alter table propostas_locacao add constraint propostas_locacao_status_valido check (status in (
-  'aguardando_locatario', 'correcao_solicitada', 'criada', 'aguardando_docs', 'docs_em_analise',
-  'docs_aprovados', 'sincronizada', 'rejeitada', 'expirada'
+  'aguardando_locatario', 'correcao_solicitada', 'aguardando_aprovacao_interna', 'criada', 'aguardando_docs',
+  'docs_em_analise', 'docs_aprovados', 'sincronizada', 'rejeitada', 'expirada'
 ));
 
 -- 3. Expiração: pelo prazo que vai ficar gravado (renovar destrava).
@@ -114,10 +114,8 @@ left join propostas_locacao_interno i on i.proposta_id = p.id
 where p.status <> 'sincronizada'
 order by p.timestamp_criacao desc;
 
--- 5. RPCs
-drop function if exists criar_proposta_locacao(text, text, integer, numeric, text, text, text);
-drop function if exists confirmar_dados_locatario(uuid, text, text, numeric, text, text);
-drop function if exists decidir_aprovacao_interna(uuid, text, text, text);
+-- 5. RPCs novos (os antigos saem na etapa de limpeza; criar_proposta_locacao
+--    convive com a versão antiga por sobrecarga: assinaturas diferentes)
 
 -- Termos da proposta chegam como jsonb (chaves: tel, valor, valor_oferta,
 -- corretor_responsavel, garantia, data_posse, prazo_meses, dia_vencimento,

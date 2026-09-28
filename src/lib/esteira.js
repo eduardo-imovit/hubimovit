@@ -4,8 +4,12 @@ import { chamarFuncao } from './funcoes'
  * Chama a Edge Function esteira-locacao, que valida identidade (JWT) e
  * despacha pro RPC certo no banco.
  */
+// Em teste local (.env.development.local) aponta para a função paralela
+// esteira-locacao-v4; o site publicado sempre usa esteira-locacao.
+const FUNCAO_ESTEIRA = import.meta.env.VITE_FUNCAO_ESTEIRA || 'esteira-locacao'
+
 function chamarEsteira(evento, dados) {
-  return chamarFuncao('esteira-locacao', { evento, ...dados })
+  return chamarFuncao(FUNCAO_ESTEIRA, { evento, ...dados })
 }
 
 export const criarProposta = (dados) => chamarEsteira('nova_proposta', dados)
