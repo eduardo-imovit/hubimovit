@@ -1,11 +1,13 @@
 // Equipe na Apresentação Imovit (fotos do ensaio de 2026 em public/apresentacao/equipe).
 // Nomes e áreas a partir de colaboradores_raw (CRM); rótulos em linguagem de cliente.
 // Para incluir alguém: foto 720x900 (4:5) na pasta e uma linha aqui.
+// Sem foto (foto: null): o card mostra o monograma até a foto chegar.
 
 const f = (slug) => `/apresentacao/equipe/${slug}.jpg`
 
 export const EQUIPE = [
   { grupo: 'Direção', nome: 'Daniel Aranovich', area: 'Sócio', foto: f('daniel-aranovich') },
+  { grupo: 'Direção', nome: 'Antônio Rosa', area: 'Sócio', foto: null },
 
   { grupo: 'Consultoria', nome: 'Maria Inês', area: 'Vendas', foto: f('maria-ines') },
   { grupo: 'Consultoria', nome: 'Ricardo Pinheiro', area: 'Vendas', foto: f('ricardo-pinheiro') },
@@ -26,6 +28,8 @@ export const EQUIPE = [
   { grupo: 'Bastidores', nome: 'Ana Celia Andrade', nomeCrm: 'Ana Celia de Sousa Andrade', area: 'Financeiro', foto: f('ana-celia') },
   { grupo: 'Bastidores', nome: 'Caroline Costa', nomeCrm: 'Caroline Camilo Costa', area: 'Conteúdo e marca', foto: f('caroline-costa') },
   { grupo: 'Bastidores', nome: 'Eduardo Jesus', area: 'Dados e marketing', foto: f('eduardo-jesus') },
+  { grupo: 'Bastidores', nome: 'Bruno', area: 'Fotografia', foto: f('bruno') },
+  { grupo: 'Bastidores', nome: 'Aline', area: 'Hospitalidade', foto: f('aline') },
 ]
 
 /** Pessoa da equipe pelo nome que vem do CRM (o do link do consultor). */

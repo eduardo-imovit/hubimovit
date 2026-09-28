@@ -56,7 +56,13 @@ function whatsappLink(numero, nome) {
 function Pessoa({ p }) {
   return (
     <figure className="ap-pessoa" style={{ margin: 0 }}>
-      <img src={p.foto} alt={p.nome} loading="lazy" width="720" height="900" />
+      {p.foto ? (
+        <img src={p.foto} alt={p.nome} loading="lazy" width="720" height="900" />
+      ) : (
+        <div className="ap-monograma" role="img" aria-label={p.nome}>
+          {p.nome.split(' ').map((n) => n[0]).slice(0, 2).join('')}
+        </div>
+      )}
       <figcaption>
         <strong>{p.nome}</strong>
         <span>{p.area}</span>
@@ -239,8 +245,8 @@ export default function ApresentacaoImovit() {
       <section className="ap-sec">
         <div className="ap-wrap">
           {consultor ? (
-            <div className={`ap-consultor${pessoa ? '' : ' ap-consultor--sem-foto'}`}>
-              {pessoa && <img src={pessoa.foto} alt={pessoa.nome} />}
+            <div className={`ap-consultor${pessoa?.foto ? '' : ' ap-consultor--sem-foto'}`}>
+              {pessoa?.foto && <img src={pessoa.foto} alt={pessoa.nome} />}
               <div>
                 <p className="ap-eyebrow">Seu consultor Imovit</p>
                 <h2 className="ap-h2 ap-serif" style={{ marginBottom: 8 }}>{nomeConsultor}</h2>
