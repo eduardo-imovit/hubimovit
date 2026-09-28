@@ -100,6 +100,8 @@ Triggers: `trg_propostas_locacao_expira` (bloqueia avanço quando expirada), `tr
 - **Escrita:** só pela Edge Function `captacao` (service_role), chamada pelo formulário público: valida (zod), limita tamanho da assinatura, honeypot anti-robô. `anon` não tem grant na tabela.
 - **Leitura:** gestao/adm todas; corretor as dele (`corretor_email`, copiado de `colaboradores_raw.email_oficial` na gravação, = e-mail do login).
 
+**`captacao_links`** (migration `20260928170000`): token (PK, 12 caracteres aleatórios url-safe) · corretor_crm_id (unique) · criado_em. Sem policies: ninguém lê pela API. O corretor recebe o próprio link pelo RPC `meu_link_captacao()` (authenticated; e-mail do JWT = `colaboradores_raw.email_oficial`; cria o token na primeira vez). A função `captacao` resolve o corretor pelo token. Os links no formato antigo (`/captacao/<id do CRM>`) deixaram de funcionar em 28/09.
+
 **`feedbacks_visita`**: id · criado_em · criado_por→perfis · codigo_imovel! · olhar_visitante · curadoria_ajustes · termometro (1–5)! · corretor! · nota_consultor. RLS: insert pelo próprio usuário (gestao/adm/corretor); leitura gestao/adm todas, corretor as dele.
 
 ### 2.4 Dados comerciais e de mídia (escrita: n8n com service role)
