@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import { usePerfil } from '../../hooks/usePerfil'
-import { useCorretores } from '../../hooks/useCorretores'
-import { pode } from '../../lib/acessos'
-import { linkCaptacao } from '../../lib/captacao'
+import MeuLinkCaptacao from '../../components/formularios/MeuLinkCaptacao'
 import { baixarPdfDoElemento } from '../../lib/pdf'
 import { valorBR } from '../../lib/esteiraLabels'
 import ModalPortal from '../../components/esteira/ModalPortal'
@@ -16,14 +13,10 @@ const data = (iso) => new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit'
  * corretor conduz o processo. Gestão/Admin veem todas; o corretor, as dele (RLS).
  */
 export default function Captacoes() {
-  const { perfil } = usePerfil()
-  const corretores = useCorretores()
-  const veTodos = pode(perfil, 'esteiraDecidir')
   const [captacoes, setCaptacoes] = useState([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
   const [detalhe, setDetalhe] = useState(null)
-  const [copiado, setCopiado] = useState('')
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -39,22 +32,6 @@ export default function Captacoes() {
 
   useEffect(() => { carregar() }, [carregar])
 
-  // Gestão/Admin veem o link de todos; o corretor, só o dele (mesmo e-mail no CRM).
-  const links = veTodos
-    ? corretores
-    : corretores.filter((c) => c.email_oficial?.toLowerCase() === perfil?.email?.toLowerCase())
-
-  async function copiar(c) {
-    const url = linkCaptacao(c.id_corretor_crm)
-    try {
-      await navigator.clipboard.writeText(url)
-      setCopiado(c.nome_completo)
-      setTimeout(() => setCopiado(''), 2000)
-    } catch {
-      window.prompt('Copie o link:', url)
-    }
-  }
-
   return (
     <div>
       <header className="page-header">
@@ -65,26 +42,11 @@ export default function Captacoes() {
         </div>
       </header>
 
-      {links.length > 0 && (
-        <details className="card card-body" style={{ marginBottom: 'var(--space-5)' }} open={!veTodos}>
-          <summary className="page-eyebrow" style={{ marginBottom: 0, cursor: 'pointer' }}>
-            {veTodos ? 'Links de captação dos corretores' : 'Seu link de captação'}
-          </summary>
-          <div className="avisos-list" style={{ marginTop: 'var(--space-3)' }}>
-            {links.map((c) => (
-              <div className="avisos-item" key={c.id_corretor_crm}>
-                <div className="avisos-item-body">
-                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--weight-medium)' }}>{c.nome_completo}</div>
-                  <div className="avisos-item-sub" style={{ wordBreak: 'break-all' }}>{linkCaptacao(c.id_corretor_crm)}</div>
-                </div>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => copiar(c)}>
-                  {copiado === c.nome_completo ? 'Copiado!' : 'Copiar link'}
-                </button>
-              </div>
-            ))}
-          </div>
-        </details>
-      )}
+      <div className="card card-body" style={{ marginBottom: 'var(--space-5)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+        <div className="page-eyebrow" style={{ marginBottom: 0 }}>Seu link de captação</div>
+        <div className="avisos-item-sub">Mande ao proprietário: ele preenche e assina, e a captação chega para você.</div>
+        <MeuLinkCaptacao />
+      </div>
 
       {carregando && <div className="hub-loading">Carregando…</div>}
       {erro && <div className="hub-error">Não foi possível carregar as captações: {erro}</div>}
