@@ -14,10 +14,13 @@ import PainelGestao from './pages/PainelGestao'
 import PainelPerformance from './pages/PainelPerformance'
 import Configuracoes from './pages/Configuracoes'
 import Propostas from './pages/admin/Propostas'
+import Vendas from './pages/admin/Vendas'
 import Esteiras from './pages/admin/Esteiras'
 import Processos from './pages/admin/Processos'
 import PortalLogin from './pages/portal/PortalLogin'
 import PortalStatus from './pages/portal/PortalStatus'
+import PortalVendaLogin from './pages/portal/PortalVendaLogin'
+import PortalVenda from './pages/portal/PortalVenda'
 import Perfil from './pages/Perfil'
 import { ACESSO } from './lib/acessos'
 
@@ -49,11 +52,14 @@ export default function App() {
         <Route path="/dashboard/*" element={<Redirecionar para="/dashboard/gestao" />} />
         <Route path="/configuracoes" element={<ProtectedRoute papeis={ACESSO.configuracoes}><Configuracoes /></ProtectedRoute>} />
         <Route path="/admin/propostas" element={<ProtectedRoute papeis={ACESSO.esteira}><Propostas /></ProtectedRoute>} />
+        <Route path="/admin/vendas" element={<ProtectedRoute papeis={ACESSO.vendas}><Vendas /></ProtectedRoute>} />
         <Route path="/admin/esteiras" element={<ProtectedRoute papeis={ACESSO.esteira}><Esteiras /></ProtectedRoute>} />
         <Route path="/admin/processos" element={<ProtectedRoute papeis={ACESSO.esteira}><Processos /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
         <Route path="/portal/entrar" element={<PortalLogin />} />
         <Route path="/portal" element={<PortalStatus />} />
+        <Route path="/venda/entrar" element={<PortalVendaLogin />} />
+        <Route path="/venda" element={<PortalVenda />} />
       </Routes>
     </BrowserRouter>
   )

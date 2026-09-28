@@ -109,6 +109,12 @@ export default function Navbar() {
           </div>
         ))}
 
+        {pode(perfil, 'vendas') && (
+          <NavLink to="/admin/vendas" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
+            Vendas
+          </NavLink>
+        )}
+
         {pode(perfil, 'esteira') && linksLocacao.map((link) => (
           <div className="navbar-item" key={link.to}>
             <NavLink to={link.to} end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>

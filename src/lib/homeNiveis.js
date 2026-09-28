@@ -10,10 +10,12 @@ export const ATALHOS = {
     { to: '/dashboard/performance', titulo: 'Performance', descricao: 'Mídia, orçamento e campanhas', icone: 'grafico' },
     { to: '/kanban', titulo: 'Kanban', descricao: 'Atendimentos por fase', icone: 'kanban' },
     { to: '/admin/esteiras', titulo: 'Esteira de locação', descricao: 'Propostas e documentos', icone: 'documento' },
+    { to: '/admin/vendas', titulo: 'Propostas de venda', descricao: 'Compra: assinadas pelo proponente', icone: 'documento' },
     { to: '/configuracoes?aba=usuarios', titulo: 'Usuários', descricao: 'Níveis e pedidos de acesso', icone: 'pessoas' },
   ],
   adm: [
     { to: '/admin/propostas', titulo: 'Propostas', descricao: 'Criar e acompanhar', icone: 'mais' },
+    { to: '/admin/vendas', titulo: 'Vendas', descricao: 'Propostas de compra', icone: 'documento' },
     { to: '/admin/esteiras', titulo: 'Esteira', descricao: 'Decidir documentos', icone: 'documento' },
     { to: '/admin/processos', titulo: 'Processos', descricao: 'Concluídos e finalizar', icone: 'pasta' },
     { to: '/kanban', titulo: 'Kanban', descricao: 'Atendimentos por fase', icone: 'kanban' },
@@ -27,6 +29,7 @@ export const ATALHOS = {
   ],
   corretor: [
     { to: '/admin/propostas', titulo: 'Nova proposta', descricao: 'Locação: enviar o link ao locatário', icone: 'mais' },
+    { to: '/admin/vendas', titulo: 'Nova proposta de venda', descricao: 'Compra: enviar o link ao proponente', icone: 'mais' },
     { to: '/admin/esteiras', titulo: 'Minhas propostas', descricao: 'Onde cada uma está', icone: 'documento' },
     { to: '/agenda', titulo: 'Agenda', descricao: 'Plantão, reuniões e datas', icone: 'calendario' },
     { to: '#links', titulo: 'Manuais e links', descricao: 'Processos, formulários e Drive', icone: 'link' },
@@ -45,6 +48,7 @@ const PAGINAS = [
   { titulo: 'Kanban', to: '/kanban', acesso: 'kanban', termos: 'atendimentos fases crm leads quadro' },
   { titulo: 'Dados de Atendimento', to: '/kanban/dados', acesso: 'kanban', termos: 'analise atendimentos origem bairros corretor' },
   { titulo: 'Relatório de Atividades', to: '/kanban/atividades', acesso: 'kanban', termos: 'atividades ligacoes visitas relatorio' },
+  { titulo: 'Propostas de venda', to: '/admin/vendas', acesso: 'vendas', termos: 'proposta venda compra proponente cliente assinar' },
   { titulo: 'Propostas de locação', to: '/admin/propostas', acesso: 'esteira', termos: 'proposta locacao aluguel nova locatario' },
   { titulo: 'Esteira de locação', to: '/admin/esteiras', acesso: 'esteira', termos: 'esteira documentos aprovar reprovar ajustes' },
   { titulo: 'Processos', to: '/admin/processos', acesso: 'esteira', termos: 'processos concluidos finalizar zip imoview' },

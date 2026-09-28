@@ -29,6 +29,8 @@ export const PAPEIS_ATRIBUIVEIS = ['gestao', 'adm', 'marketing', 'corretor', 'us
 export const ACESSO = {
   esteira: ['gestao', 'adm', 'corretor'], // Propostas / Esteira / Processos (corretor: só as dele)
   esteiraDecidir: ['gestao', 'adm'], // aprovar, descartar, decidir documentos, solicitar ajustes, finalizar
+  vendas: ['gestao', 'adm', 'corretor'], // Propostas de venda (corretor: só as dele)
+  vendasDecidir: ['gestao', 'adm'], // descartar proposta de venda
   kanban: ['gestao', 'adm'],
   dash: ['gestao', 'marketing'],
   configuracoes: ['gestao', 'marketing'],
