@@ -70,7 +70,7 @@ Faltava um lugar único para:
 | RF20 | **Home por nível**: busca, atalhos, pendências com número que levam à tela certa, hoje no escritório, avisos e links (§5.4) | todos com perfil | must | feito (24/09), commitado; falta push |
 | RF21 | **Proposta de venda (compra)**: corretor cria, proponente confirma e assina pelo portal `/venda`, a equipe recebe o PDF assinado; valores e condições ficam no banco para análise (§5.5) | corretor, adm, gestao; proponente | must | aprovado e publicado no banco/função em 28/09; frontend aguarda push (ver plano, Fase 9) |
 | RF22 | **Esteira de locação v4**: gestor registra a proposta negociada (com observações); locatário valida ou pede correção; ao validar abre a esteira e avisa o ADM, sem aprovação interna (§5.6). Substitui partes de RF10–RF12 | corretor; locatário; adm | must | aprovado e implementado (28/09) |
-| RF23 | **Formulários no Hub** (§5.7): 1ª entrega Captação (link público por corretor, assinatura, PDF, lista) e Feedback de visita (PDF); depois apresentações públicas, Avaliação, Guia e Relatório | corretor, adm, gestao; proprietário | must | 1ª entrega implementada (28/09), publicação pendente |
+| RF23 | **Formulários no Hub** (§5.7): 1ª entrega Captação (link público por corretor, assinatura, PDF, lista) e Feedback de visita (PDF); depois apresentações públicas, Avaliação, Guia e Relatório | corretor, adm, gestao; proprietário | must | 1ª entrega no ar (28/09) |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -138,7 +138,7 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - **Taxa de administração:** é responsabilidade do proprietário (acordo Imovit × proprietário). Aparece para a equipe (Propostas, Esteira, e-mail "esteira aberta"), nunca para o locatário: fica em `propostas_locacao_interno`, que o locatário não consegue ler nem pela API.
 - **Decisões assumidas (28/09, o Eduardo pode rever):** validação por clique com confirmação (sem assinatura desenhada); alerta "esteira aberta" para a lista que já existia; 30 dias para a fase de documentos.
 
-### 5.7 Formulários dentro do Hub (pedido do Eduardo, 28/09) — **aprovado; 1ª entrega implementada**
+### 5.7 Formulários dentro do Hub (pedido do Eduardo, 28/09) — **aprovado; 1ª entrega no ar**
 - **Problema:** os formulários do dia a dia estão no Tally (`documentos.imovit.com.br`), fora do Hub: os dados não caem no nosso banco, não ficam ligados ao corretor e o documento final não sai no padrão Imovit. A seção "Links úteis" da Home é só uma lista de links para eles.
 - **Visão (7 itens, por etapas):** Captação de imóvel · Feedback de visita · Apresentação Imovit (página pública para leads do topo) · Sobre a CasaDezoito (página pública, estrutura) · Avaliação de imóvel (doc padrão de precificação; comparáveis de mercado) · Guia de visita (a definir) · Relatório do imóvel (GA4, conversões, campanhas; por último).
 - **1ª entrega (decisão do Eduardo, 28/09): só os dois formulários.**
