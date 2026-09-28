@@ -22,7 +22,7 @@
 
 **S1 — Fechar o que está aberto a qualquer pessoa** (curto, prioridade máxima)
 - [x] 9 views `vw_*`: `security_invoker = true` + revogar anon (feito pelo Eduardo com o OpenCode no SQL Editor, 28/09; registrado em `20260928180000_seguranca_equipe_registro.sql`)
-- [x] `dashboard_meta_ads_backup_20260924`: RLS ligada e anon/authenticated revogados (28/09). [ ] Apagar os backups de 23–24/09 quando o Eduardo confirmar.
+- [x] `dashboard_meta_ads_backup_20260924`: RLS ligada e anon/authenticated revogados (28/09). [x] Backups de 23–24/09 apagados (autorizado pelo Eduardo, migration `20260928200000`).
 - **Pronto quando:** `curl` com a anon key nas 9 views e no backup → vazio ou 401; Painel da Gestão, Painel de Performance, Home (pendências do corretor) e TV abrem iguais.
 
 **S2 — "Logado" passa a ser "da equipe"** (o item de maior impacto)
@@ -37,7 +37,7 @@
 - [x] Revogado `EXECUTE` de anon/authenticated nas 4 funções de gatilho (28/09). Ficam executáveis por anon, de propósito, `is_gestao`, `is_adm_ou_gestao`, `pode_acessar_documento_esteira` e `is_team`: são usadas em policies avaliadas para anon e devolvem false (sem EXECUTE a consulta daria erro em vez de vazio).
 - [x] **CRÍTICO corrigido (28/09):** `proteger_campos_perfil` não barrava ninguém (usava `current_user`, que dentro de SECURITY DEFINER é sempre o dono); qualquer perfil podia se promover a Gestão pela API. Agora barra por token (`authenticated`/`anon` sem ser Gestão).
 - [x] `search_path` fixo nas 10 funções (28/09).
-- [ ] Eduardo: ligar a proteção contra senha vazada (Supabase → Authentication → Passwords).
+- [ ] Proteção contra senha vazada: o Eduardo não achou "Passwords" no painel. Fica em Authentication → Sign In / Providers → Email → "Prevent use of leaked passwords", e **exige plano Pro** (o projeto é Free). Mitigação no Free: senha mínima maior e exigência de caracteres no mesmo lugar.
 - **Pronto quando:** o Security Advisor não mostra nenhum ERROR, e os WARN restantes estão justificados (ex.: `vector` no schema public). **Atingido em 28/09**: 0 ERROR; WARN restantes: 4 helpers de RLS executáveis por anon (justificado acima), funções que o app chama logado (intencional), `vector` no public e a senha vazada (Eduardo liga no painel).
 
 **S4 — Rotina para não voltar**
