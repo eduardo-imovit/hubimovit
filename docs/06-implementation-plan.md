@@ -21,13 +21,14 @@
 - **Endurecimento:** 7 funções SECURITY DEFINER executáveis sem login; 10 funções sem `search_path` fixo; proteção contra senha vazada desligada.
 
 **S1 — Fechar o que está aberto a qualquer pessoa** (curto, prioridade máxima)
-- [ ] 9 views `vw_*`: `security_invoker = true` + revogar anon. Com isso a view respeita a RLS da tabela base; a equipe logada continua lendo.
+- [x] 9 views `vw_*`: `security_invoker = true` + revogar anon (feito pelo Eduardo com o OpenCode no SQL Editor, 28/09; registrado em `20260928180000_seguranca_equipe_registro.sql`)
 - [ ] `dashboard_meta_ads_backup_20260924`: ligar RLS e revogar anon agora; apagar os backups de 23–24/09 depois de o Eduardo confirmar que não precisa deles.
 - **Pronto quando:** `curl` com a anon key nas 9 views e no backup → vazio ou 401; Painel da Gestão, Painel de Performance, Home (pendências do corretor) e TV abrem iguais.
 
 **S2 — "Logado" passa a ser "da equipe"** (o item de maior impacto)
-- [ ] Função `e_equipe()`: tem linha em `perfis` e não está suspenso (só e-mails @imovit ganham perfil; cliente do portal não tem).
-- [ ] Trocar a policy `true` por `e_equipe()` nas 16 tabelas; `pilares`/`blog_posts` seguem públicas de propósito (blog).
+- [x] Função `is_team()` (= `e_equipe` do plano): perfil existe e `suspenso_em is null` (Eduardo + OpenCode, 28/09; registrada na mesma migration)
+- [x] Policy "so equipe le" com `is_team()` em 12 tabelas (leads, colaboradores, CRM, atividades, metas, plantão, fotógrafo, datas). Testado: anon e cliente do portal leem 0 linhas.
+- [ ] Faltam `avisos`, `biblioteca_links`, `home_banners` (ainda `true` para qualquer logado; o cliente do portal lê os avisos). `pilares`/`blog_posts` seguem públicas de propósito (blog).
 - [ ] Revogar grants de escrita de `anon`/`authenticated` onde só a service role (n8n) grava.
 - **Pronto quando:** um cliente do portal (JWT sem perfil) lê 0 linhas nessas tabelas e continua vendo só a própria proposta; a equipe (todos os níveis, inclusive "Sem nível" e TV) vê o mesmo de antes.
 - **Como testar:** em `BEGIN … ROLLBACK`, simular os papéis anon, cliente do portal, sem nível, corretor, marketing, adm, gestão e tvaccess; depois, login real como Marketing e Corretor.
