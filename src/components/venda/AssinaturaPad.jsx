@@ -3,7 +3,7 @@ import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 're
 /**
  * Captura de assinatura do proponente (canvas, sem dependências novas).
  * Uso: const assinaturaRef = useRef(); <AssinaturaPad ref={assinaturaRef} />
- * API: { vazia(), limpar(), toBlob() }.
+ * API: { vazia(), limpar(), toBlob(), toDataURL() }.
  */
 const AssinaturaPad = forwardRef(function AssinaturaPad({ onChange }, ref) {
   const canvasRef = useRef(null)
@@ -28,6 +28,8 @@ const AssinaturaPad = forwardRef(function AssinaturaPad({ onChange }, ref) {
     vazia: () => !temTinta,
     limpar: () => limpar(),
     toBlob: () => new Promise((resolve) => canvasRef.current.toBlob(resolve, 'image/png')),
+    // captação: o proprietário não tem login, a assinatura vai no corpo da requisição
+    toDataURL: () => canvasRef.current.toDataURL('image/png'),
   }))
 
   function pos(e) {

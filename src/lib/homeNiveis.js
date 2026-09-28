@@ -49,6 +49,8 @@ const PAGINAS = [
   { titulo: 'Dados de Atendimento', to: '/kanban/dados', acesso: 'kanban', termos: 'analise atendimentos origem bairros corretor' },
   { titulo: 'Relatório de Atividades', to: '/kanban/atividades', acesso: 'kanban', termos: 'atividades ligacoes visitas relatorio' },
   { titulo: 'Propostas (locação ou venda)', to: '/propostas', acesso: 'propostas', termos: 'propostas locacao venda escolher' },
+  { titulo: 'Captações', to: '/captacoes', acesso: 'formularios', termos: 'captacao captar imovel proprietario autorizacao link formulario' },
+  { titulo: 'Feedback de visita', to: '/feedback-visita', acesso: 'formularios', termos: 'feedback visita proprietario pdf formulario' },
   { titulo: 'Propostas de venda', to: '/admin/vendas', acesso: 'vendas', termos: 'proposta venda compra proponente cliente assinar' },
   { titulo: 'Processos de venda', to: '/admin/vendas/processos', acesso: 'vendas', termos: 'processos venda compra assinada pdf historico' },
   { titulo: 'Propostas de locação', to: '/admin/propostas', acesso: 'esteira', termos: 'proposta locacao aluguel nova locatario' },

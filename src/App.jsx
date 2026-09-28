@@ -16,6 +16,9 @@ import Configuracoes from './pages/Configuracoes'
 import Propostas from './pages/admin/Propostas'
 import Vendas from './pages/admin/Vendas'
 import PropostasInicio from './pages/PropostasInicio'
+import Captacoes from './pages/admin/Captacoes'
+import FeedbackVisita from './pages/FeedbackVisita'
+import CaptacaoPublica from './pages/publico/CaptacaoPublica'
 import Esteiras from './pages/admin/Esteiras'
 import Processos from './pages/admin/Processos'
 import PortalLogin from './pages/portal/PortalLogin'
@@ -58,7 +61,12 @@ export default function App() {
         <Route path="/admin/vendas/processos" element={<ProtectedRoute papeis={ACESSO.vendas}><Vendas key="processos" modo="processos" /></ProtectedRoute>} />
         <Route path="/admin/esteiras" element={<ProtectedRoute papeis={ACESSO.esteira}><Esteiras /></ProtectedRoute>} />
         <Route path="/admin/processos" element={<ProtectedRoute papeis={ACESSO.esteira}><Processos /></ProtectedRoute>} />
+        <Route path="/captacoes" element={<ProtectedRoute papeis={ACESSO.formularios}><Captacoes /></ProtectedRoute>} />
+        <Route path="/feedback-visita" element={<ProtectedRoute papeis={ACESSO.formularios}><FeedbackVisita /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+        {/* público (proprietário, sem login): link fixo de captação do corretor */}
+        <Route path="/captacao" element={<CaptacaoPublica />} />
+        <Route path="/captacao/:corretorId" element={<CaptacaoPublica />} />
         <Route path="/portal/entrar" element={<PortalLogin />} />
         <Route path="/portal" element={<PortalStatus />} />
         <Route path="/venda/entrar" element={<PortalVendaLogin />} />

@@ -118,10 +118,10 @@ Código feito pelo OpenCode em 25/09 sem os docs; revisado e corrigido em 28/09 
 - **Pronto quando:** uma proposta vai do gestor à esteira aberta só com a validação do locatário, e a correção volta ao gestor e retorna validada.
 
 ## Fase 11 — Formulários no Hub (RF23, PRD §5.7) — aguardando aprovação
-- [ ] Eduardo aprova o PRD §5.7 e responde: quem recebe o aviso de captação; captação só registra ou tem revisão?
-- [ ] 11.1 Banco: `captacoes`, `feedbacks_visita` (RLS, grants), testado em `BEGIN … ROLLBACK`
-- [ ] 11.2 Edge Function `captacao` (pública com JWT anon: validação, honeypot, e-mail à equipe)
-- [ ] 11.3 Front: `/captacao/:corretor` (público, em etapas, assinatura, PDF no navegador), `/captacoes` (lista + PDF + links dos corretores), `/feedback-visita` (form + PDF) e histórico, bloco "Ferramentas" na Home
+- [x] Eduardo aprovou (28/09): aviso só ao corretor; só registro
+- [x] 11.1 Banco: migration `20260928160000`, testada em `BEGIN … ROLLBACK` (12 cenários de permissão)
+- [x] 11.2 Edge Function `captacao` (pública com JWT anon: validação, honeypot, e-mail à equipe)
+- [x] 11.3 Front: `/captacao/:corretor` (público, em etapas, assinatura, PDF no navegador), `/captacoes` (lista + PDF + links dos corretores), `/feedback-visita` (form + PDF) e histórico, bloco "Ferramentas" na Home
 - [ ] 11.4 Teste com um e-mail de teste (ficou para o fim, junto da bateria final)
 - [ ] 11.5 Tirar os links do Tally de Captação e Feedback da biblioteca de links
 - Depois: Apresentação Imovit e Sobre a CasaDezoito (páginas públicas); Avaliação; Guia de visita; Relatório do imóvel.

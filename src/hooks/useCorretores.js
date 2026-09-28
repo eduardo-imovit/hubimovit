@@ -12,7 +12,7 @@ export function useCorretores() {
     let ativo = true
     supabase
       .from('colaboradores_raw')
-      .select('nome_completo, email_oficial')
+      .select('id_corretor_crm, nome_completo, email_oficial')
       .eq('ativo', true)
       .order('nome_completo')
       .then(({ data }) => ativo && setCorretores(data ?? []))

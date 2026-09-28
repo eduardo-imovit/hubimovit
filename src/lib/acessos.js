@@ -32,6 +32,7 @@ export const ACESSO = {
   vendas: ['gestao', 'adm', 'corretor'], // Propostas de venda (corretor: só as dele)
   vendasDecidir: ['gestao', 'adm'], // descartar proposta de venda
   propostas: ['gestao', 'adm', 'corretor'], // menu Propostas (locação ou venda)
+  formularios: ['gestao', 'adm', 'corretor'], // Ferramentas: Captações e Feedback de visita (corretor: os dele)
   kanban: ['gestao', 'adm'],
   dash: ['gestao', 'marketing'],
   configuracoes: ['gestao', 'marketing'],

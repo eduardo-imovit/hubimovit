@@ -2,13 +2,14 @@ import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useSession } from '../hooks/useSession'
 import { usePerfil } from '../hooks/usePerfil'
+import { pode } from '../lib/acessos'
 import { useAvisos } from '../hooks/useAvisos'
 import { useBibliotecaLinks } from '../hooks/useBibliotecaLinks'
 import { usePendenciasHome } from '../hooks/usePendenciasHome'
 import { formatarDataLonga, saudacao } from '../lib/dateUtils'
 import { isoLocal } from '../lib/paineis'
 import { ATALHOS, NIVEIS_PREVIA, paginasDoNivel } from '../lib/homeNiveis'
-import { AgendaSemana, Atalhos, AvisosResumo, BuscaHome, HojeNoEscritorio, LinksUteis, Pendencias } from '../components/home/BlocosHome'
+import { AgendaSemana, Atalhos, AvisosResumo, BuscaHome, FerramentasHub, HojeNoEscritorio, LinksUteis, Pendencias } from '../components/home/BlocosHome'
 
 /**
  * Home: a porta de entrada de todo mundo (docs/01-prd.md §5.4). Responde "o que
@@ -89,7 +90,8 @@ export default function Home() {
           <AvisosResumo avisos={avisos} />
         </section>
         <section className="home-bloco" id="links" aria-labelledby="home-links">
-          <h2 id="home-links" className="home-bloco-titulo">Links úteis e manuais</h2>
+          <h2 id="home-links" className="home-bloco-titulo">Ferramentas</h2>
+          {pode(perfil, 'formularios') && <FerramentasHub />}
           <LinksUteis links={links} />
         </section>
       </div>

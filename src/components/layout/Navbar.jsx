@@ -117,6 +117,18 @@ export default function Navbar() {
           </div>
         )}
 
+        {pode(perfil, 'formularios') && (
+          <div className="navbar-item">
+            <NavLink to="/captacoes" className={({ isActive }) => `navbar-link${isActive || pathname === '/feedback-visita' ? ' is-active' : ''}`}>
+              Ferramentas <span className="navbar-caret">▾</span>
+            </NavLink>
+            <div className="navbar-dropdown">
+              <NavLink to="/captacoes" end className={({ isActive }) => (isActive ? 'is-active' : '')}>Captações</NavLink>
+              <NavLink to="/feedback-visita" end className={({ isActive }) => (isActive ? 'is-active' : '')}>Feedback de visita</NavLink>
+            </div>
+          </div>
+        )}
+
         {pode(perfil, 'configuracoes') && (
           <NavLink to="/configuracoes" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
             Configurações

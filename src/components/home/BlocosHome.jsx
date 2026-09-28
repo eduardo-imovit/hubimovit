@@ -298,6 +298,21 @@ export function AvisosResumo({ avisos }) {
   )
 }
 
+/** Formulários que já vivem no Hub (RF23, PRD §5.7); os links externos vêm logo abaixo. */
+export function FerramentasHub() {
+  return (
+    <div className="home-links" style={{ marginBottom: 'var(--space-3)' }}>
+      <div>
+        <div className="home-subtitulo">No Hub</div>
+        <ul>
+          <li><Link to="/captacoes">Captação de imóvel <span className="is-muted">· seu link para o proprietário</span></Link></li>
+          <li><Link to="/feedback-visita">Feedback de visita <span className="is-muted">· PDF para o proprietário</span></Link></li>
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 export function LinksUteis({ links }) {
   const grupos = useMemo(() => {
     const mapa = new Map()
