@@ -78,6 +78,15 @@ Triggers: `trg_propostas_locacao_expira` (bloqueia avanço quando expirada), `tr
 
 **View `propostas_ativas`** (`security_invoker`): propostas + `status_efetivo` (considera expiração).
 
+### 2.3b Proposta de venda (RF21) — migration `20260925130000_propostas_venda`, **não aplicada**
+**`propostas_venda`**: id uuid PK · criado_por→perfis (set null) · codigo_imovel int! · imovel_titulo, imovel_endereco · nome_cliente!, email!, telefone · valor_referencia, valor_proposta, descricao_proposta · assinatura_path, documento_path (bucket `propostas-venda`) · status! (`aguardando_cliente, confirmada, descartada, expirada`) · link_expira_em! (+7 dias) · motivo · timestamp_criacao, atualizado_em (trigger `tocar_venda_updated_at`).
+
+**`propostas_venda_historico`**: proposta_id→propostas_venda (cascade), status_anterior, status_novo!, ator (e-mail), motivo, timestamp_registro.
+
+**View `propostas_venda_ativas`** (`security_invoker`): `aguardando_cliente` + `confirmada`, com `status_efetivo` (expiração).
+
+**Permissões:** `authenticated` só tem SELECT (RLS por `pode_ver_proposta_venda`: adm/gestao tudo, corretor as que criou, proponente pelo e-mail do JWT); anon nada. Toda escrita passa pelos RPCs, que só a `service_role` executa: `criar_proposta_venda(p_criado_por, …)`, `confirmar_proposta_venda(p_proposta_id, p_email_chamador, …)`, `descartar_proposta_venda`. A Edge Function valida o JWT e o papel e passa a identidade como parâmetro (com a service role, `auth.uid()`/`auth.jwt()` no banco não são do usuário). Única escrita do navegador: `registrar_documento_venda(p_proposta_id)` (authenticated; só o proponente, uma vez, com o PDF já no Storage).
+
 ### 2.4 Dados comerciais e de mídia (escrita: n8n com service role)
 | Tabela | Origem | Nota |
 |---|---|---|
@@ -119,6 +128,7 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | Bucket | Público | Regras |
 |---|---|---|
 | `esteira-documentos` | não | ler: `pode_acessar_documento_esteira(name)`; enviar/atualizar: `pode_enviar_documento_esteira(name)` (locatário da proposta ou adm/gestao) |
+| `propostas-venda` | não | ler: `pode_ler_arquivo_venda(name)`; enviar/atualizar: `pode_enviar_arquivo_venda(name)`: só o proponente, `assinatura.png` enquanto `aguardando_cliente` e no prazo, `documento.pdf` uma vez depois de `confirmada` (não aplicado) |
 | `banners` | sim | escrever/remover: `pode_editar_conteudo()` |
 | `avatares` | sim | cada um só escreve na pasta `<uid>/` |
 | `videos` | sim | ⚠ sem uso no Hub |
@@ -135,14 +145,14 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | `aceitar_proprietario` | RPC definer | ⚠ legado (proprietário saiu do fluxo) | — |
 | `fn_atualiza_status` | função | muda status + histórico | RPCs |
 | `recalcular_status_proposta`, `bloquear_avanco_expirado`, `log_status_historico`, `tocar_updated_at` | triggers da esteira | | |
-| `kpis_tv` | RPC definer | JSON só com agregados para a TV (gestao/adm/marketing/tvaccess). Desde 24/09 (migration `20260924140000_kpis_tv_alinhado_paineis`) traz também os campos com as definições do Painel da Gestão: `leads_mes`, `ritmo_dia`, `projecao_mes`, `leads_media_3m`, `negocios_fechados_mes`, `negocios_media_3m`, `conversao_safra(_anterior)`, `ciclo_mediano_12m`, `sem_contato`, `abertos_30d`, `atividades_vencidas_30d`, `crm_atualizado_ate`; os campos de 23/09 continuam | `useKpisTV` |
+| `kpis_tv` | RPC definer | JSON só com agregados para a TV (gestao/adm/marketing/tvaccess). Desde 24/09 (migration `20260924140000_kpis_tv_alinhado_paineis`) traz também os campos com as definições do Painel da Gestão: `leads_mes`, `ritmo_dia`, `projecao_mes`, `leads_media_3m`, `negocios_fechados_mes`, `negocios_media_3m`, `conversao_safra(_anterior)`, `ciclo_mediano_12m`, `sem_contato`, `abertos_30d`, `atividades_vencidas_30d`, `crm_atualizado_ate`; os campos de 23/09 continuam. Desde 25/09 (migration `20260925120000_kpis_tv_meta_90d`): `meta_leads_90d` (leads dos últimos 90 dias ÷ 3), a meta da barra de ritmo na TV. ⚠ Essa foi aplicada pelo SQL Editor e não consta em `schema_migrations` | `useKpisTV` |
 | `meta_ads_upsert`, `leads_wpp_gtm_descarta_vazia` | triggers | higiene dos dados do n8n | n8n |
 | `fn_upsert_atividades`, `fn_upsert_atividades_notas` | triggers | upsert | n8n |
 | `match_documents` | função | busca vetorial em `knowledge_base` | fora do Hub |
 | `vw_atendimentos_base` | view | normaliza atendimentos (canal, fase, flags ruído/interno/negócio, dias) | base das outras |
 | `vw_kpis_mensais`, `vw_funil_acumulado`, `vw_aging_ativos`, `vw_cobertura_atividades`, `vw_corretores`, `vw_descartes`, `vw_origem_performance`, `vw_tempo_resposta` | views | agregados dos dashboards | dashboards |
 
-Edge Functions: `esteira-locacao` (eventos `nova_proposta, confirmar_dados_locatario, completar_cadastro, descartar_proposta, decisao_interna, docs_enviados, decisao_adm, solicitar_ajustes, sincronizar_imoview`), `gestao-colaboradores` (`suspender, reativar, excluir`), `spotify-auth`.
+Edge Functions: `esteira-locacao` (eventos `nova_proposta, confirmar_dados_locatario, completar_cadastro, descartar_proposta, decisao_interna, docs_enviados, decisao_adm, solicitar_ajustes, sincronizar_imoview`), `gestao-colaboradores` (`suspender, reativar, excluir`), `spotify-auth`, `proposta-venda` (`nova_proposta, confirmar_proposta, descartar_proposta`; **não publicada**).
 
 ## 5. Migrations
 - Repo: `supabase/migrations/` (28 arquivos, de `20260821140000` a `20260923233000`).

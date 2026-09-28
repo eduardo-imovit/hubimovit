@@ -97,6 +97,15 @@
 - [ ] Confirmar formulários/eventos nos links e o que mais entra na Home
 - **Pronto quando:** cada nível entra e acha o próprio trabalho em um clique; nenhum bloco é só leitura.
 
+## Fase 9 — Proposta de venda (RF21, PRD §5.5)
+Código feito pelo OpenCode em 25/09 sem os docs; revisado e corrigido em 28/09 (RPCs falhavam sempre chamadas pela função; UPDATE direto liberado para proponente/corretor; histórico do descarte errado). Migration testada em produção com `BEGIN … ROLLBACK` (20 cenários de papel/permissão passando).
+- [ ] Eduardo aprova o PRD §5.5 e responde as perguntas em aberto
+- [ ] Aplicar a migration `20260925130000_propostas_venda` (conector MCP)
+- [ ] Publicar a Edge Function `proposta-venda` (secrets: as mesmas da `esteira-locacao`)
+- [ ] Commit do frontend + push (só depois da migration e da função, senão o menu "Vendas" aparece quebrado)
+- [ ] Roteiro `docs/proposta-venda-teste.md` com um e-mail de teste de ponta a ponta
+- **Pronto quando:** uma proposta real vai do corretor à assinatura e o PDF abre em `/admin/vendas`; proponente e corretor não conseguem alterar nada fora do fluxo.
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - Backup: upgrade para o plano Pro do Supabase (~US$ 25/mês) ou dump periódico.
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).
@@ -115,3 +124,4 @@
 |---|---|---|
 | 2026-09-24 | Plano criado (retroativo) | Adoção do framework de documentação |
 | 2026-09-24 | Fase 5b (painéis Comercial e Operacional) | Cards atuais com rótulos e fórmulas enganosos; catálogo alinhado com o Eduardo |
+| 2026-09-28 | Fase 9 (proposta de venda) | Pedido da direção em 25/09, feito sem docs; documentado e corrigido antes de aplicar |

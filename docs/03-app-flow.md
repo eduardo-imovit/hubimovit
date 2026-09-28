@@ -9,12 +9,14 @@
         │     │          │              Performance ▸ Performance · Campanhas
         │     │          │              Funil
         │     │          │              Kanban ▸ Quadro · Dados · Atividades (gestao, adm)
-        │     │          ├─ TV Display                                         (gestao, adm, tvaccess)
+        │     │          ├─ Vendas      /admin/vendas                         (gestao, adm, corretor) — RF21, não publicado
+        │     │          ├─ TV Display                                         (gestao, adm, marketing, tvaccess)
         │     │          └─ Configurações                                      (gestao, marketing)
         │     └─ rodapé da navbar: foto + nome + nível ─> /perfil (todos)
         └─> /redefinir-senha
 
 /portal/entrar (magic link) ─> /portal  ── locatário, sem Navbar do Hub
+/venda/entrar (magic link) ─> /venda    ── proponente da compra, sem Navbar do Hub
 /tv-display ── NavbarTV própria, sem padding, sem rolagem
 /spotify-callback ── só gestao (conexão única do Spotify)
 ```
@@ -68,6 +70,18 @@ docs_aprovados ──Finalizar (baixa .zip, limpa Storage) + sincronizar_imoview
 Em qualquer etapa aberta: descartar ─> rejeitada · prazo do link vencido ─> expirada
 ```
 Portal do locatário: 5 etapas com cadeado (Proposta → Aprovação → Cadastro → Documentos → Conclusão). A tela se atualiza sozinha a cada 20 s com a aba visível e avisa "Nova etapa liberada".
+
+### Proposta de venda (corretor, ADM, proponente) — RF21, PRD §5.5
+Status em `propostas_venda.status`:
+```
+nova_proposta (corretor/adm/gestao) ─> aguardando_cliente
+aguardando_cliente ──(proponente: telefone + valor + descrição + assinatura)──> confirmada
+                                                         └─ navegador gera o PDF → documento_path
+aguardando_cliente / confirmada ──descartar (adm/gestao)──> descartada
+aguardando_cliente com link vencido (7 dias) ─> expirada (calculado na leitura)
+```
+Ordem no portal ao assinar: envia `assinatura.png` → Edge Function confirma → gera o PDF → envia `documento.pdf` → RPC `registrar_documento_venda`. Se o PDF falhar, a proposta continua confirmada, só sem `documento_path`.
+E-mails (Brevo, pela `proposta-venda`): criação → proponente; assinatura → `gabriel@`, `daniele@`.
 
 ### Gestão: suspender colaborador
 Configurações → Usuários & Acessos → Suspender (confirmação) → o acesso cai na hora; a pessoa vê "acesso suspenso" e só tem o botão Sair. Excluir avisa que não tem volta e sugere Suspender.

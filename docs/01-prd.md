@@ -39,6 +39,7 @@ Faltava um lugar único para:
 - Dashboards: **Painel da Gestão** e **Painel de Performance** (§5.0 e §5.0b). As páginas antigas (visão geral, funil, campanhas, performance com PDF, leads) foram removidas em 24/09.
 - Configurações: conteúdo da Home, agenda do fotógrafo, datas, usuários e acessos.
 - Esteira de locação: propostas, esteira (documentos), processos, portal do locatário, e-mails pelo Brevo, sincronização com o Imoview.
+- Proposta de venda (RF21, §5.5): criação pelo corretor, assinatura pelo proponente no portal `/venda`, PDF para a equipe. Ainda não publicada.
 
 ### Fora (não é o Hub)
 - Editar dados do CRM: o Hub só **lê** o que o n8n traz do Imoview.
@@ -67,6 +68,7 @@ Faltava um lugar único para:
 | RF18 | **Painel de Performance**: história do investimento em mídia até o negócio, com orçamento, campanhas e recomendações (§5.0b) | gestao, marketing | must | em construção (24/09) |
 | RF19 | **Importar a escala de plantão (PDF) do mês**: o sistema lê a tabela (data, dia, manhã, tarde), casa os nomes com os corretores, mostra prévia e grava; a TV mostra o plantão da semana (§5.3) | gestao, marketing (import); todos (TV) | must | feito no localhost (24/09); falta push |
 | RF20 | **Home por nível**: busca, atalhos, pendências com número que levam à tela certa, hoje no escritório, avisos e links (§5.4) | todos com perfil | must | feito (24/09), commitado; falta push |
+| RF21 | **Proposta de venda (compra)**: corretor cria, proponente confirma e assina pelo portal `/venda`, a equipe recebe o PDF assinado; valores e condições ficam no banco para análise (§5.5) | corretor, adm, gestao; proponente | must | código pronto e revisado (28/09); **migration e função não aplicadas**, fora do git; aguardando aprovação do Eduardo |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -106,6 +108,13 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - **Pendências por nível:** Gestão = pedidos de nível, saúde do CRM, leads sem contato; Admin = documentos aguardando decisão e propostas aguardando aprovação interna; Corretor = propostas dele paradas ou com link vencendo, e os leads dele sem contato (login ↔ corretor pelo e-mail em `colaboradores_raw`); Marketing = orçamento do mês não cadastrado em `metas_campanhas`.
 - **Revisão:** a Gestão tem um seletor "ver a Home como…" para conferir cada nível (só muda o que a tela mostra; os dados seguem a permissão de quem está logado).
 - **Decisões:** banner fora da Home (só na TV); formulários e eventos entram na busca e nos links (provisório). Configurações aceita `?aba=` para as pendências abrirem a aba certa.
+
+### 5.5 Proposta de venda (pedido da direção, 25/09; documentado retroativamente em 28/09)
+- **Problema:** a proposta de compra hoje é informal (WhatsApp/papel); não fica registro assinado nem dado para análise (valor ofertado × referência, condições).
+- **Fluxo:** corretor (ou Adm/Gestão) cria em `/admin/vendas` com nome e e-mail do proponente, código do imóvel e valor de referência → proponente recebe e-mail "Sua proposta de compra foi criada" → entra em `/venda/entrar` por magic link → preenche telefone, valor da proposta e descrição (condições), assina no quadro → "Assinar proposta" → o navegador gera o PDF → a equipe (`gabriel@`, `daniele@`) recebe "Nova proposta de compra assinada" e abre o PDF em `/admin/vendas`.
+- **Diferença para a locação:** sem aprovação interna, sem cadastro, sem documentos, sem esteira e sem sincronizar com o Imoview. Paralela: não toca em `propostas_locacao` nem na `esteira-locacao`.
+- **Regras:** link vale 7 dias; uma assinatura por proposta (depois de confirmada, não muda mais); só Adm/Gestão descartam; corretor vê só as dele; proponente vê só as do próprio e-mail.
+- **Perguntas em aberto (Eduardo):** a assinatura desenhada basta, ou o documento precisa de validade jurídica (ex.: assinatura eletrônica com certificado)? Quem mais recebe o e-mail de proposta assinada? A proposta de venda deve ir para o Imoview?
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.
