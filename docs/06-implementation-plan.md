@@ -13,18 +13,36 @@
   - [ ] Decidir: cor dos e-mails (template do Obsidian × tokens do DS)
 - **Pronto quando:** Status do PRD = aprovado.
 
-## Fase 1 — Fechar as exposições de dados 🔴 (prioridade máxima)
-- **Entrega:** nada de negócio legível ou gravável sem login.
-- **Requisitos:** PRD §7 (critério de aceite de segurança).
-- **Depende de:** saber como o n8n acessa `repique_*` (service role ou anon key?).
-- **Tarefas:**
-  - [ ] Confirmar no n8n qual chave os fluxos de repique usam
-  - [ ] `repique_control` / `repique_ponteiro`: ligar RLS e revogar anon (se o n8n usar service role, ele continua funcionando)
-  - [ ] Views `vw_*`: `security_invoker = true` + revogar anon; conferir que gestao/marketing continuam vendo os dashboards
-  - [ ] Ligar a proteção contra senha vazada (Supabase → Authentication → Passwords)
-  - [ ] Rodar o Security Advisor do Supabase e zerar os alertas críticos
-- **Pronto quando:** chamada com a anon key e sem login a `repique_*` e `vw_*` responde vazio ou 401; os dashboards abrem normalmente para gestao/marketing.
-- **Como testar:** `curl` com a anon key antes e depois; login como Marketing e como Corretor.
+## Fase 1 — Segurança: fechar as exposições de dados 🔴 (roadmap revisto em 28/09)
+**Diagnóstico de 28/09** (leitura real como anônimo e contagem de policies, não só permissões):
+- **Aberto a qualquer pessoa, sem login:** 9 views `vw_*` (dados do CRM: corretor, campanha, datas, situação, tempo de resposta; ex. `vw_atendimentos_base` = 2.771 linhas) e o backup `dashboard_meta_ads_backup_20260924` (698 linhas, sem RLS, anon pode até gravar).
+- **Aberto a qualquer usuário logado, inclusive cliente do portal:** 16 tabelas com policy `true` para `authenticated`: `leads_wpp_gtm`, `colaboradores_raw` (e-mail, telefone, nascimento da equipe), `dashboard_atendimentos_crm`, `atividades`, `atividades_notas`, conteúdo da Home etc. Locatários e proponentes entram por magic link e viram `authenticated`, sem perfil. Como o login do portal cria conta para qualquer e-mail digitado, na prática "logado" ≈ público.
+- **Já fechado (corrigindo o diagnóstico anterior):** `colaboradores_raw`, `repique_*`, `perfis` e `dashboard_atendimentos_crm` devolvem 0 linhas para anônimo; `repique_*` já estão com RLS ligada.
+- **Endurecimento:** 7 funções SECURITY DEFINER executáveis sem login; 10 funções sem `search_path` fixo; proteção contra senha vazada desligada.
+
+**S1 — Fechar o que está aberto a qualquer pessoa** (curto, prioridade máxima)
+- [ ] 9 views `vw_*`: `security_invoker = true` + revogar anon. Com isso a view respeita a RLS da tabela base; a equipe logada continua lendo.
+- [ ] `dashboard_meta_ads_backup_20260924`: ligar RLS e revogar anon agora; apagar os backups de 23–24/09 depois de o Eduardo confirmar que não precisa deles.
+- **Pronto quando:** `curl` com a anon key nas 9 views e no backup → vazio ou 401; Painel da Gestão, Painel de Performance, Home (pendências do corretor) e TV abrem iguais.
+
+**S2 — "Logado" passa a ser "da equipe"** (o item de maior impacto)
+- [ ] Função `e_equipe()`: tem linha em `perfis` e não está suspenso (só e-mails @imovit ganham perfil; cliente do portal não tem).
+- [ ] Trocar a policy `true` por `e_equipe()` nas 16 tabelas; `pilares`/`blog_posts` seguem públicas de propósito (blog).
+- [ ] Revogar grants de escrita de `anon`/`authenticated` onde só a service role (n8n) grava.
+- **Pronto quando:** um cliente do portal (JWT sem perfil) lê 0 linhas nessas tabelas e continua vendo só a própria proposta; a equipe (todos os níveis, inclusive "Sem nível" e TV) vê o mesmo de antes.
+- **Como testar:** em `BEGIN … ROLLBACK`, simular os papéis anon, cliente do portal, sem nível, corretor, marketing, adm, gestão e tvaccess; depois, login real como Marketing e Corretor.
+
+**S3 — Endurecer funções e autenticação**
+- [ ] Revogar `EXECUTE` de anon nas 7 funções SECURITY DEFINER (triggers e helpers de RLS não precisam de chamada direta).
+- [ ] Fixar `search_path` nas 10 funções apontadas pelo Advisor.
+- [ ] Eduardo: ligar a proteção contra senha vazada (Supabase → Authentication → Passwords).
+- **Pronto quando:** o Security Advisor não mostra nenhum ERROR, e os WARN restantes estão justificados (ex.: `vector` no schema public).
+
+**S4 — Rotina para não voltar**
+- [ ] Rodar o Security Advisor ao fim de todo sprint que mexer no banco (registrar no handoff).
+- [ ] Convenção do schema §6 valendo para tudo: policy nunca `true` para `authenticated` em dado interno; usar `e_equipe()` ou papéis.
+- [ ] Migration-base do schema (Fase 2) para o repo voltar a ser a fonte da verdade.
+- Fora de segurança, mas vale rever antes de "liberar": o projeto está no plano Free, **sem backup** (decisão consciente de 22/09).
 
 ## Fase 2 — Base do repositório
 - **Entrega:** o repo volta a descrever o banco inteiro.
