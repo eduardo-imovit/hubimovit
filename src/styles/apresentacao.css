@@ -31,7 +31,7 @@
 .ap-hero .ap-wrap { position: relative; z-index: 1; padding-bottom: clamp(48px, 9vw, 104px); width: 100%; }
 .ap-hero h1 { font-size: clamp(48px, 9vw, 104px); line-height: .98; margin: 0 0 24px; color: #fff; }
 .ap-hero p { font-size: clamp(17px, 2vw, 21px); line-height: 1.6; max-width: 580px; margin: 0 0 34px; color: rgba(255, 255, 255, .9); }
-.ap-hero .ap-eyebrow { color: rgba(255, 255, 255, .85); }
+.ap-hero p.ap-eyebrow { color: rgba(255, 255, 255, .85); font-size: 12px; max-width: none; margin: 0 0 18px; }
 .ap-ctas { display: flex; flex-wrap: wrap; gap: 12px; }
 
 /* manifesto + números */
