@@ -1,0 +1,115 @@
+/* Apresentação Imovit — Editorial Boutique (A Alma da Imovit, 2026).
+   Creme e grafite de base; coral como ponto de luz; serifa nas manchetes. */
+.ap { background: var(--creme); color: var(--grafite); font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+.ap img { display: block; max-width: 100%; }
+.ap a { color: inherit; }
+.ap-wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.ap-serif { font-family: var(--font-serif); font-weight: 400; letter-spacing: -0.015em; }
+.ap-eyebrow { font-size: 12px; letter-spacing: .24em; text-transform: uppercase; color: var(--coral); font-weight: 600; margin: 0 0 18px; }
+.ap-sec { padding: clamp(72px, 11vw, 140px) 0; }
+.ap-sec--branco { background: #fff; }
+.ap-sec--grafite { background: var(--grafite); color: #F5F0E8; }
+.ap-h2 { font-size: clamp(34px, 5vw, 58px); line-height: 1.08; margin: 0 0 24px; }
+.ap-lead { font-size: clamp(17px, 1.6vw, 19px); line-height: 1.8; color: #555; max-width: 640px; margin: 0; }
+.ap-sec--grafite .ap-lead { color: rgba(245, 240, 232, .78); }
+
+/* barra */
+.ap-barra { position: sticky; top: 0; z-index: 10; background: rgba(245, 240, 232, .92); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(45, 45, 45, .08); }
+.ap-barra .ap-wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+.ap-logo { font-size: 24px; font-weight: 700; color: var(--coral); letter-spacing: -.02em; text-decoration: none; }
+.ap-btn { display: inline-flex; align-items: center; gap: 10px; background: var(--grafite); color: var(--coral) !important; padding: 15px 28px; text-decoration: none; font-weight: 700; font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase; border: 1px solid var(--grafite); transition: transform .2s ease, background .2s ease; }
+.ap-btn:hover { transform: translateY(-1px); background: #1f1f1f; }
+.ap-btn--claro { background: transparent; color: #fff !important; border-color: rgba(255, 255, 255, .55); }
+.ap-btn--claro:hover { background: rgba(255, 255, 255, .1); }
+.ap-btn--pequeno { padding: 10px 18px; font-size: 11px; }
+
+/* abertura */
+.ap-hero { position: relative; min-height: min(92vh, 820px); display: flex; align-items: flex-end; color: #fff; overflow: hidden; }
+.ap-hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scale(1.02); }
+.ap-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(18, 18, 18, .05) 20%, rgba(18, 18, 18, .82) 100%); }
+.ap-hero .ap-wrap { position: relative; z-index: 1; padding-bottom: clamp(48px, 9vw, 104px); width: 100%; }
+.ap-hero h1 { font-size: clamp(48px, 9vw, 104px); line-height: .98; margin: 0 0 24px; color: #fff; }
+.ap-hero p { font-size: clamp(17px, 2vw, 21px); line-height: 1.6; max-width: 580px; margin: 0 0 34px; color: rgba(255, 255, 255, .9); }
+.ap-hero .ap-eyebrow { color: rgba(255, 255, 255, .85); }
+.ap-ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* manifesto + números */
+.ap-manifesto { display: grid; grid-template-columns: 1.15fr 1fr; gap: clamp(32px, 6vw, 96px); align-items: end; }
+.ap-manifesto blockquote { margin: 0; font-size: clamp(36px, 5.2vw, 64px); line-height: 1.06; }
+.ap-manifesto blockquote em { color: var(--coral); font-style: italic; }
+.ap-numeros { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid rgba(45, 45, 45, .15); margin-top: clamp(56px, 8vw, 96px); }
+.ap-numero { padding: 28px 24px 0 0; }
+.ap-numero strong { display: block; font-family: var(--font-serif); font-weight: 400; font-size: clamp(34px, 4.4vw, 52px); line-height: 1; margin-bottom: 10px; }
+.ap-numero span { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: #777; }
+
+/* pilares */
+.ap-pilares { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; margin-top: 48px; border-top: 1px solid rgba(245, 240, 232, .15); }
+.ap-pilar { padding: 36px 36px 36px 0; border-bottom: 1px solid rgba(245, 240, 232, .15); display: grid; grid-template-columns: 64px 1fr; gap: 12px; }
+.ap-pilar:nth-child(odd) { border-right: 1px solid rgba(245, 240, 232, .15); }
+.ap-pilar:nth-child(even) { padding-left: 36px; }
+.ap-pilar .n { font-family: var(--font-serif); font-size: 28px; color: var(--coral); line-height: 1.2; }
+.ap-pilar h3 { font-family: var(--font-serif); font-weight: 400; font-size: 26px; margin: 0 0 10px; color: #fff; }
+.ap-pilar p { margin: 0; line-height: 1.75; color: rgba(245, 240, 232, .75); font-size: 15.5px; }
+
+/* jornada */
+.ap-jornada { list-style: none; margin: 56px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px 40px; counter-reset: passo; }
+.ap-jornada li { position: relative; padding-top: 22px; border-top: 1px solid rgba(45, 45, 45, .18); }
+.ap-jornada li::before { counter-increment: passo; content: counter(passo, decimal-leading-zero); position: absolute; top: -13px; left: 0; background: var(--creme); padding-right: 12px; font-family: var(--font-serif); color: var(--coral); font-size: 20px; }
+.ap-jornada h3 { font-family: var(--font-serif); font-weight: 400; font-size: 24px; margin: 0 0 10px; }
+.ap-jornada p { margin: 0; line-height: 1.75; color: #555; font-size: 15.5px; }
+
+/* comprar / alugar */
+.ap-duas { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; margin-top: 48px; }
+.ap-card { background: var(--creme); padding: clamp(28px, 4vw, 48px); }
+.ap-card h3 { font-family: var(--font-serif); font-weight: 400; font-size: clamp(28px, 3.2vw, 36px); margin: 0 0 22px; }
+.ap-card ul { list-style: none; margin: 0; padding: 0; }
+.ap-card li { padding: 12px 0 12px 26px; border-top: 1px solid rgba(45, 45, 45, .1); position: relative; line-height: 1.6; color: #444; font-size: 15.5px; }
+.ap-card li::before { content: ''; position: absolute; left: 0; top: 21px; width: 12px; height: 1px; background: var(--coral); }
+
+/* bairros */
+.ap-bairros { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 28px; margin-top: 28px; }
+.ap-bairros span { font-family: var(--font-serif); font-size: clamp(30px, 4.4vw, 54px); line-height: 1.1; }
+.ap-bairros small { font-size: 15px; color: #777; }
+
+/* equipe */
+.ap-equipe { display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px 20px; margin-top: 48px; }
+.ap-equipe--menor { grid-template-columns: repeat(6, 1fr); gap: 28px 16px; margin-top: 28px; }
+.ap-pessoa img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; background: #e9e2d6; filter: saturate(.92); transition: filter .3s ease; }
+.ap-pessoa:hover img { filter: saturate(1.05); }
+.ap-pessoa strong { display: block; font-family: var(--font-serif); font-weight: 400; font-size: 20px; margin: 14px 0 4px; }
+.ap-equipe--menor .ap-pessoa strong { font-size: 16px; margin-top: 10px; }
+.ap-pessoa span { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #888; }
+.ap-subgrupo { margin-top: clamp(56px, 8vw, 88px); }
+.ap-subgrupo .ap-eyebrow { color: #999; }
+
+/* casa */
+.ap-casa { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 6vw, 80px); align-items: center; }
+.ap-casa-fotos { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
+.ap-casa-fotos img { width: 100%; height: 100%; aspect-ratio: 3 / 4; object-fit: cover; }
+.ap-casa-fotos img:last-child { margin-top: 48px; }
+.ap-link { color: var(--coral) !important; text-decoration: none; border-bottom: 1px solid var(--coral); padding-bottom: 3px; font-weight: 600; letter-spacing: .02em; }
+
+/* consultor */
+.ap-consultor { display: grid; grid-template-columns: 340px 1fr; gap: clamp(32px, 6vw, 80px); align-items: center; max-width: 960px; margin: 0 auto; }
+.ap-consultor img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }
+.ap-consultor--sem-foto { grid-template-columns: 1fr; text-align: center; max-width: 640px; }
+.ap-consultor--sem-foto .ap-ctas { justify-content: center; }
+.ap-assinatura { font-family: var(--font-serif); font-style: italic; color: var(--coral); font-size: 22px; margin: 26px 0 30px; }
+
+.ap-rodape { text-align: center; padding: 36px 24px; font-size: 12px; letter-spacing: .08em; color: #888; border-top: 1px solid rgba(45, 45, 45, .1); }
+
+@media (max-width: 860px) {
+  .ap-manifesto, .ap-casa, .ap-consultor, .ap-duas { grid-template-columns: 1fr; }
+  .ap-numeros { grid-template-columns: repeat(2, 1fr); }
+  .ap-pilares { grid-template-columns: 1fr; }
+  .ap-pilar, .ap-pilar:nth-child(even) { padding: 28px 0; border-right: 0; }
+  .ap-jornada { grid-template-columns: 1fr; gap: 40px; }
+  .ap-equipe { grid-template-columns: repeat(2, 1fr); }
+  .ap-equipe--menor { grid-template-columns: repeat(3, 1fr); }
+  .ap-consultor img { max-width: 320px; }
+  .ap-casa-fotos img:last-child { margin-top: 24px; }
+}
+@media (max-width: 480px) {
+  .ap-equipe--menor { grid-template-columns: repeat(2, 1fr); }
+  .ap-barra .ap-btn { display: none; }
+}
