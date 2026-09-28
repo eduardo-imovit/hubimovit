@@ -95,6 +95,13 @@ Triggers: `trg_propostas_locacao_expira` (bloqueia avanço quando expirada), `tr
 
 **Permissões:** `authenticated` só tem SELECT (RLS por `pode_ver_proposta_venda`: adm/gestao tudo, corretor as que criou, proponente pelo e-mail do JWT); anon nada. Toda escrita passa pelos RPCs, que só a `service_role` executa: `criar_proposta_venda(p_criado_por, …)`, `confirmar_proposta_venda(p_proposta_id, p_email_chamador, …)`, `descartar_proposta_venda`. A Edge Function valida o JWT e o papel e passa a identidade como parâmetro (com a service role, `auth.uid()`/`auth.jwt()` no banco não são do usuário). Única escrita do navegador: `registrar_documento_venda(p_proposta_id)` (authenticated; só o proponente, uma vez, com o PDF já no Storage).
 
+### 2.5b Formulários (RF23, PRD §5.7) — proposta, não aplicada
+**`captacoes`**: id uuid PK · criado_em · corretor (nome) · corretor_crm_id int (colaboradores_raw.id_corretor_crm, opcional) · proprietário (nome!, email!, telefone!, cpf!) · tipo_imovel, finalidade (`Venda, Locação, Ambos`), exclusividade bool, exclusividade_periodo (`30 dias, 90 dias, 180 dias, 1 ano`) · endereço (logradouro!, numero!, bairro!, cep, complemento_apto, bloco, quadra) · valores (valor_locacao, valor_venda, condominio, iptu_mensal) · área_interna!, area_terreno, quartos, suites, banheiros, salas, vagas (texto, aceitam "5 ou mais"), tipo_vaga · lazer text[] · observacoes · declaracao_versao (texto da declaração assinado, gravado junto) · assinatura (PNG em base64 ou Storage privado) · status (`nova, cadastrada_imoview, descartada`) · origem_ip/user_agent (auditoria da assinatura).
+- **Escrita:** só pela Edge Function `captacao` (service_role), chamada pelo formulário público: valida (zod), limita tamanho da assinatura, honeypot anti-robô. `anon` não tem grant na tabela.
+- **Leitura:** gestao/adm todas; corretor as dele (e-mail do login = `colaboradores_raw.email_oficial` do corretor).
+
+**`feedbacks_visita`**: id · criado_em · criado_por→perfis · codigo_imovel! · olhar_visitante · curadoria_ajustes · termometro (1–5)! · corretor! · nota_consultor. RLS: insert pelo próprio usuário (gestao/adm/corretor); leitura gestao/adm todas, corretor as dele.
+
 ### 2.4 Dados comerciais e de mídia (escrita: n8n com service role)
 | Tabela | Origem | Nota |
 |---|---|---|

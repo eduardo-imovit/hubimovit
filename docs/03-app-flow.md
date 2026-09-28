@@ -54,6 +54,13 @@ Corretor: em Propostas/Esteiras/Processos a RLS só devolve as propostas que ele
 3. A Gestão vê o pedido em Configurações → Usuários & Acessos e aprova ou recusa (`decidir_solicitacao_acesso`).
 4. O menu se monta de novo pelo novo nível (evento `hub:perfil-atualizado`).
 
+### Formulários no Hub (PRD §5.7) — proposta
+**Captação (proprietário, público):** corretor copia o link fixo `/captacao/<id>` → proprietário abre (sem login) → preenche em etapas (contato → natureza → endereço → valores → atributos → lazer) → lê a declaração e assina → "Enviar" → tela de sucesso com **Baixar PDF da autorização** → e-mail para o corretor e a equipe → aparece em `/captacoes`.
+Estados: link de corretor inexistente/inativo → formulário sem corretor pré-escolhido; envio com erro → mensagem e dados preservados na tela.
+**Captações (equipe):** `/captacoes` lista (data, proprietário, imóvel, finalidade, corretor, status "nova / cadastrada no Imoview"); detalhe com todos os dados e **Baixar PDF**; botão para copiar o link fixo de cada corretor.
+**Feedback de visita (corretor):** Ferramentas → Feedback de visita → formulário → "Gerar PDF" (download) → salvo no histórico (`/feedbacks`, o corretor vê os dele).
+**Home:** bloco "Ferramentas" (forms do Hub + links externos restantes) no lugar de "Links úteis".
+
 ### Menu Propostas (pedido do Eduardo, 28/09)
 Locação e venda são processos separados. Navbar **Propostas ▾** → Locação ▸ / Venda ▸; o clique em "Propostas" abre `/propostas`, com um cartão por área. Dentro de cada área, o topo da página tem o caminho "Propostas › Locação" e abas: Locação = Propostas (`/admin/propostas`) · Esteira (`/admin/esteiras`) · Processos (`/admin/processos`); Venda = Propostas (`/admin/vendas`, só as que aguardam assinatura, e o botão de criar) · Processos (`/admin/vendas/processos`, histórico completo com o PDF). As URLs antigas foram mantidas porque os e-mails apontam para elas. Definição única em `src/lib/propostasNav.js`.
 

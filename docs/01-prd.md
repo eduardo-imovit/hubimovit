@@ -70,6 +70,7 @@ Faltava um lugar único para:
 | RF20 | **Home por nível**: busca, atalhos, pendências com número que levam à tela certa, hoje no escritório, avisos e links (§5.4) | todos com perfil | must | feito (24/09), commitado; falta push |
 | RF21 | **Proposta de venda (compra)**: corretor cria, proponente confirma e assina pelo portal `/venda`, a equipe recebe o PDF assinado; valores e condições ficam no banco para análise (§5.5) | corretor, adm, gestao; proponente | must | aprovado e publicado no banco/função em 28/09; frontend aguarda push (ver plano, Fase 9) |
 | RF22 | **Esteira de locação v4**: gestor registra a proposta negociada (com observações); locatário valida ou pede correção; ao validar abre a esteira e avisa o ADM, sem aprovação interna (§5.6). Substitui partes de RF10–RF12 | corretor; locatário; adm | must | aprovado e implementado (28/09) |
+| RF23 | **Formulários no Hub** (§5.7): 1ª entrega Captação (link público por corretor, assinatura, PDF, lista) e Feedback de visita (PDF); depois apresentações públicas, Avaliação, Guia e Relatório | corretor, adm, gestao; proprietário | must | **proposta, aguardando aprovação** (28/09) |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -136,6 +137,19 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - **Sai:** aprovação interna (`decisao_interna`, status `aguardando_aprovacao_interna`) e a digitação de oferta/detalhes pelo locatário. A única proposta que estava na aprovação interna (teste do Daniel) volta para a validação do locatário.
 - **Taxa de administração:** é responsabilidade do proprietário (acordo Imovit × proprietário). Aparece para a equipe (Propostas, Esteira, e-mail "esteira aberta"), nunca para o locatário: fica em `propostas_locacao_interno`, que o locatário não consegue ler nem pela API.
 - **Decisões assumidas (28/09, o Eduardo pode rever):** validação por clique com confirmação (sem assinatura desenhada); alerta "esteira aberta" para a lista que já existia; 30 dias para a fase de documentos.
+
+### 5.7 Formulários dentro do Hub (pedido do Eduardo, 28/09) — **proposta, aguardando aprovação**
+- **Problema:** os formulários do dia a dia estão no Tally (`documentos.imovit.com.br`), fora do Hub: os dados não caem no nosso banco, não ficam ligados ao corretor e o documento final não sai no padrão Imovit. A seção "Links úteis" da Home é só uma lista de links para eles.
+- **Visão (7 itens, por etapas):** Captação de imóvel · Feedback de visita · Apresentação Imovit (página pública para leads do topo) · Sobre a CasaDezoito (página pública, estrutura) · Avaliação de imóvel (doc padrão de precificação; comparáveis de mercado) · Guia de visita (a definir) · Relatório do imóvel (GA4, conversões, campanhas; por último).
+- **1ª entrega (decisão do Eduardo, 28/09): só os dois formulários.**
+  1. **Captação de imóvel** (substitui o Tally "Acompanhamento personalizado"). Quem preenche é o **proprietário**:
+     - **Link fixo por corretor**, público, sem login: `/captacao/<id do corretor no CRM>` (sem id: o proprietário escolhe o corretor, como no Tally).
+     - Mesmos campos e textos do Tally: contato (nome, e-mail, telefone, CPF); natureza (tipo, finalidade venda/locação/ambos, exclusividade + período 30/90/180 dias/1 ano); endereço (rua, número, bairro, CEP, apto/sala, bloco, quadra); valores (locação, venda, condomínio, IPTU mensal); atributos (área interna, área do terreno, quartos, suítes, banheiros, salas, vagas, tipo de vaga); lazer (16 opções) e observações; **declaração de ciência com honorários** (locação: 1º aluguel; administração: 8% do aluguel bruto; venda: 6%) e **assinatura desenhada**.
+     - Ao assinar: o proprietário **baixa o PDF da autorização** na hora; a equipe recebe **e-mail**; a captação entra na lista **Captações** do Hub (PDF baixável, marcar "cadastrada no Imoview").
+  2. **Feedback de visita** (substitui o Tally "Feedback da visita"). Quem preenche é o **corretor**, no Hub: código do imóvel, olhar do visitante, curadoria de ajustes, termômetro de interesse (1 a 5), corretor e nota do consultor. Gera um **PDF no padrão Imovit** para o corretor mandar ao proprietário (sem e-mail automático). Fica o histórico.
+- **Home:** "Links úteis" vira **Ferramentas**: os formulários do Hub primeiro; os links externos ficam enquanto não migram e **somem aos poucos**.
+- **Depois (fora da 1ª entrega):** Apresentação Imovit e Sobre a CasaDezoito como **páginas públicas com link**; Avaliação de imóvel com comparáveis informados pelo corretor (scraping de portais como ZAP/VivaReal é proibido pelos termos de uso e bloqueado; automatizar só com fonte autorizada); Guia de visita; Relatório do imóvel.
+- **Perguntas em aberto:** quem é a "equipe" que recebe o aviso de captação (além do corretor)? A captação precisa de revisão/aprovação interna ou só registro?
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.
