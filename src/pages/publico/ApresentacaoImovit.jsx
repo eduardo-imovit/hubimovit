@@ -89,7 +89,7 @@ export default function ApresentacaoImovit() {
     <div className="ap">
       <nav className="ap-barra" aria-label="Imovit">
         <div className="ap-wrap">
-          <a className="ap-logo" href="#inicio">imovit</a>
+          <a className="ap-logo" href="#inicio"><img src="/apresentacao/logo-imovit-lares.png" alt="Imovit · Lares com a sua alma." width="1200" height="162" /></a>
           {wa ? (
             <a className="ap-btn ap-btn--pequeno" href={wa} target="_blank" rel="noreferrer">Falar com {primeiroNome}</a>
           ) : (
@@ -130,7 +130,7 @@ export default function ApresentacaoImovit() {
             <div className="ap-numero"><strong>10</strong><span>anos em Campinas</span></div>
             <div className="ap-numero"><strong>{EQUIPE.length}</strong><span>pessoas no time</span></div>
             <div className="ap-numero"><strong>2</strong><span>frentes: compra e locação</span></div>
-            <div className="ap-numero"><strong>1</strong><span>casa: a CasaDezoito</span></div>
+            <div className="ap-numero"><strong>1</strong><span>lar: CasaDezoito</span></div>
           </div>
         </div>
       </section>
@@ -266,7 +266,10 @@ export default function ApresentacaoImovit() {
         </div>
       </section>
 
-      <footer className="ap-rodape">IMOVIT · LARES COM A SUA ALMA · CAMPINAS/SP</footer>
+      <footer className="ap-rodape">
+        <img src="/apresentacao/logo-imovit-lares-creme.png" alt="Imovit · Lares com a sua alma." width="1200" height="162" loading="lazy" />
+        <p>Campinas/SP · @imovitimobiliaria</p>
+      </footer>
     </div>
   )
 }
