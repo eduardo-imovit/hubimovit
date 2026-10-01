@@ -154,18 +154,20 @@ Ordem pensada para a precisão: primeiro o dado acumula certo, depois as métric
 
 **S0 — Base e decisões (Eduardo + eu, ~meio dia)**
 - [ ] Eduardo aprova PRD §5.8, Schema §2.6 e este plano, e responde às perguntas em aberto (PRD §8: P2, P4, P6). P1, P3 e P5 decididos em 29/09
-- [ ] Eduardo assina o Supabase Pro; eu confirmo backup diário ativo antes de qualquer migration
+- [x] Supabase Pro assinado (01/10; plano `pro` confirmado na organização). Backup diário: o 1º ainda não foi verificado no painel
 - [ ] Verificar na API do Imoview se existe histórico de fases por atendimento (se existir, dá para recuperar parte do passado)
 - **Pronto quando:** docs aprovados e backup confirmado.
 
 **S1 — Banco acumulativo (eu)**
-- [ ] Migration: `crm_atendimentos_captura`, `crm_funil_etapas`, `crm_atendimento_transicoes`, gatilhos e RLS (Schema §2.6)
+- [x] Migration `20261001160000_crm_jornada` aplicada (01/10): RPC + `crm_atendimento_jornada` + `crm_leituras` (desenho revisto, Schema §2.6)
+- [ ] (original) Migration: `crm_atendimentos_captura`, `crm_funil_etapas`, `crm_atendimento_transicoes`, gatilhos e RLS (Schema §2.6)
 - [ ] `dashboard_atendimentos_crm` passa a ser mantida pelo gatilho; a escrita direta do n8n continua aceita até a virada (convivência)
 - [ ] Teste em `BEGIN … ROLLBACK`: capturas repetidas no mesmo dia não duplicam; mudança de fase gera 1 transição; sem mudança, 0 transições; estado atual igual à última captura
 - **Pronto quando:** os testes passam e a migration está no repo e em `schema_migrations`.
 
 **S2 — Novo fluxo no n8n (eu escrevo, Eduardo importa e liga as credenciais)**
-- [ ] Fluxo novo `crm_captura_diaria`: roda 1×/dia e busca **todos** os atendimentos em atendimento + os encerrados nos últimos N dias, **sem** `dataInicial = ontem`, e só **insere** em `crm_atendimentos_captura` (com `payload`)
+- [x] Fluxo `crm_jornada_diaria` criado no n8n **desligado** (01/10, id `4tzh8UFpxciJOYiY`); faltam credenciais (Eduardo) e a RPC no banco
+- [ ] (original) Fluxo novo `crm_captura_diaria`: roda 1×/dia e busca **todos** os atendimentos em atendimento + os encerrados nos últimos N dias, **sem** `dataInicial = ontem`, e só **insere** em `crm_atendimentos_captura` (com `payload`)
 - [ ] Senha do Imoview sai do parâmetro da URL e vai para uma credencial
 - [ ] Carga inicial: a primeira captura vira a "foto" de partida de cada lead
 - [ ] Rodar em paralelo com o `crm_atendimentos` atual por 3 dias; conferir contagens por fase × Imoview; depois desligar o antigo
@@ -185,7 +187,7 @@ Ordem pensada para a precisão: primeiro o dado acumula certo, depois as métric
 - [x] 1ª versão no localhost (29/09): 4 índices, funil de 7 etapas (coluna de tempo reservada), ritmo, descartes + simulação, mídias, bairros e tipos visitados, em atendimento e valor na mesa, com subtexto de recorte em cada gráfico
 - [x] Corretor vê só os próprios dados: tela travada ("Meus números") + migration RLS testada em transação (29/09)
 - [x] "Sem nível" não lê dados comerciais: migration `20261001120000` aplicada (01/10)
-- [ ] Aplicar a migration `20261001130000` (trava do corretor; aguarda o OK do Eduardo)
+- [x] Trava do corretor `20261001130000` aplicada; push `cd36fdd` (01/10)
 - [ ] Revisão do Eduardo; depois push
 - [ ] 4 índices, funil com tempo por etapa, regiões e tipos no tempo, e os gráficos mantidos, todos com subtexto de filtro
 - **Pronto quando:** trocar qualquer filtro muda todos os gráficos, e o Eduardo aprova.

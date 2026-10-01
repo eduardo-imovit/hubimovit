@@ -153,6 +153,16 @@ Princípio: o n8n **só insere**. Nada de *upsert* nem de *update* em dado comer
 
 **Volume esperado:** cerca de 230 atendimentos ativos por dia mais os encerrados recentes, ou seja, dezenas de milhares de linhas por ano. Não pesa no Pro. Se crescer, a captura pode gravar só quando algo mudou.
 
+**APLICADO em 01/10** (migration `20261001160000_crm_jornada`): `crm_leituras`, `crm_atendimento_jornada` (RLS: só quem tem nível; corretor só o dele; sem escrita pela API) e `registrar_atendimentos_crm(jsonb)` (execução só `service_role`). Teste antes (transação desfeita, 4 leituras simuladas): entrada, primeira_leitura, mudanca_etapa, lead novo que já andou (entrada + mudança), encerramento, reabertura, leitura repetida sem linha nova e item sem fase ignorado; a Gestão não executa nem grava, e o anon lê 0. Nesta etapa a RPC **não** escreve em `dashboard_atendimentos_crm`; isso fica para a virada, depois dos 3 dias em paralelo.
+
+**Revisão do desenho (01/10, conversa com o Eduardo).** Para não guardar ~2.800 linhas por dia, o n8n não grava a foto inteira. O fluxo `crm_jornada_diaria` (n8n `4tzh8UFpxciJOYiY`, criado **desligado**) lê todos os atendimentos e chama a RPC `registrar_atendimentos_crm(itens jsonb)` (security definer, só `service_role`). A RPC:
+- grava em **`crm_atendimento_jornada`** (append-only) 1 linha quando o código aparece pela primeira vez e 1 linha a cada mudança de fase ou situação. Campos: `codigo`, `fase_crm`, `situacao`, `data_evento`, `tipo` (`entrada` | `primeira_leitura` | `mudanca_etapa` | `encerramento`), `origem_data` (`crm` | `captura`), `finalidade`, `corretor`, `midia`, `campanha`, `funil`, `detectado_em`, `payload`;
+- mantém `dashboard_atendimentos_crm` como estado atual, para Kanban, TV e views continuarem iguais e o `crm_atendimentos` antigo poder ser desligado depois;
+- grava 1 linha por execução em `crm_leituras` (lidos, novos, mudanças), para auditoria;
+- devolve `{lidos, novos, mudancas_etapa, encerramentos}`.
+
+Na primeira leitura, um código que já está além do Pré-atendimento vira `primeira_leitura`, com a data de chegada na etapa desconhecida, e fica fora da média de tempo. A `entrada` usa `datahoraentradalead`. As mudanças usam o dia da leitura (precisão de 1 dia).
+
 ### 2.6b "Sem nível" não lê dados comerciais — migration `20261001120000_sem_nivel_nao_le_dados_comerciais`, **APLICADA em 01/10**
 - Função `pode_ler_comercial()`: perfil ativo com nível `gestao, adm, marketing, corretor, tvaccess`.
 - Policy "so quem tem nivel le" no lugar de "so equipe le" (is_team) em `dashboard_atendimentos_crm`, `atividades`, `atividades_notas`, `leads_wpp_gtm`, `metas`, `metas_atividades_tipo` e `campanhas_metas`.
@@ -161,7 +171,7 @@ Princípio: o n8n **só insere**. Nada de *upsert* nem de *update* em dado comer
   - "Sem nível" lê 0 nas 7 tabelas e nas views `vw_*`, mas lê avisos e plantão; `kpis_tv` já o barrava;
   - TV e Gestão sem mudança.
 
-### 2.7 Corretor só lê o que é dele — migration `20261001130000_corretor_ve_so_os_seus_dados` (era `20260929150000`), **testada, não aplicada**
+### 2.7 Corretor só lê o que é dele — migration `20261001130000_corretor_ve_so_os_seus_dados` (era `20260929150000`), **APLICADA em 01/10**
 - Funções: `meu_nome_crm()` (security definer; nome no CRM pelo e-mail do login) e `nome_corretor_crm(bruto)` (mesmo ajuste de nome da `vw_atendimentos_base`).
 - Policies "equipe le; corretor so os seus" substituem "so quem tem nivel le" (2.6b) em `dashboard_atendimentos_crm`, `atividades`, `atividades_notas` e `leads_wpp_gtm`. Quem não é corretor segue com `pode_ler_comercial()`. Retestada em 01/10 sobre a 2.6b: corretora 398 atendimentos, 0 de outros; Gestão sem mudança.
 - Teste (29/09, transação desfeita, corretora simulada com o e-mail da Sandra):
