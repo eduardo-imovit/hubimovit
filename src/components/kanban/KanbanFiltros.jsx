@@ -1,4 +1,4 @@
-import { dataDiasAtras, FILTROS_VAZIOS, PERIODOS_FILTRO, SITUACOES } from '../../lib/atendimentos'
+import { dataDiasAtras, FASES_FUNIL, FILTROS_VAZIOS, PERIODOS_FILTRO, SITUACOES } from '../../lib/atendimentos'
 
 function opcoesPorFrequencia(valores) {
   const contagem = new Map()
@@ -37,6 +37,13 @@ export default function KanbanFiltros({ atendimentos, filtros, setFiltros, valor
         <option value="">Situação: todas</option>
         {SITUACOES.map((s) => (
           <option key={s} value={s}>{s}</option>
+        ))}
+      </select>
+
+      <select value={filtros.etapa} onChange={(e) => set('etapa', e.target.value)}>
+        <option value="">Etapa: todas</option>
+        {FASES_FUNIL.map((f) => (
+          <option key={f.fase} value={f.fase}>{f.label}</option>
         ))}
       </select>
 

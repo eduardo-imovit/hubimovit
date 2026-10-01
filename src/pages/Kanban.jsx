@@ -1,13 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAtendimentos } from '../hooks/useAtendimentos'
-import { FILTROS_KANBAN_PADRAO, filtrarAtendimentos } from '../lib/atendimentos'
+import { filtrarAtendimentos, filtrosKanbanPadrao } from '../lib/atendimentos'
 import KanbanFiltros from '../components/kanban/KanbanFiltros'
 import KanbanBoard from '../components/kanban/KanbanBoard'
 
 export default function Kanban() {
   const { atendimentos, carregando, erro } = useAtendimentos()
-  const [filtros, setFiltros] = useState(FILTROS_KANBAN_PADRAO)
+  const [padrao] = useState(filtrosKanbanPadrao)
+  const [filtros, setFiltros] = useState(padrao)
 
   const filtrados = useMemo(() => filtrarAtendimentos(atendimentos, filtros), [atendimentos, filtros])
 
@@ -27,8 +28,8 @@ export default function Kanban() {
 
       {!carregando && !erro && (
         <>
-          <KanbanFiltros atendimentos={atendimentos} filtros={filtros} setFiltros={setFiltros} valoresPadrao={FILTROS_KANBAN_PADRAO} />
-          <KanbanBoard atendimentos={filtrados} />
+          <KanbanFiltros atendimentos={atendimentos} filtros={filtros} setFiltros={setFiltros} valoresPadrao={padrao} />
+          <KanbanBoard atendimentos={filtrados} etapa={filtros.etapa} />
         </>
       )}
     </div>

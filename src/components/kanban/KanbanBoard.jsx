@@ -4,7 +4,7 @@ import { FASES_FUNIL } from '../../lib/atendimentos'
 
 const LOTE = 10
 
-export default function KanbanBoard({ atendimentos }) {
+export default function KanbanBoard({ atendimentos, etapa }) {
   const [visiveisPorFase, setVisiveisPorFase] = useState({})
 
   useEffect(() => {
@@ -17,7 +17,7 @@ export default function KanbanBoard({ atendimentos }) {
 
   return (
     <div className="kanban">
-      {FASES_FUNIL.map(({ fase, label }) => {
+      {FASES_FUNIL.filter((f) => !etapa || f.fase === Number(etapa)).map(({ fase, label }) => {
         const itens = atendimentos.filter((a) => a.fase === fase)
         const limite = visiveisPorFase[fase] ?? LOTE
         const visiveis = itens.slice(0, limite)

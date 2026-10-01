@@ -1100,3 +1100,42 @@
   .home-agenda-dia { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 6px var(--space-2); }
   .home-agenda-dia-nome { width: 100%; }
 }
+
+/* ------- PAINEL COMERCIAL (docs/01-prd.md §5.8) ------- */
+.pg-recorte { font-size: 11px; color: var(--grafite-soft); margin: 0 0 var(--space-4); line-height: 1.5; }
+.pg-recorte strong { color: var(--grafite-mid); font-weight: 500; }
+.pg-recorte--escuro { color: var(--grafite-fade); margin: var(--space-4) 0 0; }
+.pg-funil--7 .pg-funil-linha { grid-template-columns: 128px 1fr 52px 40px; }
+.pg-funil--7 .pg-funil-passagem { padding-left: 140px; }
+.pg-funil-tempo { font-size: 11px; color: var(--grafite-fade); text-align: right; font-variant-numeric: tabular-nums; }
+.pg-funil-legenda-tempo { font-size: 11px; color: var(--grafite-soft); margin-top: var(--space-3); }
+.pg-hbarra--larga { grid-template-columns: 170px 1fr 72px; }
+.pg-hbarra--larga .pg-hbarra-rotulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-trilho-empilhado { display: flex; gap: 2px; background: var(--pergaminho); }
+.pg-trilho-empilhado .pg-funil-barra { border-radius: 0; }
+.pg-trilho-empilhado .pg-funil-barra:last-child { border-radius: 0 4px 4px 0; }
+.pg-trilho-duplo { display: flex; flex-direction: column; gap: 3px; }
+.pg-trilho-fino { height: 10px; }
+.pg-canal-volume { display: grid; grid-template-columns: 1fr 44px; gap: var(--space-2); align-items: center; min-width: 140px; }
+.pg-canais tbody tr.is-selecionado td:first-child { box-shadow: inset 3px 0 0 var(--coral); font-weight: 600; }
+.pg-canais .is-muted { color: var(--grafite-soft); font-size: 11px; }
+.pg-tabela-mini { width: 100%; margin-top: var(--space-3); font-size: var(--text-xs); color: var(--grafite-mid); border-collapse: collapse; }
+.pg-tabela-mini td { padding: 3px 0; border-top: 1px solid var(--champagne); }
+.pg-tabela-mini td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.pg-tabela-mini .is-muted { color: var(--grafite-soft); }
+.pg-vazio { font-size: var(--text-sm); color: var(--grafite-soft); padding: var(--space-5); background: var(--pergaminho); border-radius: var(--radius-md); }
+.pg-mesa { display: grid; gap: var(--space-4); }
+.pg-mesa-card { background: var(--pergaminho); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); }
+.pg-mesa-valor { font-size: 28px; font-weight: 500; color: var(--grafite); line-height: 1.1; }
+.pg-mesa-texto { font-size: var(--text-xs); color: var(--grafite-soft); margin-top: 4px; }
+@media (max-width: 640px) {
+  .pg-funil--7 .pg-funil-linha { grid-template-columns: 96px 1fr 44px 28px; }
+  .pg-funil--7 .pg-funil-passagem { padding-left: 0; }
+  .pg-hbarra--larga { grid-template-columns: 110px 1fr 60px; }
+}
+.pg-corretor-fixo { font-size: var(--text-sm); color: var(--grafite); padding: 8px 0; font-weight: 500; }
+
+/* Kanban: código do atendimento no card (PRD §5.8) */
+.kanban-card-codigo { font-family: var(--font-mono); font-size: 11px; color: var(--grafite-soft); margin-bottom: 2px; user-select: all; }
+.kanban-tempo--atencao { color: var(--warning); font-weight: 500; }
+.kanban-tempo--alerta { color: var(--danger); font-weight: 600; }

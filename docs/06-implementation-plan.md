@@ -149,8 +149,62 @@ Código feito pelo OpenCode em 25/09 sem os docs; revisado e corrigido em 28/09 
 - [ ] 11.7 Eduardo revisar o texto da apresentação → publicar
 - Depois: Avaliação; Guia de visita; Relatório do imóvel.
 
+## Fase 12 — Dados confiáveis e dashboards v2 (RF24, PRD §5.8) — PROPOSTA (29/09)
+Ordem pensada para a precisão: primeiro o dado acumula certo, depois as métricas, e só então as telas. O relógio do histórico só começa quando o S2 estiver no ar, então vale fazer S0–S2 o quanto antes.
+
+**S0 — Base e decisões (Eduardo + eu, ~meio dia)**
+- [ ] Eduardo aprova PRD §5.8, Schema §2.6 e este plano, e responde às perguntas em aberto (PRD §8: P2, P4, P6). P1, P3 e P5 decididos em 29/09
+- [ ] Eduardo assina o Supabase Pro; eu confirmo backup diário ativo antes de qualquer migration
+- [ ] Verificar na API do Imoview se existe histórico de fases por atendimento (se existir, dá para recuperar parte do passado)
+- **Pronto quando:** docs aprovados e backup confirmado.
+
+**S1 — Banco acumulativo (eu)**
+- [ ] Migration: `crm_atendimentos_captura`, `crm_funil_etapas`, `crm_atendimento_transicoes`, gatilhos e RLS (Schema §2.6)
+- [ ] `dashboard_atendimentos_crm` passa a ser mantida pelo gatilho; a escrita direta do n8n continua aceita até a virada (convivência)
+- [ ] Teste em `BEGIN … ROLLBACK`: capturas repetidas no mesmo dia não duplicam; mudança de fase gera 1 transição; sem mudança, 0 transições; estado atual igual à última captura
+- **Pronto quando:** os testes passam e a migration está no repo e em `schema_migrations`.
+
+**S2 — Novo fluxo no n8n (eu escrevo, Eduardo importa e liga as credenciais)**
+- [ ] Fluxo novo `crm_captura_diaria`: roda 1×/dia e busca **todos** os atendimentos em atendimento + os encerrados nos últimos N dias, **sem** `dataInicial = ontem`, e só **insere** em `crm_atendimentos_captura` (com `payload`)
+- [ ] Senha do Imoview sai do parâmetro da URL e vai para uma credencial
+- [ ] Carga inicial: a primeira captura vira a "foto" de partida de cada lead
+- [ ] Rodar em paralelo com o `crm_atendimentos` atual por 3 dias; conferir contagens por fase × Imoview; depois desligar o antigo
+- **Pronto quando:** 3 dias seguidos com a contagem por fase igual à do Imoview e transições aparecendo.
+
+**Adiantado em 29/09 (pedido do Eduardo: "começar pela página de dados do comercial"):** S3 e S4 na primeira versão, sobre os dados de hoje (fase atual), em `/dashboard/comercial`. Os cálculos ficam num módulo único, `src/lib/painelComercial.js`, e não em funções SQL: mesmo padrão dos outros painéis, sem migration antes do Pro. Conferência por SQL feita em 2 recortes (setembro sem filtros; 90 dias · Venda · Site): todos os índices batem. Quando o S1/S2 entrar, as funções de etapa trocam de "coorte pela fase atual" para "evento de chegada na etapa", e aparece o tempo por etapa.
+
+**S3 — Camada de métricas (eu)**
+- [x] 1ª versão em `src/lib/painelComercial.js` (29/09); falta a versão com histórico
+- [ ] Funções SQL com os filtros (`de`, `ate`, `finalidade`, `corretor`, `midia`) e o **filtro geral** (só equipe comercial ativa) para: índices comerciais, funil de 7 etapas com taxas, tempo por etapa, visitas por região e tipo, canais, propostas e valor na mesa, ritmo, perdas e custo da perda
+- [ ] Uma consulta de conferência por métrica (documentada no PRD §5.1)
+- [ ] Revisar o dicionário do PRD §5.1: sai a "safra madura" fixa; toda métrica segue o período escolhido
+- **Pronto quando:** cada métrica bate com a consulta de conferência em 3 recortes diferentes.
+
+**S4 — Página Comercial (eu → revisão do Eduardo)**
+- [x] Barra de filtros com período, finalidade, corretor e mídia (na URL); a lista de corretores só mostra a equipe comercial ativa (29/09, localhost)
+- [x] 1ª versão no localhost (29/09): 4 índices, funil de 7 etapas (coluna de tempo reservada), ritmo, descartes + simulação, mídias, bairros e tipos visitados, em atendimento e valor na mesa, com subtexto de recorte em cada gráfico
+- [x] Corretor vê só os próprios dados: tela travada ("Meus números") + migration RLS testada em transação (29/09)
+- [x] "Sem nível" não lê dados comerciais: migration `20261001120000` aplicada (01/10)
+- [ ] Aplicar a migration `20261001130000` (trava do corretor; aguarda o OK do Eduardo)
+- [ ] Revisão do Eduardo; depois push
+- [ ] 4 índices, funil com tempo por etapa, regiões e tipos no tempo, e os gráficos mantidos, todos com subtexto de filtro
+- **Pronto quando:** trocar qualquer filtro muda todos os gráficos, e o Eduardo aprova.
+
+**S5 — Página Performance (eu → revisão)**
+- [ ] 5 índices (investido, alcance, engajamento médio, conversões, CPL) com os filtros; o resto da página como está
+- **Pronto quando:** investido e conversões batem com Meta/Google no mesmo período (±2%).
+
+**S6 — Página Geral** — depende da resposta P2.
+
+**S7 — Kanban (pode ir a qualquer momento, é independente)**
+- [x] Código do atendimento em cada card; filtro por etapa; abre com "Últimos 7 dias" + em atendimento (29/09, localhost)
+
+**S8 — Virada e validação**
+- [ ] TV e Home passam a usar a mesma camada de métricas
+- [ ] Bateria de conferência com o Eduardo; push; handoff
+
 ## Adiado conscientemente (rever quando o volume real crescer)
-- Backup: upgrade para o plano Pro do Supabase (~US$ 25/mês) ou dump periódico.
+- ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).
 - Testes automatizados.
 
@@ -169,3 +223,5 @@ Código feito pelo OpenCode em 25/09 sem os docs; revisado e corrigido em 28/09 
 | 2026-09-24 | Fase 5b (painéis Comercial e Operacional) | Cards atuais com rótulos e fórmulas enganosos; catálogo alinhado com o Eduardo |
 | 2026-09-28 | Fase 9 (proposta de venda) | Pedido da direção em 25/09, feito sem docs; documentado e corrigido antes de aplicar |
 | 2026-09-28 | Fase 10 (esteira v4) | Eduardo: negociação acontece antes, com o corretor; o locatário só valida; sai a aprovação interna |
+| 2026-09-29 | Fase 12 (dados acumulados + dashboards v2) | Filtro de período não mudava os gráficos (safra fixa) e o banco sobrescrevia a fase do lead; Eduardo decidiu acumular histórico e assinar o Pro |
+| 2026-09-29 | Fase 12 ajustada | Eduardo: sem etapa Agendamento (funil de 7), sem filtro de time, captura 1×/dia, filtro geral só equipe comercial ativa |

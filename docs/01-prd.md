@@ -71,6 +71,7 @@ Faltava um lugar único para:
 | RF21 | **Proposta de venda (compra)**: corretor cria, proponente confirma e assina pelo portal `/venda`, a equipe recebe o PDF assinado; valores e condições ficam no banco para análise (§5.5) | corretor, adm, gestao; proponente | must | aprovado e publicado no banco/função em 28/09; frontend aguarda push (ver plano, Fase 9) |
 | RF22 | **Esteira de locação v4**: gestor registra a proposta negociada (com observações); locatário valida ou pede correção; ao validar abre a esteira e avisa o ADM, sem aprovação interna (§5.6). Substitui partes de RF10–RF12 | corretor; locatário; adm | must | aprovado e implementado (28/09) |
 | RF23 | **Formulários no Hub** (§5.7): 1ª entrega Captação (link público por corretor, assinatura, PDF, lista) e Feedback de visita (PDF); depois apresentações públicas, Avaliação, Guia e Relatório | corretor, adm, gestao; proprietário | must | 1ª entrega no ar (28/09) |
+| RF24 | **Dados confiáveis e dashboards v2** (§5.8): histórico acumulado do funil no banco, páginas Comercial, Performance e Geral com todos os filtros respeitados e só a equipe comercial ativa, Kanban com código e filtro por etapa | gestao, marketing | must | Comercial v1 no localhost (29/09); histórico (S1–S2) aguarda o Pro |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -155,6 +156,41 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - **Depois:** Avaliação de imóvel com comparáveis informados pelo corretor (scraping de portais como ZAP/VivaReal é proibido pelos termos de uso e bloqueado; automatizar só com fonte autorizada); Guia de visita; Relatório do imóvel.
 - **Decidido (28/09):** o aviso de captação vai **só para o corretor**; a captação é **só registro** (sem revisão), o corretor é o responsável pelo processo; os dados ficam no banco para visualizar em Captações.
 
+### 5.8 Dados confiáveis e dashboards v2: Comercial, Performance e Geral (pedido do Eduardo, 29/09) — **aprovado; página Comercial v1 no localhost**
+**Problema.** A Gestão filtra por período e os números não acompanham o filtro. Há duas causas, confirmadas no código e no banco em 29/09:
+1. **Muitos gráficos ignoram o período de propósito.** Funil, conversão e canais usam a "safra madura" (janelas fixas de 60–425 dias), e o ritmo usa sempre os últimos 30 dias (`src/lib/painelGestao.js`, `safraMadura`). O filtro muda os índices do topo, mas não esses gráficos.
+2. **O banco não guarda a jornada.** O `crm_atendimentos` (n8n) faz *upsert* em `dashboard_atendimentos_crm` pelo `codigo` e sobrescreve a fase. Resultado: 1 linha por atendimento (2.788 linhas, 2.788 códigos), só a fase atual, sem saber quando o lead passou por cada etapa. Além disso, o fluxo busca com `dataInicial = ontem`, então pode perder mudanças de fase de leads mais antigos.
+
+**Decisão do Eduardo.** Assinar o Supabase Pro. O banco para de atualizar linhas e passa a **acumular**: puxar os atendimentos todo dia e, quando um lead mudar de etapa, gravar uma linha nova. Com isso dá para medir o tempo médio de cada etapa e reconstruir a jornada.
+
+**Regra de ouro dos dashboards v2:** todo número e todo gráfico respeita **todos** os filtros da página. Cada gráfico tem um subtexto com o que está sendo mostrado e o filtro aplicado (ex.: "Leads que **entraram** entre 01/09 e 29/09 · Venda · Equipe X · todas as mídias").
+
+**Filtros (barra única, estado na URL):** período, finalidade (venda/locação), corretor e mídia. *(Filtro "time" descartado pelo Eduardo em 29/09.)*
+
+**Filtro geral, sempre ligado (decisão do Eduardo, 29/09):** os dashboards só consideram atendimentos de corretores com `colaboradores_raw.equipe = 'comercial'` e `ativo = true`. Corretor inativo não aparece em nenhum número, lista ou filtro. A ligação atendimento → colaborador é pelo nome (`dashboard_atendimentos_crm.corretor` = `colaboradores_raw.nome_completo`), porque o CRM não manda o id do corretor no atendimento. O subtexto de cada gráfico lembra: "só equipe comercial ativa".
+
+**Funil do Hub (7 etapas, nesta ordem):** Pré-atendimento → Seleção de perfil → Seleção de imóveis → Lead qualificado → Visita → Proposta → Negócio. *("Agendamento" não é etapa, decisão de 29/09. "Visitas agendadas" continua como índice, contado pelas atividades "Visita".)*
+- No Imoview a ordem numérica é outra: "Lead qualificado" é a fase 7. O Hub usa uma tabela de mapeamento (fase do CRM → posição no funil).
+
+**Página Comercial** (`/dashboard/comercial`, `src/pages/PainelComercial.jsx`)
+- **Corretor vê só os próprios dados (pedido do Eduardo, 29/09).** O nível Corretor acessa esta página como "Meus números" (menu Dash). O filtro de corretor fica travado no nome dele no CRM, ligado pelo e-mail do login (`perfis.email` = `colaboradores_raw.email_oficial`). A trava de verdade é a RLS (migration `20260929150000_corretor_ve_so_os_seus_dados`): o corretor só lê os próprios atendimentos, as atividades e notas dele e os leads do site dos atendimentos dele. Os painéis da Gestão e de Performance continuam só para Gestão e Marketing.
+- Índices: leads em atendimento que **entraram** no período · leads qualificados no período · visitas agendadas · propostas.
+- Funil das 7 etapas com a taxa de passagem entre elas e o **tempo médio em cada etapa** (dias entre entrar na etapa e sair dela).
+- Visitas por região (bairro) e por tipo de imóvel (casa, casa de condomínio, apartamento, terreno), comparadas ao longo do tempo. Fonte: atividades do tipo "Visita" com o imóvel (há dados desde 15/05/2026).
+- Mantidos, agora respeitando os filtros: canais e eficiência, volume de propostas e valores "na mesa", ritmo de leads, onde o lead se perde, custo da perda, leads em atendimento.
+
+**Página Performance**
+- Índices: total investido · alcance total · engajamento médio · conversões registradas · CPL.
+- O resto da página atual continua como está.
+
+**Página Geral:** conteúdo a definir (pergunta P2).
+
+**Kanban:** código do atendimento em cada card e filtro por etapa.
+
+**Limites que precisam ficar claros na tela**
+- O histórico de etapas só existe **a partir do dia em que o acúmulo começar**. Tempo por etapa e jornada valem para leads que entraram depois disso. O que veio antes continua com a aproximação atual ("fase máxima").
+- Captura **1 vez por dia** (decisão de 29/09): a precisão do tempo por etapa é de 1 dia.
+
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.
 
@@ -205,3 +241,15 @@ Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = exec
 - [ ] Views `vw_*` legíveis sem login; tabelas `repique_*` sem RLS.
 - [ ] Checagem de IP nas chaves de API do Brevo: os e-mails da esteira podem voltar 401.
 - [ ] ⚠ Quais indicadores a diretoria usa para dizer se o Hub está dando resultado?
+
+### Perguntas em aberto da §5.8 (29/09)
+- ~~P1 Agendamento~~ **decidido:** não é etapa do funil.
+- **P2 Página Geral:** o Eduardo ainda não definiu; começar pela Comercial (29/09).
+- ~~P3 Time~~ **decidido:** filtro descartado. No lugar, entra o filtro geral "equipe comercial ativa".
+- ~~P4 Valor na mesa~~ **decidido:** vem das propostas feitas no Hub (venda `valor_proposta`, locação `valor_oferta`); fica completo quando todas as propostas passarem pelo sistema.
+- ~~P5 Frequência~~ **decidido:** 1 vez por dia.
+- ~~P6~~ **resolvido em 29/09:** Sandra corrigida para "comercial"; Gabriel Rosa (gestão comercial), Daniel (direção) e Giovana (recepção) ficam fora, como está. Registro do achado: com a regra ao pé da letra, ficam de fora corretores que atendem hoje:
+  - Sandra Nobre (Locação, ativa, **equipe vazia** no CRM; 46 leads em 90 dias);
+  - Gabriel Rosa (equipe "gestão comercial"; 11 em atendimento);
+  - Daniel Aranovich (direção; 7 em atendimento).
+  Proposta: corrigir o cadastro no CRM (equipe da Sandra = comercial) e decidir se "gestão comercial" entra. Giovana saiu, mas ainda consta ativa: inativar no CRM.

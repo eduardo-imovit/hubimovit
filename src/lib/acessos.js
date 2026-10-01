@@ -15,7 +15,7 @@ export const PAPEL_DESCRICAO = {
   gestao: 'Acesso geral, inclusive usuários e níveis de acesso.',
   adm: 'Propostas, esteira e processos de todos os corretores, e Kanban.',
   marketing: 'Dashboards e metas, TV Display, e conteúdo da Home: avisos, links, banners, plantão, agenda do fotógrafo e datas.',
-  corretor: 'Cria propostas e acompanha as suas em Propostas, Esteira e Processos.',
+  corretor: 'Cria propostas e acompanha as suas em Propostas, Esteira e Processos. Vê os próprios números no Dash Comercial.',
   user: 'Home e Perfil. Solicite um nível para liberar o resto.',
   tvaccess: 'Conta da TV Display.',
 }
@@ -34,7 +34,8 @@ export const ACESSO = {
   propostas: ['gestao', 'adm', 'corretor'], // menu Propostas (locação ou venda)
   formularios: ['gestao', 'adm', 'corretor'], // Ferramentas: Captações e Feedback de visita (corretor: os dele)
   kanban: ['gestao', 'adm'],
-  dash: ['gestao', 'marketing'],
+  dash: ['gestao', 'marketing'], // Painel da Gestão, Performance e Comercial com todos os corretores
+  dashComercial: ['gestao', 'marketing', 'corretor'], // Comercial (corretor: só os dados dele, PRD §5.8)
   configuracoes: ['gestao', 'marketing'],
   usuarios: ['gestao'],
   tv: ['gestao', 'adm', 'marketing', 'tvaccess'],

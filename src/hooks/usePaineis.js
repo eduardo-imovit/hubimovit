@@ -98,6 +98,27 @@ function carregarPerformance() {
   }
 }
 
+function carregarComercial() {
+  return {
+    base: fetchTodasLinhas(() => supabase.from('vw_atendimentos_base').select(COLUNAS_BASE)),
+    // filtro geral do Painel Comercial: só a equipe comercial ativa (PRD §5.8)
+    colaboradores: fetchTodasLinhas(() => supabase.from('colaboradores_raw').select('nome_completo, email_oficial, equipe, ativo')),
+    visitas: fetchTodasLinhas(() =>
+      supabase.from('atividades').select('codigo, datahorainicio, realizada, codigoatendimento, resumoimovel').eq('nometipo', 'Visita')
+    ),
+    propostasVenda: fetchTodasLinhas(() => supabase.from('propostas_venda').select('id, status, valor_proposta, timestamp_criacao, criado_por')),
+    propostasLocacao: fetchTodasLinhas(() => supabase.from('propostas_locacao').select('id, status, valor, valor_oferta, timestamp_criacao, criado_por')),
+    perfis: fetchTodasLinhas(() => supabase.from('perfis').select('id, email')),
+    ultimaCrm: ultimaData('dashboard_atendimentos_crm', 'data_de_entrada'),
+    ultimaAtividades: ultimaData('atividades', 'inserido_em'),
+  }
+}
+
+/** Dados do Painel Comercial (PRD §5.8): os filtros rodam no navegador sobre a base inteira. */
+export function usePainelComercial() {
+  return useCarga(carregarComercial)
+}
+
 /** Dados do Painel de Performance (mídia + orçamento + leads pagos do CRM). */
 export function usePainelPerformance() {
   return useCarga(carregarPerformance)

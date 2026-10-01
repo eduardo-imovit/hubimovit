@@ -22,10 +22,12 @@ export const SITUACAO_COR = {
   Descartado: 'var(--grafite-fade)',
 }
 
-export const FILTROS_VAZIOS = { situacao: '', finalidade: '', funil: '', corretor: '', midia: '', dataInicio: '', dataFim: '' }
+export const FILTROS_VAZIOS = { situacao: '', finalidade: '', funil: '', corretor: '', midia: '', dataInicio: '', dataFim: '', etapa: '' }
 
-/** Padrão do Kanban: só atendimentos em aberto. */
-export const FILTROS_KANBAN_PADRAO = { ...FILTROS_VAZIOS, situacao: 'Em atendimento' }
+/** Padrão do Kanban: atendimentos em aberto que entraram nos últimos 7 dias (pedido do Eduardo, 29/09). */
+export function filtrosKanbanPadrao() {
+  return { ...FILTROS_VAZIOS, situacao: 'Em atendimento', dataInicio: dataDiasAtras(7) }
+}
 
 export const PERIODOS_FILTRO = [
   { dias: 7, label: 'Últimos 7 dias' },
@@ -35,17 +37,24 @@ export const PERIODOS_FILTRO = [
   { dias: 90, label: 'Últimos 90 dias' },
 ]
 
-/** Data (YYYY-MM-DD) de N dias atrás, para os atalhos de período. */
+/**
+ * Início (YYYY-MM-DD, data local) de "últimos N dias" contando hoje: últimos 7
+ * dias = hoje e os 6 anteriores. Data local, não UTC: à noite o UTC já é o dia
+ * seguinte e o período andaria um dia.
+ */
 export function dataDiasAtras(dias) {
   const d = new Date()
-  d.setDate(d.getDate() - dias)
-  return d.toISOString().slice(0, 10)
+  d.setDate(d.getDate() - (dias - 1))
+  const mes = String(d.getMonth() + 1).padStart(2, '0')
+  const dia = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${mes}-${dia}`
 }
 
-/** Aplica os filtros do Kanban/Dados de atendimento (situação, finalidade, funil, corretor, mídia, período de entrada). */
+/** Aplica os filtros do Kanban/Dados de atendimento (situação, etapa, finalidade, funil, corretor, mídia, período de entrada). */
 export function filtrarAtendimentos(atendimentos, filtros) {
   return atendimentos.filter((a) => {
     if (filtros.situacao && a.situacao !== filtros.situacao) return false
+    if (filtros.etapa && a.fase !== Number(filtros.etapa)) return false
     if (filtros.finalidade && a.finalidade !== filtros.finalidade) return false
     if (filtros.funil && a.funil !== filtros.funil) return false
     if (filtros.corretor && a.corretor !== filtros.corretor) return false

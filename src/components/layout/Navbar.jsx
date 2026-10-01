@@ -7,7 +7,7 @@ import { PAPEL_LABEL, pode } from '../../lib/acessos'
 import { AREAS_PROPOSTAS } from '../../lib/propostasNav'
 
 /** Dash reúne Kanban (gestão/admin) e dashboards (gestão/marketing) num único item de navbar. */
-function buildLinksDash({ verKanban, verDash }) {
+function buildLinksDash({ verKanban, verDash, verComercial }) {
   const children = []
 
   if (verKanban) {
@@ -23,13 +23,17 @@ function buildLinksDash({ verKanban, verDash }) {
 
   if (verDash) {
     children.unshift(
+      { to: '/dashboard/comercial', label: 'Comercial' },
       { to: '/dashboard/gestao', label: 'Painel da Gestão' },
       { to: '/dashboard/performance', label: 'Painel de Performance' },
     )
   }
 
+  // corretor: só o Comercial, com os dados dele
+  if (!verDash && verComercial) children.unshift({ to: '/dashboard/comercial', label: 'Meus números' })
+
   if (children.length === 0) return []
-  return [{ to: verDash ? '/dashboard/gestao' : '/kanban', label: 'Dash', children }]
+  return [{ to: verDash ? '/dashboard/gestao' : verComercial && !verKanban ? '/dashboard/comercial' : '/kanban', label: 'Dash', children }]
 }
 
 /** Item de dropdown: link direto (sem children) ou submenu-flyout (com children). */
@@ -60,7 +64,7 @@ export default function Navbar() {
   const { perfil } = usePerfil()
   const { pathname } = useLocation()
   const emPropostas = pathname === '/propostas' || pathname.startsWith('/admin/')
-  const linksDash = buildLinksDash({ verKanban: pode(perfil, 'kanban'), verDash: pode(perfil, 'dash') })
+  const linksDash = buildLinksDash({ verKanban: pode(perfil, 'kanban'), verDash: pode(perfil, 'dash'), verComercial: pode(perfil, 'dashComercial') })
   // Propostas ▾ → Locação ▸ / Venda ▸ (processos separados, ver lib/propostasNav)
   const areasPropostas = AREAS_PROPOSTAS
     .filter((a) => pode(perfil, a.acesso))

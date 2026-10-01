@@ -104,3 +104,9 @@ export function saudeDados(ultimas, hoje) {
     return { ...f, dias, status: dias == null ? 'ruim' : dias <= f.toleranciaDias ? 'bom' : dias <= f.toleranciaDias + 2 ? 'atencao' : 'ruim' }
   })
 }
+
+/** '2026-09-29' → '29/09/26' */
+export const fmtDataCurta = (iso) => {
+  const [y, m, d] = iso.slice(0, 10).split('-')
+  return `${d}/${m}/${y.slice(2)}`
+}

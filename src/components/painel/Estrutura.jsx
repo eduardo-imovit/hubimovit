@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { OPCOES_PERIODO } from '../../lib/painelGestao'
 
 /** Barra única de filtros, acima de tudo que ela recorta. O estado vive na URL. */
-export function BarraFiltros({ filtros, setFiltro, limpar, canais, corretores, alterados }) {
+export function BarraFiltros({ filtros, setFiltro, limpar, canais, corretores, alterados, opcoesPeriodo = OPCOES_PERIODO, rotuloCanal = 'Canal', corretorFixo = null }) {
   const [copiado, setCopiado] = useState(false)
   const copiarLink = async () => {
     try {
@@ -38,14 +38,14 @@ export function BarraFiltros({ filtros, setFiltro, limpar, canais, corretores, a
       <label className="pg-campo">
         <span>Período</span>
         <select value={filtros.periodo} onChange={(e) => setFiltro('periodo', e.target.value)}>
-          {OPCOES_PERIODO.map((o) => (
+          {opcoesPeriodo.map((o) => (
             <option key={o.valor} value={o.valor}>{o.label}</option>
           ))}
         </select>
       </label>
 
       <label className="pg-campo">
-        <span>Canal</span>
+        <span>{rotuloCanal}</span>
         <select value={filtros.canal} onChange={(e) => setFiltro('canal', e.target.value)}>
           <option value="todos">Todos</option>
           {canais.map((c) => (
@@ -54,15 +54,22 @@ export function BarraFiltros({ filtros, setFiltro, limpar, canais, corretores, a
         </select>
       </label>
 
-      <label className="pg-campo">
-        <span>Corretor</span>
-        <select value={filtros.corretor} onChange={(e) => setFiltro('corretor', e.target.value)}>
-          <option value="todos">Todos</option>
-          {corretores.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-      </label>
+      {corretorFixo ? (
+        <div className="pg-campo">
+          <span>Corretor</span>
+          <strong className="pg-corretor-fixo">{corretorFixo}</strong>
+        </div>
+      ) : (
+        <label className="pg-campo">
+          <span>Corretor</span>
+          <select value={filtros.corretor} onChange={(e) => setFiltro('corretor', e.target.value)}>
+            <option value="todos">Todos</option>
+            {corretores.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <div className="pg-filtros-acoes">
         {alterados && (
@@ -101,7 +108,7 @@ const SETA = { sobe: '↑', desce: '↓', igual: '→' }
  * Índice da manchete: valor, variação com seta e texto (nunca só cor) e um
  * minigráfico dos últimos 12 meses.
  */
-export function Indice({ rotulo, valor, variacao, sentido = 'maior-melhor', contexto, serie, formula }) {
+export function Indice({ rotulo, valor, variacao, sentido = 'maior-melhor', contexto, detalhe, serie, formula }) {
   let direcao = 'igual'
   if (variacao != null && Math.abs(variacao) >= 5) direcao = variacao > 0 ? 'sobe' : 'desce'
   const bom = direcao === 'igual' || sentido === 'neutro' ? null : (direcao === 'sobe') === (sentido === 'maior-melhor')
@@ -112,11 +119,12 @@ export function Indice({ rotulo, valor, variacao, sentido = 'maior-melhor', cont
       <div className="pg-indice-valor">{valor}</div>
       {variacao != null && (
         <div className={`pg-indice-var pg-indice-var--${classe}`}>
-          <span aria-hidden="true">{SETA[direcao]}</span> {variacao > 0 ? '+' : ''}
-          {Math.round(variacao)}% <span className="pg-indice-contexto">{contexto}</span>
+          <span aria-hidden="true">{SETA[direcao]}</span> {Math.abs(Math.round(variacao))}%{' '}
+          <span className="pg-indice-contexto">{contexto}</span>
         </div>
       )}
       {variacao == null && contexto && <div className="pg-indice-contexto">{contexto}</div>}
+      {detalhe && <div className="pg-indice-contexto">{detalhe}</div>}
       {serie && serie.length > 1 && <Sparkline valores={serie} />}
     </div>
   )

@@ -122,6 +122,54 @@ Triggers: `trg_propostas_locacao_expira` (bloqueia avanço quando expirada), `tr
 ### 2.5 Integrações
 `spotify_auth`: linha única (`id = 1`), refresh token do Spotify da TV.
 
+### 2.6 Histórico do funil (RF24, PRD §5.8) — **PROPOSTA, não aplicada**
+Princípio: o n8n **só insere**. Nada de *upsert* nem de *update* em dado comercial. O "estado atual" passa a ser derivado do histórico.
+
+**`crm_atendimentos_captura`** (append-only): uma linha por atendimento por captura.
+| Campo | Tipo | Nota |
+|---|---|---|
+| id | bigint identity PK | |
+| capturado_em | timestamptz! default now() | momento da leitura no Imoview |
+| dia_captura | date! | dia (America/Sao_Paulo); **unique (codigo, dia_captura)** para o reprocessamento do mesmo dia não duplicar |
+| codigo | bigint! | código do atendimento no Imoview |
+| fase_crm | smallint! | número da fase no Imoview (1–7) |
+| situacao | text! | Em atendimento / Descartado / Negócio realizado |
+| finalidade, corretor, midia, campanha, funil | text | como vêm do CRM |
+| data_entrada | date | `datahoraentradalead` |
+| data_encerramento | date | descarte ou negócio |
+| payload | jsonb | resposta bruta do Imoview, para reprocessar sem nova chamada |
+
+**`crm_funil_etapas`** (mapeamento, editável pela Gestão): `fase_crm` PK → `posicao` (1–8), `nome`. Hoje: 1 Pré-atendimento→1, 2 Seleção de perfil→2, 3 Seleção de imóveis→3, 7 Lead qualificado→4, 4 Visita→5, 5 Proposta→6, 6 Negócio→7 (sem "Agendamento", decisão de 29/09).
+
+**`crm_atendimento_transicoes`** (gerada por gatilho, nunca escrita pelo n8n): `codigo`, `fase_anterior`, `fase_nova`, `situacao_anterior`, `situacao_nova`, `detectado_em` (dia da captura em que a mudança apareceu). O gatilho `AFTER INSERT` em `crm_atendimentos_captura` compara com a última captura do mesmo código e grava uma linha só quando fase ou situação mudou. A primeira captura de um código grava a entrada (`fase_anterior = null`).
+
+**Estado atual:** `dashboard_atendimentos_crm` continua existindo (Kanban, TV, views `vw_*` e painéis leem dela), mas é **mantida pelo gatilho** a partir da última captura, e não mais pelo n8n. Assim nada que já existe quebra na virada.
+
+**RLS:** as três tabelas com leitura `is_team()` e sem escrita pela API (o n8n usa service role). Mapeamento: escrita só Gestão.
+
+**Métricas (camada única, SQL):** funções/views com parâmetros (`de`, `ate`, `finalidade`, `corretor`, `midia`) que todas as páginas usam. **Filtro geral embutido:** toda função parte de uma view `vw_corretores_comerciais_ativos` (`equipe = 'comercial' and ativo`) e liga o atendimento ao corretor por `lower(trim(nome))`; não há como pedir os inativos pela API do painel. Assim o front não recalcula e cada card tem uma consulta de conferência.
+- Tempo na etapa = `detectado_em` da saída − `detectado_em` da entrada, por etapa, média e mediana.
+- Visitas por região e tipo: `atividades` com `nometipo = 'Visita'`, com bairro e tipo tirados do imóvel (`resumoimovel` hoje; o ideal é a API de imóveis do Imoview).
+
+**Volume esperado:** cerca de 230 atendimentos ativos por dia mais os encerrados recentes, ou seja, dezenas de milhares de linhas por ano. Não pesa no Pro. Se crescer, a captura pode gravar só quando algo mudou.
+
+### 2.6b "Sem nível" não lê dados comerciais — migration `20261001120000_sem_nivel_nao_le_dados_comerciais`, **APLICADA em 01/10**
+- Função `pode_ler_comercial()`: perfil ativo com nível `gestao, adm, marketing, corretor, tvaccess`.
+- Policy "so quem tem nivel le" no lugar de "so equipe le" (is_team) em `dashboard_atendimentos_crm`, `atividades`, `atividades_notas`, `leads_wpp_gtm`, `metas`, `metas_atividades_tipo` e `campanhas_metas`.
+- Continuam com `is_team()`, porque a Home é de todos os perfis: `avisos`, `biblioteca_links`, `home_banners`, `plantao`, `agendamentos_fotografo`, `fotografo_bloqueios`, `datas_comemorativas` e `colaboradores_raw`.
+- Teste antes de aplicar (transação desfeita):
+  - "Sem nível" lê 0 nas 7 tabelas e nas views `vw_*`, mas lê avisos e plantão; `kpis_tv` já o barrava;
+  - TV e Gestão sem mudança.
+
+### 2.7 Corretor só lê o que é dele — migration `20261001130000_corretor_ve_so_os_seus_dados` (era `20260929150000`), **testada, não aplicada**
+- Funções: `meu_nome_crm()` (security definer; nome no CRM pelo e-mail do login) e `nome_corretor_crm(bruto)` (mesmo ajuste de nome da `vw_atendimentos_base`).
+- Policies "equipe le; corretor so os seus" substituem "so quem tem nivel le" (2.6b) em `dashboard_atendimentos_crm`, `atividades`, `atividades_notas` e `leads_wpp_gtm`. Quem não é corretor segue com `pode_ler_comercial()`. Retestada em 01/10 sobre a 2.6b: corretora 398 atendimentos, 0 de outros; Gestão sem mudança.
+- Teste (29/09, transação desfeita, corretora simulada com o e-mail da Sandra):
+  - corretora: 397 atendimentos, 0 de outros, 49 atividades, 0 leads do site;
+  - Gestão: sem mudança (2.788 atendimentos / 2.112 atividades / 824 leads);
+  - anon: 0.
+- ~~Achado: "Sem nível" lia os dados comerciais~~ fechado em 01/10 (2.6b).
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 

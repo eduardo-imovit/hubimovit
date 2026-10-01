@@ -11,6 +11,7 @@ import Kanban from './pages/Kanban'
 import DadosAtendimento from './pages/DadosAtendimento'
 import RelatorioAtividades from './pages/RelatorioAtividades'
 import PainelGestao from './pages/PainelGestao'
+import PainelComercial from './pages/PainelComercial'
 import PainelPerformance from './pages/PainelPerformance'
 import Configuracoes from './pages/Configuracoes'
 import Propostas from './pages/admin/Propostas'
@@ -49,6 +50,7 @@ export default function App() {
         <Route path="/kanban" element={<ProtectedRoute papeis={ACESSO.kanban}><Kanban /></ProtectedRoute>} />
         <Route path="/kanban/dados" element={<ProtectedRoute papeis={ACESSO.kanban}><DadosAtendimento /></ProtectedRoute>} />
         <Route path="/kanban/atividades" element={<ProtectedRoute papeis={ACESSO.kanban}><RelatorioAtividades /></ProtectedRoute>} />
+        <Route path="/dashboard/comercial" element={<ProtectedRoute papeis={ACESSO.dashComercial}><PainelComercial /></ProtectedRoute>} />
         <Route path="/dashboard/gestao" element={<ProtectedRoute papeis={ACESSO.dash}><PainelGestao /></ProtectedRoute>} />
         <Route path="/dashboard/performance" element={<ProtectedRoute papeis={ACESSO.dash}><PainelPerformance /></ProtectedRoute>} />
         {/* endereços antigos do Dash: redirecionam para os painéis novos */}

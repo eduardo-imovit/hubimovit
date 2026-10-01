@@ -20,7 +20,7 @@ import { fmtMoeda, fmtNum, fmtPct } from '../../lib/paineis'
 const EIXO = { fontSize: 11, fill: 'var(--grafite-soft)' }
 const GRADE = 'var(--champagne)'
 
-function CaixaTooltip({ titulo, linhas }) {
+export function CaixaTooltip({ titulo, linhas }) {
   return (
     <div className="pg-tooltip">
       <div className="pg-tooltip-titulo">{titulo}</div>
