@@ -226,6 +226,7 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 ⚠ `leads_wpp_gtm` (telefone e nome de lead) e `atividades` são legíveis por qualquer usuário logado, inclusive "Sem nível". Rever se isso é intencional.
 
 ### Storage
+- `avatares` (público para exibir): cada usuário lê, grava, atualiza e apaga só a própria pasta (`<uid>/...`). A policy de SELECT foi adicionada em 06/10 (`20261006210000`): sem ela o upload falhava com erro de RLS.
 | Bucket | Público | Regras |
 |---|---|---|
 | `esteira-documentos` | não | ler: `pode_acessar_documento_esteira(name)`; enviar/atualizar: `pode_enviar_documento_esteira(name)` (locatário da proposta ou adm/gestao) |
