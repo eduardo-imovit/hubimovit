@@ -190,6 +190,22 @@ Na primeira leitura, um código que já está além do Pré-atendimento vira `pr
   - anon: 0.
 - ~~Achado: "Sem nível" lia os dados comerciais~~ fechado em 01/10 (2.6b).
 
+### 2.8 Campanhas (RF25, PRD §5.9) — **PROPOSTA, não aplicada**
+**`campanhas`**: `id` bigint identity PK, `slug` text unique (ex.: `km32-4tri-2026`), `nome` text!, `inicio` date!, `fim` date! (check `fim >= inicio`), `ativa` bool default true, `criado_em` timestamptz.
+
+**`campanha_metas`**: `campanha_id` → campanhas (cascade), `finalidade` text check (`Venda`, `Aluguel`), `meta_valor` numeric!, `meta_negocios` int!, PK (`campanha_id`, `finalidade`).
+
+Carga inicial: Km 32, de 06/10 a 31/12/2026. Venda: R$ 28.000.000 / 14. Aluguel: R$ 160.000 / 18.
+
+**Negócios da campanha (derivados, nada é digitado):** vêm de `crm_atendimento_jornada`, nas linhas com `situacao = 'Negócio realizado'` e payload completo (gravado pelo `crm_jornada_diaria v3`):
+- **data** = maior `datahora` entre as `payload.interacoes` cuja descrição começa com "NEGÓCIO REALIZADO";
+- **valor** = soma de `payload.imoveisnegocio[].valornegocio`;
+- 1 negócio por código de atendimento: vale o registro mais recente (por exemplo, reaberto e fechado de novo).
+
+**Função `campanha_resumo(p_slug text)`** (security definer, só para quem `pode_ler_comercial()`): devolve o período e, por finalidade, `valor`, `negocios`, `ticket`, `sem_valor`, `meta_valor` e `meta_negocios`, além de `ultima_leitura` (`crm_leituras`). Devolve só agregados, nunca linhas: assim o corretor vê o total da imobiliária (C3) sem ler atendimentos de outros.
+
+**RLS:** `campanhas` e `campanha_metas` com leitura por `pode_ler_comercial()` e escrita só pela Gestão.
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 

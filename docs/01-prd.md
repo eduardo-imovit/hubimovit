@@ -72,7 +72,7 @@ Faltava um lugar único para:
 | RF22 | **Esteira de locação v4**: gestor registra a proposta negociada (com observações); locatário valida ou pede correção; ao validar abre a esteira e avisa o ADM, sem aprovação interna (§5.6). Substitui partes de RF10–RF12 | corretor; locatário; adm | must | aprovado e implementado (28/09) |
 | RF23 | **Formulários no Hub** (§5.7): 1ª entrega Captação (link público por corretor, assinatura, PDF, lista) e Feedback de visita (PDF); depois apresentações públicas, Avaliação, Guia e Relatório | corretor, adm, gestao; proprietário | must | 1ª entrega no ar (28/09) |
 | RF24 | **Dados confiáveis e dashboards v2** (§5.8): histórico acumulado do funil no banco, páginas Comercial, Performance e Geral com todos os filtros respeitados e só a equipe comercial ativa, Kanban com código e filtro por etapa | gestao, marketing | must | Comercial v1 no localhost (29/09); histórico (S1–S2) aguarda o Pro |
-| RF25 | **Campanha "Km 32" na Home** (§5.9): trilha do 4º tri 2026 com valor realizado, volume e ticket médio por finalidade, a partir dos negócios realizados no CRM desde 06/10/2026, contra metas guardadas numa tabela de campanha | todos (ver C3) | must | rascunho (06/10), aguardando aprovação |
+| RF25 | **Campanha "Km 32" na Home** (§5.9): trilha do 4º tri 2026 com valor realizado, volume e ticket médio por finalidade, a partir dos negócios realizados no CRM desde 06/10/2026, contra metas guardadas numa tabela de campanha | todos com nível | must | decisões tomadas (06/10); plano na Fase 13 |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -192,7 +192,7 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - O histórico de etapas só existe **a partir do dia em que o acúmulo começar**. Tempo por etapa e jornada valem para leads que entraram depois disso. O que veio antes continua com a aproximação atual ("fase máxima").
 - Captura **1 vez por dia** (decisão de 29/09): a precisão do tempo por etapa é de 1 dia.
 
-### 5.9 Campanha "Km 32" — 4º trimestre 2026 (pedido do Eduardo, 06/10) — **RASCUNHO, aguardando aprovação**
+### 5.9 Campanha "Km 32" — 4º trimestre 2026 (pedido do Eduardo, 06/10) — **decisões tomadas em 06/10; aguardando OK do plano (Fase 13)**
 **Contexto.** A direção lançou a campanha "Km 32 · Campanha 4º Tri 2026" (apresentação em `Downloads\Imovit.zip`). A metáfora é a maratona: o trimestre é o trecho final da prova, do Km 32 (largada) ao Km 42 (chegada), com paradas no fim de outubro, novembro e dezembro. Existe um protótipo visual local (`src/components/home/TrilhaKm32.jsx`, sem commit, dados fictícios), usado só como referência de design.
 
 **Problema.** A equipe precisa ver, todo dia e no mesmo lugar, quanto da meta do trimestre já foi feito e se o ritmo acompanha o calendário. Hoje isso não existe no Hub.
@@ -248,18 +248,24 @@ Também mostra as paradas mensais (meta acumulada de cada fim de mês) e o marca
 - A Gestão confere a lista de negócios da campanha contra o Imoview na primeira semana e não acha diferença.
 - Um negócio fechado no Imoview aparece na trilha até a manhã seguinte (captura diária das 6h).
 
+**Origem do valor e da data — RESOLVIDO em 06/10** (1ª leitura do `crm_jornada_diaria v3`, atendimento 6133):
+- **Valor:** `payload.imoveisnegocio[].valornegocio` (na locação é o aluguel mensal, ex.: 7.200; isso responde à C2). Com mais de um imóvel no negócio, soma.
+- **Data do negócio realizado:** a interação cuja descrição começa com "NEGÓCIO REALIZADO" → `datahora` (ex.: 01/10/2026 14:11). Exata e independente do dia da leitura. `imoveisnegocio[].datanegocio` é o início da negociação, não o fechamento.
+- O campo `datafechamento` da lista vem sempre vazio: não usar.
+- Conta para a campanha: negócio com interação "NEGÓCIO REALIZADO" em data ≥ 06/10/2026.
+
 **Dependências e riscos (verificados em 06/10).**
 - **D1 — Valor do negócio:** o banco não tem nenhuma coluna de valor nos atendimentos; o n8n não traz esse dado. Sem resolver, a trilha só mostra o volume. Caminho: ver na resposta crua do Imoview (guardada pelo fluxo `crm_jornada_diaria` em `crm_atendimento_jornada.payload`) se há valor do negócio ou o imóvel/proposta. Se não houver, buscar em outro endpoint do Imoview (imóvel ou proposta).
 - **D2 — Data de fechamento:** o último fechamento com data no banco é de 16/09; nenhum negócio de outubro aparece. Pode ser falta de negócio ou o fluxo antigo não gravando a data. Caminho: (a) o fluxo `crm_jornada_diaria` registra o dia em que o atendimento virou "Negócio realizado" (precisão de 1 dia); (b) se o Imoview mandar a data do negócio, usar ela, que é exata. **O fluxo precisa estar rodando antes de qualquer negócio da campanha; enquanto não roda, fechamentos podem ficar sem data.**
 - **D3 — Atraso:** os dados são do dia anterior (captura diária). A tela deixa isso claro.
 
-**Perguntas em aberto (para o Eduardo).**
-- **C1 Meta de venda:** 14 negócios / R$ 28 milhões no trimestre, ou 4 por mês / R$ 8,4 milhões (= 12 / R$ 25,2 milhões), como no slide "O percurso"?
-- **C2 Valor na locação:** o valor de um negócio de locação é o aluguel mensal do contrato (coerente com a meta de R$ 160 mil)?
-- **C3 Quem vê a trilha:** todos os níveis com perfil, ou só quem tem nível (sem "Sem nível")? O corretor vê os números da imobiliária inteira?
-- **C4 Quais negócios contam:** todos os negócios realizados no CRM, ou só os de corretores da equipe comercial ativa (o filtro geral dos dashboards)?
-- **C5 Campanhas futuras:** a estrutura fica genérica (campanha com período e metas) para o 1º tri de 2027 em diante? *(Proposta: sim, o custo é o mesmo.)*
-- **C6 Negócios de 01/10 a 05/10:** ficam fora mesmo (a campanha começa a contar em 06/10), com a trilha começando em 01/10 no calendário?
+**Decisões (Eduardo, 06/10).**
+- **C1 Meta de venda:** 14 negócios / R$ 28 milhões no trimestre. A meta de cada parada mensal é 1/3, 2/3 e 3/3.
+- **C2 Valor na locação:** o aluguel mensal (`valornegocio`), coerente com a meta de R$ 160 mil.
+- **C3 Quem vê:** todos com nível (gestao, adm, marketing, corretor, tvaccess). Os números são da imobiliária inteira, inclusive para o corretor. "Sem nível" não vê.
+- **C4 Quais negócios:** todos os negócios realizados no CRM, sem o filtro de equipe comercial ativa.
+- **C5 Campanhas futuras:** estrutura genérica (tabela de campanhas com período e metas).
+- **C6 Início:** 06/10/2026 para tudo, negócios e calendário. O marcador "hoje" e o ritmo partem de 06/10.
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.

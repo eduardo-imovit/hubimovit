@@ -35,7 +35,8 @@ export const ACESSO = {
   formularios: ['gestao', 'adm', 'corretor'], // Ferramentas: Captações e Feedback de visita (corretor: os dele)
   kanban: ['gestao', 'adm'],
   dash: ['gestao', 'marketing'], // Painel da Gestão, Performance e Comercial com todos os corretores
-  dashComercial: ['gestao', 'marketing', 'corretor'], // Comercial (corretor: só os dados dele, PRD §5.8)
+  dashComercial: ['gestao', 'marketing', 'corretor'],
+  campanha: ['gestao', 'adm', 'marketing', 'corretor', 'tvaccess'], // trilha da campanha na Home (PRD §5.9, C3) // Comercial (corretor: só os dados dele, PRD §5.8)
   configuracoes: ['gestao', 'marketing'],
   usuarios: ['gestao'],
   tv: ['gestao', 'adm', 'marketing', 'tvaccess'],

@@ -69,6 +69,14 @@
 | Navegação | `.navbar*` (dropdown + flyout) · `.navbar-tv*` · `.pagination` | |
 | TV | `.sky-card-tv*`, `.spotify-card-tv*`, carrossel do rodapé (`hub.css`) | Só em `/tv-display` |
 
+### Trilha de campanha (`.km32`, `src/components/home/TrilhaKm32.jsx`) — 06/10
+- **Bloco:** fundo grafite, com o mesmo tratamento da manchete dos painéis; título em serif "Km N de 42"; rótulo pequeno em caixa alta (coral) com o nome da campanha.
+- **Trilha:** trilho cinza, preenchimento e ponto do realizado em **coral** (`--coral`), paradas mensais como anéis e chegada com bandeira quadriculada. O marcador **"hoje"** é uma linha tracejada clara com o rótulo "HOJE".
+- **Números:** 4 colunas (valor, negócios, ticket, ritmo); número grande em serif e legenda pequena. Ritmo negativo usa a cor de atenção, sempre com texto ("x pontos atrás do calendário").
+- **Abas:** pílula segmentada (Venda | Locação), com a ativa em coral.
+- **Acessibilidade:** a trilha tem `role="img"` com `aria-label` descrevendo o avanço em texto. A animação de entrada respeita `prefers-reduced-motion`. Números em pt-BR (vírgula decimal).
+- **Formatos:** venda em "R$ x,y MM"; locação em "R$ x,y mil"; ticket no mesmo formato da finalidade.
+
 ## 4. Padrões de tela
 - **Layout base:** `AppShell` = Navbar no topo (menu por nível) + conteúdo em container. Título de página com `.page-title`.
 - **Lista + filtro:** filtros no topo (`KanbanFiltros`, `MidiaFiltros`, `FilterPanel`), conteúdo em cards ou `.data-table`.

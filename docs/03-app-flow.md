@@ -100,6 +100,22 @@ Configurações → Usuários & Acessos → Suspender (confirmação) → o aces
 ### Marketing: atualizar a Home
 Configurações → aba → criar/editar/desativar item → aparece na Home e na TV (agenda e eventos) na próxima leitura.
 
+### Campanha Km 32 na Home (RF25, PRD §5.9) — 06/10
+- **Onde:** Home, logo abaixo dos atalhos. Só para quem tem nível (gestao, adm, marketing, corretor, tvaccess); o "Sem nível" não vê o bloco.
+- **Interação:** abas Venda | Locação. Sem filtro e sem navegação para outra tela nesta versão.
+- **Conteúdo por aba:**
+  - "Km N de 42";
+  - a trilha com as paradas Out/Nov/Dez, o marcador "hoje" e o ponto do realizado;
+  - 4 números: valor realizado de R$ meta (%), negócios de meta, ticket médio e ritmo (± pontos contra o calendário).
+- **Rodapé:** "Negócios realizados no CRM desde 06/10/2026 · atualizado em dd/mm às hh:mm".
+- **Estados:**
+  - **carregando:** a trilha aparece vazia, sem números (sem "pulo" de layout);
+  - **vazio (0 negócios):** "A largada foi dada em 06/10. Nenhum negócio realizado ainda." A trilha fica no Km 32 e o ticket mostra "—";
+  - **erro:** o bloco mostra "Não foi possível carregar a campanha agora." sem quebrar a Home;
+  - **atraso:** se a última leitura do CRM tiver mais de 1 dia, aviso "Dados do CRM de dd/mm";
+  - **negócio sem valor:** "N negócios sem valor no CRM", contados no volume e fora do valor e do ticket;
+  - **fora do período:** antes do início ou depois do fim, o bloco não aparece.
+
 ## 4. Estados de tela
 | Tela | Vazio | Carregando | Erro | Sem permissão |
 |---|---|---|---|---|

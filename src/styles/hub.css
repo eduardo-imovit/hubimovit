@@ -1139,3 +1139,53 @@
 .kanban-card-codigo { font-family: var(--font-mono); font-size: 11px; color: var(--grafite-soft); margin-bottom: 2px; user-select: all; }
 .kanban-tempo--atencao { color: var(--warning); font-weight: 500; }
 .kanban-tempo--alerta { color: var(--danger); font-weight: 600; }
+
+/* ------- Campanha Km 32 na Home (RF25, PRD §5.9; DS: trilha de campanha) ------- */
+.km32 { position: relative; overflow: hidden; margin-bottom: var(--space-6); padding: var(--space-6); border-radius: var(--radius-lg); background: var(--grafite); color: var(--creme); }
+.km32::before { content: ""; position: absolute; right: -180px; top: -220px; width: 560px; height: 560px; border-radius: 50%; background: radial-gradient(circle, rgba(232, 89, 60, 0.28), rgba(232, 89, 60, 0) 65%); pointer-events: none; }
+.km32-topo { position: relative; display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-7); }
+.km32-label { font-size: 11px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--coral); }
+.km32-titulo { margin: var(--space-2) 0 0; font-family: var(--font-serif); font-weight: var(--weight-regular); font-size: var(--text-3xl); line-height: 1; }
+.km32-titulo span { font-size: var(--text-xl); color: var(--grafite-fade); }
+.km32-abas { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(245, 240, 232, 0.08); }
+.km32-abas button { border: 0; padding: 6px 16px; border-radius: 999px; background: transparent; color: var(--grafite-fade); font: inherit; font-size: var(--text-sm); cursor: pointer; }
+.km32-abas button.is-ativa { background: var(--coral); color: var(--branco); }
+.km32-abas button:focus-visible { outline: 2px solid var(--coral-light); outline-offset: 2px; }
+
+.km32-trilha { position: relative; margin: 0 var(--space-2); }
+.km32-track { position: relative; height: 8px; border-radius: 8px; background: rgba(245, 240, 232, 0.14); }
+.km32-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 8px; background: var(--coral); transition: width 1.4s cubic-bezier(0.65, 0, 0.25, 1); }
+.km32-parada { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--grafite); border: 3px solid var(--grafite-soft); box-sizing: border-box; }
+.km32-parada.is-chegada { width: 22px; height: 22px; margin: -11px 0 0 -11px; border: 2px solid var(--creme); background: repeating-conic-gradient(var(--creme) 0 25%, var(--grafite) 0 50%) 0 0 / 8px 8px; }
+.km32-hoje { position: absolute; top: -14px; bottom: -14px; width: 0; border-left: 2px dashed var(--grafite-fade); }
+.km32-hoje::after { content: "hoje"; position: absolute; top: -18px; left: 0; transform: translateX(-50%); font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--grafite-fade); }
+.km32-corredor { position: absolute; top: 50%; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 8px rgba(232, 89, 60, 0.22); transition: left 1.4s cubic-bezier(0.65, 0, 0.25, 1); z-index: 1; }
+@media (prefers-reduced-motion: no-preference) {
+  .km32-corredor { animation: km32-pulso 1.8s ease-out 1.4s 3; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .km32-fill, .km32-corredor { transition: none; }
+}
+@keyframes km32-pulso { 0% { box-shadow: 0 0 0 0 rgba(232, 89, 60, 0.55); } 100% { box-shadow: 0 0 0 22px rgba(232, 89, 60, 0); } }
+
+.km32-escala { position: relative; height: 44px; margin-top: var(--space-4); }
+.km32-escala span { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; font-size: var(--text-sm); font-weight: var(--weight-medium); white-space: nowrap; }
+.km32-escala span:first-child { transform: none; align-items: flex-start; }
+.km32-escala span:last-child { transform: translateX(-100%); align-items: flex-end; }
+.km32-escala small { font-size: 11px; font-weight: var(--weight-regular); letter-spacing: 0.08em; text-transform: uppercase; color: var(--grafite-fade); }
+
+.km32-numeros { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-5); margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid rgba(245, 240, 232, 0.12); }
+.km32-numeros > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.km32-n { font-family: var(--font-serif); font-size: var(--text-2xl); line-height: 1.05; color: var(--creme); }
+.km32-n small { font-size: var(--text-lg); color: var(--grafite-fade); }
+.km32-n.is-atras { color: var(--coral-light); }
+.km32-l { font-size: 12px; color: var(--grafite-fade); }
+.km32-rodape { position: relative; margin: var(--space-5) 0 0; font-size: 11px; color: var(--grafite-fade); line-height: 1.5; }
+.km32-atraso { color: var(--coral-light); font-weight: var(--weight-medium); }
+.km32--aviso { padding: var(--space-4) var(--space-6); }
+@media (max-width: 960px) { .km32-numeros { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) {
+  .km32 { padding: var(--space-5); }
+  .km32-numeros { grid-template-columns: 1fr; gap: var(--space-4); }
+  .km32-escala small { display: none; }
+}

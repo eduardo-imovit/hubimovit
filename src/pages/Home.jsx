@@ -10,6 +10,7 @@ import { formatarDataLonga, saudacao } from '../lib/dateUtils'
 import { isoLocal } from '../lib/paineis'
 import { ATALHOS, NIVEIS_PREVIA, paginasDoNivel } from '../lib/homeNiveis'
 import { AgendaSemana, Atalhos, AvisosResumo, BuscaHome, FerramentasHub, HojeNoEscritorio, LinksUteis, Pendencias } from '../components/home/BlocosHome'
+import { TrilhaKm32 } from '../components/home/TrilhaKm32'
 
 /**
  * Home: a porta de entrada de todo mundo (docs/01-prd.md §5.4). Responde "o que
@@ -67,6 +68,8 @@ export default function Home() {
       <BuscaHome paginas={paginasDoNivel(papel)} links={links} />
 
       <Atalhos itens={ATALHOS[papel] ?? ATALHOS.user} />
+
+      {pode(perfil, 'campanha') && <TrilhaKm32 />}
 
       <div className="home-duas">
         <section className="home-bloco" aria-labelledby="home-para-voce">
