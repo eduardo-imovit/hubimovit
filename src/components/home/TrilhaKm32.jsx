@@ -27,20 +27,27 @@ const km = (fracao) => Math.round(KM_INICIO + (KM_FIM - KM_INICIO) * fracao)
 const pct = (f) => `${(f * 100).toFixed(2)}%`
 const pctTexto = (f) => `${(f * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
 
-/** Paradas no fim de cada mês da campanha, com a meta acumulada em partes iguais. */
+/** Quanto do período já passou (0–1) até a data, contando o próprio dia. */
+function fracaoAte(inicio, fim, data) {
+  const total = (dataLocal(fim) - dataLocal(inicio)) / DIA_MS + 1
+  const passados = (data - dataLocal(inicio)) / DIA_MS + 1
+  return Math.min(1, Math.max(0, passados / total))
+}
+
+/**
+ * Paradas no último dia de cada mês, na mesma régua do tempo: a tracejada
+ * "hoje" encosta na parada no fim do mês. A meta acumulada da parada é a mesma
+ * fração (ex.: 31/10 = 29,9% do período = 29,9% da meta).
+ */
 function paradasDa(inicio, fim) {
   const a = dataLocal(inicio)
   const b = dataLocal(fim)
-  const meses = []
-  for (let d = new Date(a.getFullYear(), a.getMonth(), 1); d <= b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) meses.push(MESES[d.getMonth()])
-  return meses.map((mes, i) => ({ mes, fracao: (i + 1) / meses.length }))
-}
-
-/** Quanto do período já passou (0–1), contando o dia de hoje. */
-function fracaoDoTempo(inicio, fim, hoje) {
-  const total = (dataLocal(fim) - dataLocal(inicio)) / DIA_MS + 1
-  const passados = (dataLocal(hoje) - dataLocal(inicio)) / DIA_MS + 1
-  return Math.min(1, Math.max(0, passados / total))
+  const paradas = []
+  for (let d = new Date(a.getFullYear(), a.getMonth(), 1); d <= b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
+    const fimDoMes = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+    paradas.push({ mes: MESES[d.getMonth()], fracao: fracaoAte(inicio, fim, fimDoMes < b ? fimDoMes : b) })
+  }
+  return paradas
 }
 
 function useCampanha(slug) {
@@ -77,7 +84,7 @@ export function TrilhaKm32() {
 
   const f = dados?.finalidades?.[aba]
   const progresso = f ? Math.min(1, f.valor / f.meta_valor) : 0
-  const tempo = dados ? fracaoDoTempo(dados.inicio, dados.fim, dados.hoje) : 0
+  const tempo = dados ? fracaoAte(dados.inicio, dados.fim, dataLocal(dados.hoje)) : 0
   const diferenca = progresso - tempo
   const paradas = dados ? paradasDa(dados.inicio, dados.fim) : []
   const abaAtual = ABAS.find((a) => a.chave === aba)
@@ -114,7 +121,8 @@ export function TrilhaKm32() {
         <div className="km32-track">
           <div className="km32-fill" style={{ width: montado ? pct(progresso) : 0 }} />
           {paradas.map((p) => (
-            <span key={p.mes} className={`km32-parada${p.fracao === 1 ? ' is-chegada' : ''}`} style={{ left: pct(p.fracao) }} />
+            <span key={p.mes} className={`km32-parada${p.fracao === 1 ? ' is-chegada' : ''}`} style={{ left: pct(p.fracao) }}
+              title={f ? `${p.mes}: meta acumulada de ${moeda(aba, f.meta_valor * p.fracao)}` : p.mes} />
           ))}
           {dados && <span className="km32-hoje" style={{ left: pct(tempo) }} title="Onde o calendário está hoje" />}
           <span className="km32-corredor" style={{ left: montado ? pct(progresso) : 0 }} />

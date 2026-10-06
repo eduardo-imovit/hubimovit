@@ -214,12 +214,12 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 | Avanço na trilha | valor realizado ÷ meta de valor, convertido em Km (32 + 10 × fração), limitado ao Km 42 |
 | Ritmo | avanço da meta − fração do calendário já passada, em pontos ("5 pontos à frente/atrás do calendário") |
 
-Também mostra as paradas mensais (meta acumulada de cada fim de mês) e o marcador "hoje".
+Também mostra as paradas no último dia de cada mês (meta acumulada proporcional aos dias) e o marcador "hoje".
 
 **Metas (da apresentação; ficam numa tabela, não no código).**
 - Venda: R$ 28 milhões e 14 negócios no trimestre.
 - Locação: R$ 160 mil e 18 negócios no trimestre.
-- Meta de cada mês = 1/3 da meta do trimestre, até a pergunta C1 ser respondida.
+- Meta acumulada de cada mês = proporcional aos dias da campanha até o fim do mês.
 
 **Quem vê.** A trilha aparece na Home. Quem vê está na pergunta C3. Os números são da imobiliária inteira, não por corretor.
 
@@ -260,7 +260,8 @@ Também mostra as paradas mensais (meta acumulada de cada fim de mês) e o marca
 - **D3 — Atraso:** os dados são do dia anterior (captura diária). A tela deixa isso claro.
 
 **Decisões (Eduardo, 06/10).**
-- **C1 Meta de venda:** 14 negócios / R$ 28 milhões no trimestre. A meta de cada parada mensal é 1/3, 2/3 e 3/3.
+- **C1 Meta de venda:** 14 negócios / R$ 28 milhões no trimestre.
+- **Régua única (Eduardo, 06/10):** 0% = 06/10 e 100% = 31/12/2026, e a mesma régua vale para o tempo e para o valor. A tracejada é o dia de hoje no período; a linha laranja com a bolinha é o valor realizado ÷ a meta (R$ 28 mi na venda, R$ 160 mil na locação). As paradas ficam no **último dia de cada mês**, na posição do tempo (31/10 ≈ 29,9%, 30/11 ≈ 64,4%), e a meta acumulada da parada é a mesma fração (ex.: venda até 31/10 ≈ R$ 8,4 mi).
 - **C2 Valor na locação:** o aluguel mensal (`valornegocio`), coerente com a meta de R$ 160 mil.
 - **C3 Quem vê:** todos com nível (gestao, adm, marketing, corretor, tvaccess). Os números são da imobiliária inteira, inclusive para o corretor. "Sem nível" não vê.
 - **C4 Quais negócios:** todos os negócios realizados no CRM, sem o filtro de equipe comercial ativa.
