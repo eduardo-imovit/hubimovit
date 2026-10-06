@@ -163,6 +163,16 @@ Princípio: o n8n **só insere**. Nada de *upsert* nem de *update* em dado comer
 
 Na primeira leitura, um código que já está além do Pré-atendimento vira `primeira_leitura`, com a data de chegada na etapa desconhecida, e fica fora da média de tempo. A `entrada` usa `datahoraentradalead`. As mudanças usam o dia da leitura (precisão de 1 dia).
 
+**Carga inicial e leitura diária enxuta (06/10, decisão do Eduardo: "o foco é daqui para frente").**
+- Migration `20261006180000_crm_jornada_carga_inicial`, **aplicada**: a jornada parte de `dashboard_atendimentos_crm`, sem chamar o Imoview. Foram 2.831 linhas (5 `entrada` + 2.826 `primeira_leitura`; 247 em atendimento), com `crm_leituras.origem = 'carga_base'` (coluna nova).
+- Migration `20261006160000_service_role_timeout`, **aplicada**: `service_role` com `statement_timeout = 120s` (herdava 8s do `authenticator`; a 1ª leitura com 26,5 MB deu timeout). anon e authenticated sem mudança.
+- Fluxo `crm_jornada_diaria v3` (n8n `OrueN2tGYYqploMp`, desligado):
+  - dia a dia: situação 1 (em atendimento) em todas as fases + situações 2 e 3 com `dataInicial` de 60 dias;
+  - domingo: leitura completa;
+  - 50 por página, payload enxuto (só campos simples + o tamanho das listas internas);
+  - trava se a situação 1 não vier como "Em atendimento".
+- A v1 (`4tzh8UFpxciJOYiY`) e a v2 (`NLDrm0WTWkYdz3ge`) ficam obsoletas: arquivar.
+
 ### 2.6b "Sem nível" não lê dados comerciais — migration `20261001120000_sem_nivel_nao_le_dados_comerciais`, **APLICADA em 01/10**
 - Função `pode_ler_comercial()`: perfil ativo com nível `gestao, adm, marketing, corretor, tvaccess`.
 - Policy "so quem tem nivel le" no lugar de "so equipe le" (is_team) em `dashboard_atendimentos_crm`, `atividades`, `atividades_notas`, `leads_wpp_gtm`, `metas`, `metas_atividades_tipo` e `campanhas_metas`.

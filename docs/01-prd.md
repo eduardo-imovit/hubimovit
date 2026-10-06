@@ -72,6 +72,7 @@ Faltava um lugar único para:
 | RF22 | **Esteira de locação v4**: gestor registra a proposta negociada (com observações); locatário valida ou pede correção; ao validar abre a esteira e avisa o ADM, sem aprovação interna (§5.6). Substitui partes de RF10–RF12 | corretor; locatário; adm | must | aprovado e implementado (28/09) |
 | RF23 | **Formulários no Hub** (§5.7): 1ª entrega Captação (link público por corretor, assinatura, PDF, lista) e Feedback de visita (PDF); depois apresentações públicas, Avaliação, Guia e Relatório | corretor, adm, gestao; proprietário | must | 1ª entrega no ar (28/09) |
 | RF24 | **Dados confiáveis e dashboards v2** (§5.8): histórico acumulado do funil no banco, páginas Comercial, Performance e Geral com todos os filtros respeitados e só a equipe comercial ativa, Kanban com código e filtro por etapa | gestao, marketing | must | Comercial v1 no localhost (29/09); histórico (S1–S2) aguarda o Pro |
+| RF25 | **Campanha "Km 32" na Home** (§5.9): trilha do 4º tri 2026 com valor realizado, volume e ticket médio por finalidade, a partir dos negócios realizados no CRM desde 06/10/2026, contra metas guardadas numa tabela de campanha | todos (ver C3) | must | rascunho (06/10), aguardando aprovação |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -190,6 +191,75 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 **Limites que precisam ficar claros na tela**
 - O histórico de etapas só existe **a partir do dia em que o acúmulo começar**. Tempo por etapa e jornada valem para leads que entraram depois disso. O que veio antes continua com a aproximação atual ("fase máxima").
 - Captura **1 vez por dia** (decisão de 29/09): a precisão do tempo por etapa é de 1 dia.
+
+### 5.9 Campanha "Km 32" — 4º trimestre 2026 (pedido do Eduardo, 06/10) — **RASCUNHO, aguardando aprovação**
+**Contexto.** A direção lançou a campanha "Km 32 · Campanha 4º Tri 2026" (apresentação em `Downloads\Imovit.zip`). A metáfora é a maratona: o trimestre é o trecho final da prova, do Km 32 (largada) ao Km 42 (chegada), com paradas no fim de outubro, novembro e dezembro. Existe um protótipo visual local (`src/components/home/TrilhaKm32.jsx`, sem commit, dados fictícios), usado só como referência de design.
+
+**Problema.** A equipe precisa ver, todo dia e no mesmo lugar, quanto da meta do trimestre já foi feito e se o ritmo acompanha o calendário. Hoje isso não existe no Hub.
+
+**Objetivo.** Mostrar na Home do Hub o avanço da campanha com números reais do CRM. A equipe se orienta pela trilha, e a Gestão acompanha sem montar planilha.
+
+**Fonte dos dados (decisão do Eduardo, 06/10).**
+- O realizado vem dos **atendimentos do CRM** (Imoview → n8n → Supabase).
+- Conta como negócio da campanha o atendimento com situação **"Negócio realizado"** e **data de fechamento a partir de 06/10/2026**, até o fim da campanha (31/12/2026).
+- Venda e locação ficam separadas pela finalidade do atendimento (`Venda` / `Aluguel`).
+- Não há lançamento manual nesta versão.
+
+**O que a trilha mostra (por finalidade, abas Venda / Locação).**
+| Número | Fórmula |
+|---|---|
+| Valor realizado | soma do valor dos negócios da campanha |
+| Volume de negócios | quantidade de negócios da campanha |
+| Ticket médio | valor realizado ÷ volume (“—” com 0 negócios) |
+| Avanço na trilha | valor realizado ÷ meta de valor, convertido em Km (32 + 10 × fração), limitado ao Km 42 |
+| Ritmo | avanço da meta − fração do calendário já passada, em pontos ("5 pontos à frente/atrás do calendário") |
+
+Também mostra as paradas mensais (meta acumulada de cada fim de mês) e o marcador "hoje".
+
+**Metas (da apresentação; ficam numa tabela, não no código).**
+- Venda: R$ 28 milhões e 14 negócios no trimestre.
+- Locação: R$ 160 mil e 18 negócios no trimestre.
+- Meta de cada mês = 1/3 da meta do trimestre, até a pergunta C1 ser respondida.
+
+**Quem vê.** A trilha aparece na Home. Quem vê está na pergunta C3. Os números são da imobiliária inteira, não por corretor.
+
+**Escopo — dentro.**
+- Trilha na Home com os números acima, lidos do banco.
+- Metas e período da campanha numa tabela de campanha: dá para corrigir sem deploy e reaproveitar em campanhas futuras.
+- Origem do valor do negócio trazida do Imoview para o banco (ver dependências).
+- Subtexto com a regra de contagem ("Negócios realizados no CRM desde 06/10/2026") e a data da última atualização do CRM.
+
+**Escopo — fora (por enquanto).**
+- Lançamento manual de fechamentos.
+- Ranking ou números por corretor na trilha.
+- Conciliação do CRM com outra fonte (contratos, financeiro).
+- Notificações ou comemoração automática ao bater a parada do mês.
+
+**Requisitos.**
+- RF25.1: a trilha lê os negócios da campanha do banco; nenhum número fica no código.
+- RF25.2: metas, período e data de corte vêm da tabela da campanha.
+- RF25.3: valor realizado, volume e ticket médio por finalidade, com a mesma regra de contagem em todos.
+- RF25.4: cada número mostra de onde veio (subtexto) e a data da última informação do CRM. Se a fonte estiver atrasada mais de 1 dia, aparece um aviso.
+- RF25.5: se um negócio não tiver valor no CRM, ele conta no volume, fica fora do valor e do ticket, e a tela informa quantos estão nessa situação ("2 negócios sem valor no CRM").
+- RF25.6: acessível: o avanço é dito em texto (não só pela posição do ponto), e a animação respeita `prefers-reduced-motion`.
+
+**Critérios de sucesso.**
+- A trilha bate com uma consulta SQL de conferência: os mesmos negócios, valor e volume.
+- A Gestão confere a lista de negócios da campanha contra o Imoview na primeira semana e não acha diferença.
+- Um negócio fechado no Imoview aparece na trilha até a manhã seguinte (captura diária das 6h).
+
+**Dependências e riscos (verificados em 06/10).**
+- **D1 — Valor do negócio:** o banco não tem nenhuma coluna de valor nos atendimentos; o n8n não traz esse dado. Sem resolver, a trilha só mostra o volume. Caminho: ver na resposta crua do Imoview (guardada pelo fluxo `crm_jornada_diaria` em `crm_atendimento_jornada.payload`) se há valor do negócio ou o imóvel/proposta. Se não houver, buscar em outro endpoint do Imoview (imóvel ou proposta).
+- **D2 — Data de fechamento:** o último fechamento com data no banco é de 16/09; nenhum negócio de outubro aparece. Pode ser falta de negócio ou o fluxo antigo não gravando a data. Caminho: (a) o fluxo `crm_jornada_diaria` registra o dia em que o atendimento virou "Negócio realizado" (precisão de 1 dia); (b) se o Imoview mandar a data do negócio, usar ela, que é exata. **O fluxo precisa estar rodando antes de qualquer negócio da campanha; enquanto não roda, fechamentos podem ficar sem data.**
+- **D3 — Atraso:** os dados são do dia anterior (captura diária). A tela deixa isso claro.
+
+**Perguntas em aberto (para o Eduardo).**
+- **C1 Meta de venda:** 14 negócios / R$ 28 milhões no trimestre, ou 4 por mês / R$ 8,4 milhões (= 12 / R$ 25,2 milhões), como no slide "O percurso"?
+- **C2 Valor na locação:** o valor de um negócio de locação é o aluguel mensal do contrato (coerente com a meta de R$ 160 mil)?
+- **C3 Quem vê a trilha:** todos os níveis com perfil, ou só quem tem nível (sem "Sem nível")? O corretor vê os números da imobiliária inteira?
+- **C4 Quais negócios contam:** todos os negócios realizados no CRM, ou só os de corretores da equipe comercial ativa (o filtro geral dos dashboards)?
+- **C5 Campanhas futuras:** a estrutura fica genérica (campanha com período e metas) para o 1º tri de 2027 em diante? *(Proposta: sim, o custo é o mesmo.)*
+- **C6 Negócios de 01/10 a 05/10:** ficam fora mesmo (a campanha começa a contar em 06/10), com a trilha começando em 01/10 no calendário?
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.
