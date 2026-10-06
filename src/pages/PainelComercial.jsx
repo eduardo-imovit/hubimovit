@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { usePainelComercial } from '../hooks/usePaineis'
 import { useFiltrosUrl } from '../hooks/useFiltrosUrl'
 import { usePerfil } from '../hooks/usePerfil'
+import { PROPOSTAS_ATIVAS } from '../lib/acessos'
 import { BarraFiltros, Capitulo, Indice } from '../components/painel/Estrutura'
 import { Descartes, SaudeDados, Simulador } from '../components/painel/Graficos'
 import { EmAtendimentoEtapas, FunilEtapas, GraficoRitmo, PropostasMesa, Recorte, TabelaCanais, VisitasBairro, VisitasTipo } from '../components/painel/GraficosComercial'
@@ -272,12 +273,12 @@ export default function PainelComercial() {
               const ativos = h.emAtendimento.reduce((s, e) => s + h.finalidades.reduce((t, f) => t + e[f], 0), 0)
               return `${fmtNum(ativos)} leads do período seguem em atendimento${h.mesa.total > 0 ? ` e ${fmtMoeda(valor)} estão na mesa em propostas abertas no Hub` : ''}.`
             })()}
-            rodape="Valor na mesa: propostas criadas no Hub no período e ainda abertas (venda: aguardando o proponente ou confirmada; locação: fora de rejeitada, expirada e concluída). O corretor da proposta é quem a criou. O filtro de mídia não se aplica às propostas, que não têm mídia. Só aparecem as propostas que o seu nível de acesso permite ver. O valor fica completo quando as propostas passarem a ser feitas no sistema."
+            rodape={PROPOSTAS_ATIVAS ? "Valor na mesa: propostas criadas no Hub no período e ainda abertas (venda: aguardando o proponente ou confirmada; locação: fora de rejeitada, expirada e concluída). O corretor da proposta é quem a criou. O filtro de mídia não se aplica às propostas, que não têm mídia. Só aparecem as propostas que o seu nível de acesso permite ver. O valor fica completo quando as propostas passarem a ser feitas no sistema." : "Leads que entraram no período e seguem em atendimento, pela etapa atual no CRM."}
           >
-            <Recorte oque={`${coorteTxt} e propostas criadas no período`} recorte={h.recorte} />
+            <Recorte oque={PROPOSTAS_ATIVAS ? `${coorteTxt} e propostas criadas no período` : coorteTxt} recorte={h.recorte} />
             <div className="pg-duas">
               <EmAtendimentoEtapas dados={h.emAtendimento} finalidades={h.finalidades} />
-              <PropostasMesa porFinalidade={h.mesa.porFinalidade} />
+              {PROPOSTAS_ATIVAS && <PropostasMesa porFinalidade={h.mesa.porFinalidade} />}
             </div>
           </Capitulo>
 

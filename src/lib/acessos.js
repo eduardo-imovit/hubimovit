@@ -26,12 +26,21 @@ export const PAPEIS_SOLICITAVEIS = ['corretor', 'adm', 'marketing', 'gestao']
 /** Níveis que a Gestão pode atribuir em Usuários & Acessos. */
 export const PAPEIS_ATRIBUIVEIS = ['gestao', 'adm', 'marketing', 'corretor', 'user', 'tvaccess']
 
+/**
+ * Módulo de Propostas (locação, venda, esteira, processos): por enquanto só no
+ * ambiente de teste (VITE_MODULO_PROPOSTAS=on, branch `teste` na Vercel). Em
+ * produção os níveis abaixo ficam vazios, e somem menu, atalho, busca e rota.
+ * O portal do cliente (/portal, /venda) continua acessível pelo link do e-mail.
+ */
+export const PROPOSTAS_ATIVAS = import.meta.env.VITE_MODULO_PROPOSTAS === 'on'
+const soComPropostas = (papeis) => (PROPOSTAS_ATIVAS ? papeis : [])
+
 export const ACESSO = {
-  esteira: ['gestao', 'adm', 'corretor'], // Propostas / Esteira / Processos (corretor: só as dele)
-  esteiraDecidir: ['gestao', 'adm'], // aprovar, descartar, decidir documentos, solicitar ajustes, finalizar
-  vendas: ['gestao', 'adm', 'corretor'], // Propostas de venda (corretor: só as dele)
-  vendasDecidir: ['gestao', 'adm'], // descartar proposta de venda
-  propostas: ['gestao', 'adm', 'corretor'], // menu Propostas (locação ou venda)
+  esteira: soComPropostas(['gestao', 'adm', 'corretor']), // Propostas / Esteira / Processos (corretor: só as dele)
+  esteiraDecidir: soComPropostas(['gestao', 'adm']), // aprovar, descartar, decidir documentos, solicitar ajustes, finalizar
+  vendas: soComPropostas(['gestao', 'adm', 'corretor']), // Propostas de venda (corretor: só as dele)
+  vendasDecidir: soComPropostas(['gestao', 'adm']), // descartar proposta de venda
+  propostas: soComPropostas(['gestao', 'adm', 'corretor']), // menu Propostas (locação ou venda)
   formularios: ['gestao', 'adm', 'corretor'], // Ferramentas: Captações e Feedback de visita (corretor: os dele)
   kanban: ['gestao', 'adm'],
   dash: ['gestao', 'marketing'], // Painel da Gestão, Performance e Comercial com todos os corretores

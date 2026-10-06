@@ -1,10 +1,10 @@
 // Home por nível de acesso (docs/01-prd.md §5.4): atalhos e páginas da busca.
 // Os papéis de cada rota vêm de acessos.js; aqui é só o que a Home oferece.
 
-import { ACESSO } from './acessos'
+import { ACESSO, PROPOSTAS_ATIVAS } from './acessos'
 
 /** Atalhos grandes da Home, na ordem em que aparecem para cada nível. */
-export const ATALHOS = {
+const TODOS_ATALHOS = {
   gestao: [
     { to: '/dashboard/gestao', titulo: 'Painel da Gestão', descricao: 'Resultado, funil e pessoas', icone: 'painel' },
     { to: '/dashboard/performance', titulo: 'Performance', descricao: 'Mídia, orçamento e campanhas', icone: 'grafico' },
@@ -31,6 +31,8 @@ export const ATALHOS = {
     { to: '/admin/propostas', titulo: 'Nova proposta', descricao: 'Locação: enviar o link ao locatário', icone: 'mais' },
     { to: '/admin/vendas', titulo: 'Nova proposta de venda', descricao: 'Compra: enviar o link ao proponente', icone: 'mais' },
     { to: '/admin/esteiras', titulo: 'Minhas propostas', descricao: 'Onde cada uma está', icone: 'documento' },
+    { to: '/dashboard/comercial', titulo: 'Meus números', descricao: 'Leads, funil e visitas', icone: 'grafico' },
+    { to: '/captacoes', titulo: 'Captações', descricao: 'Meu link e as captações', icone: 'pasta' },
     { to: '/agenda', titulo: 'Agenda', descricao: 'Plantão, reuniões e datas', icone: 'calendario' },
     { to: '#links', titulo: 'Manuais e links', descricao: 'Processos, formulários e Drive', icone: 'link' },
   ],
@@ -41,10 +43,18 @@ export const ATALHOS = {
   ],
 }
 
+const ehDePropostas = (to) => /^\/(admin|propostas)(\/|$)/.test(to)
+
+/** Sem o módulo de Propostas (produção, por enquanto), os atalhos dele somem. */
+export const ATALHOS = Object.fromEntries(
+  Object.entries(TODOS_ATALHOS).map(([papel, lista]) => [papel, PROPOSTAS_ATIVAS ? lista : lista.filter((a) => !ehDePropostas(a.to))])
+)
+
 /** Páginas que a busca da Home encontra, filtradas pelo nível. */
 const PAGINAS = [
   { titulo: 'Painel da Gestão', to: '/dashboard/gestao', acesso: 'dash', termos: 'dashboard resultado funil leads negocios conversao corretores pessoas' },
   { titulo: 'Painel de Performance', to: '/dashboard/performance', acesso: 'dash', termos: 'midia meta google anuncios campanhas orcamento cpl investimento' },
+  { titulo: 'Meus números (Comercial)', to: '/dashboard/comercial', acesso: 'dashComercial', termos: 'meus numeros comercial leads funil visitas resultado corretor' },
   { titulo: 'Kanban', to: '/kanban', acesso: 'kanban', termos: 'atendimentos fases crm leads quadro' },
   { titulo: 'Dados de Atendimento', to: '/kanban/dados', acesso: 'kanban', termos: 'analise atendimentos origem bairros corretor' },
   { titulo: 'Relatório de Atividades', to: '/kanban/atividades', acesso: 'kanban', termos: 'atividades ligacoes visitas relatorio' },

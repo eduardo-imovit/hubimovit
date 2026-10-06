@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { isoLocal, limitesMes, nomeMes, somarDias } from '../lib/paineis'
+import { PROPOSTAS_ATIVAS } from '../lib/acessos'
 
 // Status em que a proposta já saiu da esteira.
 const ENCERRADAS = ['sincronizada', 'concluida', 'rejeitada', 'descartada', 'expirada']
@@ -33,6 +34,7 @@ async function pendenciasGestao(hoje) {
 
 /** Pendências do Admin: documentos esperando decisão e correções pedidas pelo locatário. */
 async function pendenciasAdm() {
+  if (!PROPOSTAS_ATIVAS) return []
   const propostas = await dados(supabase.from('propostas_locacao').select('id, status'))
   const abertas = propostas.filter((p) => !ENCERRADAS.includes(p.status))
   const out = []
@@ -48,7 +50,7 @@ async function pendenciasAdm() {
 /** Pendências do Corretor: as propostas dele (a RLS já filtra) e os leads dele sem contato. */
 async function pendenciasCorretor(email, hoje) {
   const out = []
-  const propostas = await dados(supabase.from('propostas_locacao').select('id, status, link_expira_em, updated_at'))
+  const propostas = PROPOSTAS_ATIVAS ? await dados(supabase.from('propostas_locacao').select('id, status, link_expira_em, updated_at')) : []
   const abertas = propostas.filter((p) => !ENCERRADAS.includes(p.status))
   const correcoes = abertas.filter((p) => p.status === 'correcao_solicitada').length
   if (correcoes) out.push({ tom: 'ruim', n: correcoes, texto: plural(correcoes, 'locatário pediu correção na sua proposta', 'locatários pediram correção nas suas propostas'), to: '/admin/propostas', acao: 'Corrigir' })
@@ -66,7 +68,7 @@ async function pendenciasCorretor(email, hoje) {
     ])
     const codigos = new Set(ativos.map((a) => a.codigo))
     const semContato = semAtividade.filter((t) => codigos.has(t.codigo)).length
-    if (semContato) out.push({ tom: 'atencao', n: semContato, texto: plural(semContato, 'lead seu sem nenhum contato registrado', 'leads seus sem nenhum contato registrado'), to: '/kanban', acao: 'Ver' })
+    if (semContato) out.push({ tom: 'atencao', n: semContato, texto: plural(semContato, 'lead seu sem nenhum contato registrado', 'leads seus sem nenhum contato registrado'), to: '/dashboard/comercial', acao: 'Ver' })
   }
   return out
 }

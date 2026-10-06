@@ -227,6 +227,12 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 
 **Depois:** conciliação com contratos e financeiro; comemoração ao bater a parada.
 
+## Fase 14 — Lançamento para o time sem Propostas (PRD §5.10) — 06/10
+- [x] Chave `VITE_MODULO_PROPOSTAS` (produção desligada; teste ligada), atalhos do corretor (Meus números, Captações) e pendência de leads apontando para "Meus números"
+- [ ] Eduardo: env de Preview na Vercel + branch `teste` no ar + URL do teste nas Redirect URLs do Supabase
+- [ ] Bateria de aceite das Propostas no teste (roteiro na Fase 11/handoff)
+- [ ] Liberar contas de corretor em produção (Home, Dash, Ferramentas) e piloto
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).

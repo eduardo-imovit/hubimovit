@@ -268,6 +268,11 @@ Também mostra as paradas no último dia de cada mês (meta acumulada proporcion
 - **C5 Campanhas futuras:** estrutura genérica (tabela de campanhas com período e metas).
 - **C6 Início:** 06/10/2026 para tudo, negócios e calendário. O marcador "hoje" e o ritmo partem de 06/10.
 
+### 5.10 Lançamento para o time: produção sem Propostas (decisão do Eduardo, 06/10) — **implementado**
+- **Produção (hub.imovit.com.br):** Home, Dash e Ferramentas. Para o corretor: Home, "Meus números" e Captações, Feedback de visita e Materiais.
+- **Propostas** (locação, venda, esteira, processos) **não ficam em produção** por enquanto. Ficam num ambiente de teste, com o mesmo banco, até a bateria de aceite.
+- O portal do cliente (`/portal`, `/venda`) continua acessível em produção só pelo link do e-mail, sem menu. Assim as funções `esteira-locacao` e `proposta-venda` não precisaram mudar.
+
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.
 

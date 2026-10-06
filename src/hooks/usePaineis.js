@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchTodasLinhas, supabase } from '../lib/supabaseClient'
 import { isoLocal } from '../lib/paineis'
+import { PROPOSTAS_ATIVAS } from '../lib/acessos'
 
 const COLUNAS_BASE =
   'codigo, corretor, data_entrada, data_encerramento, finalidade, situacao, fase_ordem, canal, is_ruido, is_interno, is_negocio, is_ativo, is_descartado, dias_ate_ganho'
@@ -106,8 +107,9 @@ function carregarComercial() {
     visitas: fetchTodasLinhas(() =>
       supabase.from('atividades').select('codigo, datahorainicio, realizada, codigoatendimento, resumoimovel').eq('nometipo', 'Visita')
     ),
-    propostasVenda: fetchTodasLinhas(() => supabase.from('propostas_venda').select('id, status, valor_proposta, timestamp_criacao, criado_por')),
-    propostasLocacao: fetchTodasLinhas(() => supabase.from('propostas_locacao').select('id, status, valor, valor_oferta, timestamp_criacao, criado_por')),
+    // sem o módulo de Propostas (produção, por enquanto) o "valor na mesa" não aparece
+    propostasVenda: PROPOSTAS_ATIVAS ? fetchTodasLinhas(() => supabase.from('propostas_venda').select('id, status, valor_proposta, timestamp_criacao, criado_por')) : [],
+    propostasLocacao: PROPOSTAS_ATIVAS ? fetchTodasLinhas(() => supabase.from('propostas_locacao').select('id, status, valor, valor_oferta, timestamp_criacao, criado_por')) : [],
     perfis: fetchTodasLinhas(() => supabase.from('perfis').select('id, email')),
     ultimaCrm: ultimaData('dashboard_atendimentos_crm', 'data_de_entrada'),
     ultimaAtividades: ultimaData('atividades', 'inserido_em'),

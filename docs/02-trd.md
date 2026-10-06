@@ -69,3 +69,12 @@
 | Escrita da esteira por Edge Function/RPC | Insert direto do front | Validação e e-mail no mesmo lugar |
 | Corrigir dados do n8n no banco (triggers) | Editar fluxos pelo MCP | O MCP regrava o fluxo inteiro e troca as credenciais |
 | Papéis em `perfis.role` + funções SQL | Claims customizados no JWT | A suspensão vale na hora, sem esperar o token expirar |
+
+## Ambientes (06/10)
+| Ambiente | Endereço | Branch | `VITE_MODULO_PROPOSTAS` | Banco |
+|---|---|---|---|---|
+| Produção | hub.imovit.com.br | `main` | desligado (ausente) | Supabase de produção |
+| Teste | hubimovit-git-teste-imovit.vercel.app (protegido pela Vercel) | `teste` | `on` (env de Preview na Vercel) | **o mesmo** |
+- A chave é lida em `src/lib/acessos.js` (`PROPOSTAS_ATIVAS`): desligada, zera os níveis `esteira`, `esteiraDecidir`, `vendas`, `vendasDecidir` e `propostas`, e com isso somem menu, rota e busca. Atalhos e pendências da Home e o "valor na mesa" do Comercial também a consultam.
+- Os e-mails das funções apontam para `APP_URL` (produção). Links internos para `/admin/...` abrem a Home em produção; no teste, abrir o mesmo caminho no domínio de teste.
+- Fluxo de trabalho: desenvolver na `main` → `git push origin main:teste` (ou merge) atualiza o teste. Propostas só são publicadas em produção ligando a chave na Production, quando for a hora.
