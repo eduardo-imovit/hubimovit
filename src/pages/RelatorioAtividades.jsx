@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAtividadesPeriodo } from '../hooks/useAtividadesPeriodo'
+import { useMeuCorretor } from '../hooks/useMeuCorretor'
 import { useColaboradores } from '../hooks/useColaboradores'
 import { hojeISO } from '../lib/dateUtils'
 import {
@@ -87,10 +88,16 @@ export default function RelatorioAtividades() {
   const [dataFoco, setDataFoco] = useState(hojeISO())
   const periodo = useMemo(() => semanasComparacao(dataFoco), [dataFoco])
 
-  const { atividades, carregando: carregandoAtividades, erro: erroAtividades } = useAtividadesPeriodo(periodo.anterior.inicio, periodo.atual.fim)
+  const { atividades: todasAtividades, carregando: carregandoAtividades, erro: erroAtividades } = useAtividadesPeriodo(periodo.anterior.inicio, periodo.atual.fim)
+  // Corretor (ou Gestão em "Ver como"): só as atividades dele; a RLS já faz isso para o corretor de verdade
+  const { ehCorretor, corretor, carregando: carregandoCorretor } = useMeuCorretor()
+  const atividades = useMemo(
+    () => (!ehCorretor ? todasAtividades : corretor ? todasAtividades.filter((a) => Number(a.codigousuario) === Number(corretor.codigo)) : []),
+    [todasAtividades, ehCorretor, corretor]
+  )
   const { colaboradores, carregando: carregandoColaboradores, erro: erroColaboradores } = useColaboradores()
 
-  const carregando = carregandoAtividades || carregandoColaboradores
+  const carregando = carregandoAtividades || carregandoColaboradores || carregandoCorretor
   const erro = erroAtividades || erroColaboradores
 
   const resumo = useMemo(() => resumoPorEquipe(atividades, colaboradores, periodo), [atividades, colaboradores, periodo])

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useSession } from '../hooks/useSession'
 import { usePerfil } from '../hooks/usePerfil'
@@ -6,6 +6,8 @@ import { pode } from '../lib/acessos'
 import { useAvisos } from '../hooks/useAvisos'
 import { useBibliotecaLinks } from '../hooks/useBibliotecaLinks'
 import { usePendenciasHome } from '../hooks/usePendenciasHome'
+import { useColaboradores } from '../hooks/useColaboradores'
+import { definirVerComo } from '../lib/verComo'
 import { formatarDataLonga, saudacao } from '../lib/dateUtils'
 import { isoLocal } from '../lib/paineis'
 import { ATALHOS, NIVEIS_PREVIA, paginasDoNivel } from '../lib/homeNiveis'
@@ -20,12 +22,26 @@ import { TrilhaKm32 } from '../components/home/TrilhaKm32'
 export default function Home() {
   const { session } = useSession()
   const { perfil, carregando: carregandoPerfil } = usePerfil()
-  const [previa, setPrevia] = useState(null)
   const { avisos } = useAvisos()
   const { links } = useBibliotecaLinks()
 
-  const papelReal = perfil?.role
-  const papel = papelReal === 'gestao' && previa ? previa : papelReal
+  // "Ver como" (só Gestão) troca o nível no Hub inteiro: ver usePerfil/verComo
+  const papelReal = perfil?.papelReal ?? perfil?.role
+  const papel = perfil?.role
+  const { colaboradores } = useColaboradores()
+  const corretores = useMemo(
+    () => (colaboradores ?? []).filter((c) => c.equipe === 'comercial' && c.ativo && c.email_oficial).sort((a, b) => a.nome_completo.localeCompare(b.nome_completo, 'pt-BR')),
+    [colaboradores]
+  )
+  const valorPrevia = !perfil?.previa ? 'gestao' : perfil.previa.role === 'corretor' ? `corretor:${perfil.previa.email}` : perfil.previa.role
+  function trocarPrevia(valor) {
+    if (valor === 'gestao') return definirVerComo(null)
+    if (valor.startsWith('corretor:')) {
+      const c = corretores.find((x) => x.email_oficial === valor.slice('corretor:'.length))
+      return c && definirVerComo({ role: 'corretor', nome: c.nome_completo, email: c.email_oficial })
+    }
+    return definirVerComo({ role: valor })
+  }
   const { itens: pendencias, erro: erroPendencias } = usePendenciasHome(papel, perfil)
 
   // Conta de acesso da TV: nunca fica na Home, vai direto pra tela de exibição.
@@ -49,21 +65,21 @@ export default function Home() {
         </div>
         {papelReal === 'gestao' && (
           <label className="home-previa">
-            <span>Ver a Home como</span>
-            <select value={papel} onChange={(e) => setPrevia(e.target.value === 'gestao' ? null : e.target.value)}>
-              {NIVEIS_PREVIA.map((n) => (
-                <option key={n.valor} value={n.valor}>{n.label}</option>
+            <span>Ver o Hub como</span>
+            <select value={valorPrevia} onChange={(e) => trocarPrevia(e.target.value)}>
+              {NIVEIS_PREVIA.filter((n) => n.valor !== 'corretor').map((n) => (
+                <option key={n.valor} value={n.valor}>{n.valor === 'gestao' ? 'Gestão (eu)' : n.label}</option>
               ))}
+              <optgroup label="Corretor">
+                {corretores.map((c) => (
+                  <option key={c.email_oficial} value={`corretor:${c.email_oficial}`}>{c.nome_completo}</option>
+                ))}
+              </optgroup>
             </select>
           </label>
         )}
       </header>
 
-      {previa && (
-        <div className="home-aviso-previa" role="status">
-          Prévia: é assim que a Home aparece para o nível <strong>{NIVEIS_PREVIA.find((n) => n.valor === previa)?.label}</strong>. Os números seguem o que a sua conta pode ver.
-        </div>
-      )}
 
       <BuscaHome paginas={paginasDoNivel(papel)} links={links} />
 

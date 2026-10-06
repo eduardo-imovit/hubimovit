@@ -32,6 +32,7 @@ const TODOS_ATALHOS = {
     { to: '/admin/vendas', titulo: 'Nova proposta de venda', descricao: 'Compra: enviar o link ao proponente', icone: 'mais' },
     { to: '/admin/esteiras', titulo: 'Minhas propostas', descricao: 'Onde cada uma está', icone: 'documento' },
     { to: '/dashboard/comercial', titulo: 'Meus números', descricao: 'Leads, funil e visitas', icone: 'grafico' },
+    { to: '/kanban', titulo: 'Meus atendimentos', descricao: 'Quadro por fase', icone: 'kanban' },
     { to: '/captacoes', titulo: 'Captações', descricao: 'Meu link e as captações', icone: 'pasta' },
     { to: '/agenda', titulo: 'Agenda', descricao: 'Plantão, reuniões e datas', icone: 'calendario' },
     { to: '#links', titulo: 'Manuais e links', descricao: 'Processos, formulários e Drive', icone: 'link' },
@@ -53,7 +54,7 @@ export const ATALHOS = Object.fromEntries(
 /** Páginas que a busca da Home encontra, filtradas pelo nível. */
 const PAGINAS = [
   { titulo: 'Painel da Gestão', to: '/dashboard/gestao', acesso: 'dash', termos: 'dashboard resultado funil leads negocios conversao corretores pessoas' },
-  { titulo: 'Painel de Performance', to: '/dashboard/performance', acesso: 'dash', termos: 'midia meta google anuncios campanhas orcamento cpl investimento' },
+  { titulo: 'Painel de Performance', to: '/dashboard/performance', acesso: 'dashPerformance', termos: 'midia meta google anuncios campanhas orcamento cpl investimento' },
   { titulo: 'Meus números (Comercial)', to: '/dashboard/comercial', acesso: 'dashComercial', termos: 'meus numeros comercial leads funil visitas resultado corretor' },
   { titulo: 'Kanban', to: '/kanban', acesso: 'kanban', termos: 'atendimentos fases crm leads quadro' },
   { titulo: 'Dados de Atendimento', to: '/kanban/dados', acesso: 'kanban', termos: 'analise atendimentos origem bairros corretor' },

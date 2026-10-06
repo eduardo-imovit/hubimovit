@@ -21,6 +21,10 @@ export default function Perfil() {
   if (!perfil) {
     return <div className="hub-error">Seu usuário ainda não tem perfil no Hub. Fale com a Gestão.</div>
   }
+  // em "Ver como", o perfil mostrado é o da prévia; editar gravaria no perfil da Gestão
+  if (perfil.previa) {
+    return <div className="hub-error">Você está em uma prévia. Saia da prévia (faixa azul no topo) para ver e editar o seu perfil.</div>
+  }
 
   return (
     <div>

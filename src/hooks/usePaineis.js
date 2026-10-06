@@ -90,9 +90,8 @@ function carregarPerformance() {
     metasCampanhas: fetchTodasLinhas(() =>
       supabase.from('metas_campanhas').select('campanha_nome, canal, etapa_funil, periodo_inicio, periodo_fim, meta_investimento, meta_leads, meta_cpl, ativo')
     ),
-    pagos: fetchTodasLinhas(() =>
-      supabase.from('vw_atendimentos_base').select('codigo, data_entrada, fase_ordem, is_negocio').eq('canal', 'Campanhas pagas').eq('is_ruido', false)
-    ),
+    // leads pagos da imobiliária inteira (o corretor também vê a Performance; sem código nem corretor)
+    pagos: fetchTodasLinhas(() => supabase.rpc('performance_leads_pagos')),
     ultimaCrm: ultimaData('dashboard_atendimentos_crm', 'data_de_entrada'),
     ultimaMeta: ultimaData('dashboard_meta_ads', 'data'),
     ultimaGoogle: ultimaData('dashboard_google_ads', 'data'),

@@ -273,6 +273,17 @@ Também mostra as paradas no último dia de cada mês (meta acumulada proporcion
 - **Propostas** (locação, venda, esteira, processos) **não ficam em produção** por enquanto. Ficam num ambiente de teste, com o mesmo banco, até a bateria de aceite.
 - O portal do cliente (`/portal`, `/venda`) continua acessível em produção só pelo link do e-mail, sem menu. Assim as funções `esteira-locacao` e `proposta-venda` não precisaram mudar.
 
+### 5.11 Corretor no Dash e "Ver como" (decisão do Eduardo, 06/10) — **implementado**
+| Página | Corretor | Como |
+|---|---|---|
+| Comercial ("Meus números") | só os dele | filtro travado no nome + RLS |
+| Painel da Gestão | **não vê** | só Gestão e Marketing |
+| Performance | vê, com os números da imobiliária | `pode_ver_dash()` inclui corretor; leads pagos via `performance_leads_pagos()` (agregado, sem código nem corretor) |
+| Kanban: Quadro, Dados de atendimento | só os dele | RLS de atendimentos + filtro na tela |
+| Relatório de atividades | só as dele | RLS de atividades + filtro por `codigousuario` |
+
+**"Ver o Hub como" (só Gestão):** o seletor da Home troca o Hub inteiro (menu, Home, pendências, Dash) para outro nível ou para um corretor específico, com uma faixa azul e "Sair da prévia". É uma prévia de tela: os dados são os que a Gestão lê, filtrados para a pessoa. A garantia do corretor é a RLS, testada no banco. Durante a prévia, o Perfil não pode ser editado.
+
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.
 

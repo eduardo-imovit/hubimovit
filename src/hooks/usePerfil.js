@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useSession } from './useSession'
+import { EVENTO_VER_COMO, lerVerComo } from '../lib/verComo'
 
 // A página de Perfil dispara este evento ao salvar, pra navbar e demais
 // telas que usam o hook buscarem o perfil de novo.
@@ -22,10 +23,17 @@ export function usePerfil() {
   const [resultado, setResultado] = useState({ perfil: null, paraUsuario: null })
   const [versao, setVersao] = useState(0)
 
+  const [verComo, setVerComo] = useState(lerVerComo)
+
   useEffect(() => {
     const atualizar = () => setVersao((v) => v + 1)
+    const trocarPrevia = () => setVerComo(lerVerComo())
     window.addEventListener(EVENTO_PERFIL_ATUALIZADO, atualizar)
-    return () => window.removeEventListener(EVENTO_PERFIL_ATUALIZADO, atualizar)
+    window.addEventListener(EVENTO_VER_COMO, trocarPrevia)
+    return () => {
+      window.removeEventListener(EVENTO_PERFIL_ATUALIZADO, atualizar)
+      window.removeEventListener(EVENTO_VER_COMO, trocarPrevia)
+    }
   }, [])
 
   useEffect(() => {
@@ -48,5 +56,14 @@ export function usePerfil() {
 
   const carregando = !!session && resultado.paraUsuario !== session.user.id
 
-  return { perfil: resultado.perfil, carregando }
+  // Prévia "Ver como" só vale para a Gestão; o perfil real fica em `papelReal`.
+  const real = resultado.perfil
+  const perfil = useMemo(
+    () => (real?.role === 'gestao' && verComo
+      ? { ...real, role: verComo.role, email: verComo.email ?? real.email, nome: verComo.nome ?? real.nome, previa: verComo, papelReal: real.role }
+      : real),
+    [real, verComo]
+  )
+
+  return { perfil, carregando }
 }

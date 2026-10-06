@@ -233,6 +233,12 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 - [ ] Bateria de aceite das Propostas no teste (roteiro na Fase 11/handoff)
 - [ ] Liberar contas de corretor em produção (Home, Dash, Ferramentas) e piloto
 
+## Fase 15 — Corretor no Dash + "Ver como" (PRD §5.11) — 06/10
+- [x] Migration `20261006230000_corretor_dash_performance` aplicada (teste: o corretor recebe os 508 pagos pela função × 85 lendo direto; 0 atendimentos de outros; "Sem nível" negado)
+- [x] Menu do Dash por nível; Kanban/Dados/Relatório com o filtro "só o meu"; atalho "Meus atendimentos"
+- [x] "Ver o Hub como" (Gestão) — testado em localhost como Gabriel Simon: menu, Meus números, Kanban (13 cards, só dele), Relatório, Performance, pendências (33 leads sem contato)
+- [ ] Conferir com o primeiro corretor real logado
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).

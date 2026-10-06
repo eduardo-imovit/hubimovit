@@ -960,6 +960,8 @@
 .home-previa { display: flex; flex-direction: column; gap: 2px; font-size: 11px; color: var(--grafite-soft); }
 .home-previa select { height: 32px; padding: 0 var(--space-3); border: 1px solid var(--champagne); border-radius: var(--radius-sm); background: var(--branco); font: inherit; font-size: var(--text-sm); color: var(--grafite); }
 .home-aviso-previa { margin-bottom: var(--space-4); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--info-soft); color: var(--info); font-size: var(--text-sm); }
+.faixa-previa { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; padding: var(--space-2) var(--space-5); background: var(--info); color: var(--branco); font-size: var(--text-sm); }
+.faixa-previa .btn { background: var(--branco); color: var(--info); border: 0; }
 
 /* Busca */
 .home-busca { position: relative; margin-bottom: var(--space-5); }

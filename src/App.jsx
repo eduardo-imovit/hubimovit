@@ -52,7 +52,7 @@ export default function App() {
         <Route path="/kanban/atividades" element={<ProtectedRoute papeis={ACESSO.kanban}><RelatorioAtividades /></ProtectedRoute>} />
         <Route path="/dashboard/comercial" element={<ProtectedRoute papeis={ACESSO.dashComercial}><PainelComercial /></ProtectedRoute>} />
         <Route path="/dashboard/gestao" element={<ProtectedRoute papeis={ACESSO.dash}><PainelGestao /></ProtectedRoute>} />
-        <Route path="/dashboard/performance" element={<ProtectedRoute papeis={ACESSO.dash}><PainelPerformance /></ProtectedRoute>} />
+        <Route path="/dashboard/performance" element={<ProtectedRoute papeis={ACESSO.dashPerformance}><PainelPerformance /></ProtectedRoute>} />
         {/* endereços antigos do Dash: redirecionam para os painéis novos */}
         <Route path="/dashboard" element={<Redirecionar para="/dashboard/gestao" />} />
         <Route path="/dashboard/performance-v2" element={<Redirecionar para="/dashboard/performance" />} />
