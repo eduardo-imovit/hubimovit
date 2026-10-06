@@ -907,3 +907,38 @@ button.spotify-card-tv-controle-principal:hover { background: rgba(255,255,255,.
 .agenda-info { flex: 1; min-width: 0; }
 .agenda-title { font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--grafite); }
 .agenda-sub { font-size: var(--text-xs); color: var(--grafite-soft); }
+
+/* ------- Navbar no celular e telas médias (≤ 1100px; o menu completo precisa de ~1050px): ☰ abre um painel com tudo aberto ------- */
+.navbar-menu-btn { display: none; }
+@media (max-width: 1100px) {
+  .navbar { gap: var(--space-3); padding: 0 var(--space-4); height: 60px; }
+  .navbar-tagline, .weather-widget, .navbar-footer-name { display: none; }
+  .navbar-brand { flex: 1; }
+  .navbar-menu-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    order: 3; width: 40px; height: 40px; border: 0; border-radius: var(--radius-md);
+    background: rgba(255,255,255,.06); color: var(--branco); font-size: 20px; cursor: pointer;
+  }
+  .navbar-menu-btn:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+  .navbar-footer { order: 2; gap: var(--space-2); }
+  .navbar-links {
+    display: none;
+    position: fixed; top: 60px; left: 0; right: 0; bottom: 0;
+    flex-direction: column; align-items: stretch; gap: 2px;
+    padding: var(--space-3) var(--space-4) var(--space-8);
+    background: var(--grafite); overflow-y: auto;
+    z-index: var(--z-drawer);
+  }
+  .navbar.is-aberto .navbar-links { display: flex; }
+  .navbar-links .navbar-link { padding: 12px var(--space-3); font-size: var(--text-md); }
+  .navbar-links .navbar-caret { display: none; }
+  /* submenus sempre abertos e em linha (no toque não há "passar o mouse") */
+  .navbar-links .navbar-dropdown, .navbar-links .navbar-flyout {
+    display: flex; position: static; min-width: 0; margin: 0 0 var(--space-2) var(--space-4);
+    background: transparent; border: 0; box-shadow: none; padding: 0;
+  }
+  .navbar-links .navbar-dropdown a, .navbar-links .navbar-flyout a { color: #ccc; padding: 10px var(--space-3); font-size: var(--text-sm); }
+  .navbar-links .navbar-dropdown a.is-active, .navbar-links .navbar-flyout a.is-active { background: rgba(232,89,60,.12); color: var(--coral); }
+  .navbar-links .navbar-subitem-label { color: var(--grafite-fade); background: transparent; padding: 8px var(--space-3) 2px; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+  .navbar-links .navbar-caret--flyout { display: none; }
+}

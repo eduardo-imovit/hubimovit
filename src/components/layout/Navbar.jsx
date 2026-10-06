@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useSession } from '../../hooks/useSession'
@@ -57,6 +58,9 @@ export default function Navbar() {
   const { session } = useSession()
   const { perfil } = usePerfil()
   const { pathname } = useLocation()
+  // Celular e telas médias (≤ 1100px): os links viram um painel aberto pelo botão ☰
+  const [aberto, setAberto] = useState(false)
+  useEffect(() => { setAberto(false) }, [pathname])
   const emPropostas = pathname === '/propostas' || pathname.startsWith('/admin/')
   const linksDash = buildLinksDash(perfil)
   // Propostas ▾ → Locação ▸ / Venda ▸ (processos separados, ver lib/propostasNav)
@@ -72,13 +76,24 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="navbar">
+    <nav className={`navbar${aberto ? ' is-aberto' : ''}`}>
       <div className="navbar-brand">
         <span className="navbar-logo">imovit</span>
         <span className="navbar-tagline">Lares com a sua alma.</span>
       </div>
 
-      <div className="navbar-links">
+      <button
+        type="button"
+        className="navbar-menu-btn"
+        aria-expanded={aberto}
+        aria-controls="navbar-links"
+        aria-label={aberto ? 'Fechar menu' : 'Abrir menu'}
+        onClick={() => setAberto((v) => !v)}
+      >
+        {aberto ? '✕' : '☰'}
+      </button>
+
+      <div className="navbar-links" id="navbar-links">
         <NavLink to="/" end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
           Home
         </NavLink>
