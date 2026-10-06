@@ -206,24 +206,24 @@ Ordem pensada para a precisão: primeiro o dado acumula certo, depois as métric
 - [ ] TV e Home passam a usar a mesma camada de métricas
 - [ ] Bateria de conferência com o Eduardo; push; handoff
 
-## Fase 13 — Campanha Km 32 na Home (RF25, PRD §5.9) — proposta (06/10)
+## Fase 13 — Campanha Km 32 na Home (RF25, PRD §5.9) — **NO AR (06/10)**
 Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 
 **S1 — Banco**
-- [ ] Migration: `campanhas`, `campanha_metas` (com a carga do Km 32), RLS e `campanha_resumo()` (Schema §2.8)
-- [ ] Teste em transação desfeita, com negócio simulado (venda e locação, com e sem valor, antes e depois de 06/10, reaberto) e permissões (corretor recebe o total; "Sem nível" e anon não recebem nada)
+- [x] Migration: `campanhas`, `campanha_metas` (com a carga do Km 32), RLS e `campanha_resumo()` (Schema §2.8)
+- [x] Teste em transação desfeita, com negócio simulado (venda e locação, com e sem valor, antes e depois de 06/10, reaberto) e permissões (corretor recebe o total; "Sem nível" e anon não recebem nada)
 - **Pronto quando:** o resumo bate com uma consulta de conferência na jornada.
 
 **S2 — Tela**
-- [ ] `TrilhaKm32.jsx` lê `campanha_resumo('km32-4tri-2026')`; sai a constante fictícia
-- [ ] 4 números (valor, negócios, ticket, ritmo), rodapé com a regra e a atualização, e os estados do App Flow
-- [ ] Bloco só para quem tem nível; "hoje" a partir de 06/10
+- [x] `TrilhaKm32.jsx` lê `campanha_resumo('km32-4tri-2026')`; sai a constante fictícia
+- [x] 4 números (valor, negócios, ticket, ritmo), rodapé com a regra e a atualização, e os estados do App Flow
+- [x] Bloco só para quem tem nível; "hoje" a partir de 06/10
 - **Pronto quando:** com dados reais, a tela mostra o mesmo que a consulta de conferência; build ok.
 
 **S3 — Preview e produção**
-- [ ] Branch `campanha-km32` → preview na Vercel; conferir as envs de Preview e a Deployment Protection
-- [ ] O Eduardo e o gestor aprovam o preview → merge na `main` (produção)
-- **Pronto quando:** no ar em hub.imovit.com.br, conferido logado.
+- [x] Branch `campanha-km32` → preview na Vercel; conferir as envs de Preview e a Deployment Protection
+- [x] O Eduardo e o gestor aprovam o preview → merge na `main` (produção)
+- **Pronto quando:** no ar em hub.imovit.com.br, conferido logado. ✅ 06/10, merge `4497583`, bundle `index-C_5R_s4l.js`.
 
 **Depois:** conciliação com contratos e financeiro; comemoração ao bater a parada.
 

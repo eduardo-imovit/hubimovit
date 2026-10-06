@@ -72,7 +72,7 @@ Faltava um lugar único para:
 | RF22 | **Esteira de locação v4**: gestor registra a proposta negociada (com observações); locatário valida ou pede correção; ao validar abre a esteira e avisa o ADM, sem aprovação interna (§5.6). Substitui partes de RF10–RF12 | corretor; locatário; adm | must | aprovado e implementado (28/09) |
 | RF23 | **Formulários no Hub** (§5.7): 1ª entrega Captação (link público por corretor, assinatura, PDF, lista) e Feedback de visita (PDF); depois apresentações públicas, Avaliação, Guia e Relatório | corretor, adm, gestao; proprietário | must | 1ª entrega no ar (28/09) |
 | RF24 | **Dados confiáveis e dashboards v2** (§5.8): histórico acumulado do funil no banco, páginas Comercial, Performance e Geral com todos os filtros respeitados e só a equipe comercial ativa, Kanban com código e filtro por etapa | gestao, marketing | must | Comercial v1 no localhost (29/09); histórico (S1–S2) aguarda o Pro |
-| RF25 | **Campanha "Km 32" na Home** (§5.9): trilha do 4º tri 2026 com valor realizado, volume e ticket médio por finalidade, a partir dos negócios realizados no CRM desde 06/10/2026, contra metas guardadas numa tabela de campanha | todos com nível | must | decisões tomadas (06/10); plano na Fase 13 |
+| RF25 | **Campanha "Km 32" na Home** (§5.9): trilha do 4º tri 2026 com valor realizado, volume e ticket médio por finalidade, a partir dos negócios realizados no CRM desde 06/10/2026, contra metas guardadas numa tabela de campanha | todos com nível | must | **no ar (06/10)** |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -192,7 +192,7 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - O histórico de etapas só existe **a partir do dia em que o acúmulo começar**. Tempo por etapa e jornada valem para leads que entraram depois disso. O que veio antes continua com a aproximação atual ("fase máxima").
 - Captura **1 vez por dia** (decisão de 29/09): a precisão do tempo por etapa é de 1 dia.
 
-### 5.9 Campanha "Km 32" — 4º trimestre 2026 (pedido do Eduardo, 06/10) — **decisões tomadas em 06/10; aguardando OK do plano (Fase 13)**
+### 5.9 Campanha "Km 32" — 4º trimestre 2026 (pedido do Eduardo, 06/10) — **no ar em 06/10**
 **Contexto.** A direção lançou a campanha "Km 32 · Campanha 4º Tri 2026" (apresentação em `Downloads\Imovit.zip`). A metáfora é a maratona: o trimestre é o trecho final da prova, do Km 32 (largada) ao Km 42 (chegada), com paradas no fim de outubro, novembro e dezembro. Existe um protótipo visual local (`src/components/home/TrilhaKm32.jsx`, sem commit, dados fictícios), usado só como referência de design.
 
 **Problema.** A equipe precisa ver, todo dia e no mesmo lugar, quanto da meta do trimestre já foi feito e se o ritmo acompanha o calendário. Hoje isso não existe no Hub.
