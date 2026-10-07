@@ -85,7 +85,10 @@ export function resumoCarteira(contratos, recebimentosMensais, hoje) {
   }
 }
 
-/** Capítulo 2: novos × rescindidos, rotatividade e permanência. */
+/**
+ * Capítulo 2: novos × rescindidos, rotatividade e permanência.
+ * Regra do CRM (conferida em 07/10): novos pela data de início, encerrados pela data de rescisão.
+ */
 export function crescimento(contratos, mensal, hoje) {
   const serie = [...mensal].sort((a, b) => a.mes.localeCompare(b.mes))
   const ultimos24 = serie.slice(-24).map((m) => ({ mes: m.mes, rotulo: rotuloMes(m.mes), entradas: m.entradas, saidas: m.saidas, ativos: m.ativos_fim_mes }))
@@ -101,6 +104,8 @@ export function crescimento(contratos, mensal, hoje) {
 
   return {
     serie: ultimos24,
+    periodo12: ultimos12.length ? `${rotuloMes(ultimos12[0].mes)} a ${rotuloMes(ultimos12.at(-1).mes)}` : '12 meses',
+    semDataRescisao: contratos.filter((c) => c.situacao === 'Rescindido' && !c.data_rescisao).length,
     entradas12,
     saidas12,
     saldo12: entradas12 - saidas12,

@@ -230,7 +230,7 @@ Escrita só pela RPC `carregar_carteira_locacao` (service role: n8n `carteira_lo
 - **Views:**
   - `vw_carteira_locacao`: contrato + `receita_adm`, `dias_para_fim`, `prazo_indeterminado`, `com_aviso`, `reajuste_atrasado`, `meses_de_contrato`, `seguro_incendio_situacao`, `garantia_situacao`, valor vencido, `sem_baixa_*`, `grupo_cobranca` (inadimplente | encerrado_debito | atencao);
   - `vw_cobrancas_locacao` (dias de atraso e faixa);
-  - `vw_carteira_locacao_mensal` (novos, encerrados, ativos no fim do mês, aluguel dos novos, desde 2014);
+  - `vw_carteira_locacao_mensal` (novos pela data de início, encerrados pela data de rescisão, como no CRM; ativos no fim do mês, em que o rescindido sem data sai na data de fim; aluguel dos novos; desde 2014; migration `20261008000000_carteira_mensal_regra_crm`);
   - `vw_recebimentos_locacao_mensal` (pelo mês do pagamento);
   - `vw_proprietarios_locacao` (pelo percentual de cada locador).
 - `imoveis_locados` e `proprietarios_locacao` **não são usadas**. Achado: `proprietarios_locacao` tem grant total para `anon` (sem policy) → Fase 1.

@@ -354,7 +354,7 @@ Quem lê:
    - Administração e intermediação recebidas por mês, pela data do pagamento.
    - Prevista (aluguel × taxa); taxa média; contratos que pagaram.
 2. **A carteira está crescendo?**
-   - Novos × encerrados por mês (24 meses).
+   - Novos × encerrados por mês (24 meses), **pela regra do CRM** (conferida com o Eduardo em 07/10): novos pela data de início, encerrados pela data de rescisão. 2025 = 71 × 70; 2026 até out = 50 × 49. Os 28 rescindidos sem data de rescisão não contam como encerrados (saem dos ativos na data de fim).
    - Rotatividade (encerrados em 12 meses ÷ média de ativos).
    - Aluguel médio dos novos × carteira; permanência mediana.
 3. **Onde e o que alugamos?** Bairros (n e aluguel), tipo de imóvel, faixa de aluguel, destinação.

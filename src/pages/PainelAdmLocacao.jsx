@@ -319,7 +319,7 @@ export default function PainelAdmLocacao() {
                 formula="Regra do Imoview: contrato ativo marcado como Atrasado (cobrança amigável) ÷ contratos ativos."
               />
               <Indice
-                rotulo="Novos × encerrados (12 meses)"
+                rotulo={`Novos × encerrados (${h.crescimento.periodo12})`}
                 valor={`${fmtNum(h.crescimento.entradas12)} × ${fmtNum(h.crescimento.saidas12)}`}
                 contexto={`saldo ${h.crescimento.saldo12 > 0 ? '+' : ''}${fmtNum(h.crescimento.saldo12)} contratos`}
                 detalhe={h.crescimento.rotatividade != null ? `rotatividade de ${fmtPct(h.crescimento.rotatividade, 0)} ao ano` : null}
@@ -358,7 +358,7 @@ export default function PainelAdmLocacao() {
             numero="2"
             pergunta="A carteira está crescendo?"
             conclusao={`Nos últimos 12 meses entraram ${fmtNum(h.crescimento.entradas12)} contratos e saíram ${fmtNum(h.crescimento.saidas12)}: ${h.crescimento.saldo12 > 0 ? 'a carteira cresceu' : h.crescimento.saldo12 < 0 ? 'a carteira encolheu' : 'a carteira ficou estável'}${h.crescimento.rotatividade != null ? `, com ${fmtPct(h.crescimento.rotatividade, 0)} dela trocando por ano` : ''}.`}
-            rodape="Rotatividade = encerrados nos últimos 12 meses ÷ média de contratos ativos no período. Permanência = mediana de meses entre o início e a rescisão dos contratos encerrados nos últimos 2 anos. Rescindidos sem data de rescisão usam a data de fim do contrato."
+            rodape={`Mesma regra do CRM: novos pela data de início do contrato; encerrados pela data de rescisão. Os últimos 12 meses vão de ${h.crescimento.periodo12}. Rotatividade = encerrados nos últimos 12 meses ÷ média de contratos ativos no período. Permanência = mediana de meses entre o início e a rescisão dos contratos encerrados nos últimos 2 anos. ${h.crescimento.semDataRescisao} contratos estão rescindidos no Imoview sem data de rescisão: não contam como encerrados, mas saem da contagem de ativos na data de fim do contrato.`}
           >
             <Recorte oque="Contratos ativos e encerrados" recorte={`${h.recorte}, últimos 24 meses`} />
             <div className="pg-duas">
