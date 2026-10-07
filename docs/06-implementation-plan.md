@@ -245,6 +245,30 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 - **S2:** capítulo "Jornada do lead" no Comercial (etapas com tempo, passagem, perdas e motivos; tempo até o negócio; parados).
 - **S3:** publicar e acompanhar; os tempos ganham amostra com as semanas.
 
+## Fase 17 — Carteira de locação: contratos ativos (RF26, PRD §5.13) — proposta (07/10)
+- **S0 Descoberta — FEITA (07/10):**
+  - contratos em `ContratoAluguel/RetornarContratos` (só `chave`, 50 por página, 17 páginas);
+  - cobranças em `Movimento/RetornarMovimentos` (módulo 2);
+  - L3 respondida pelos dados; Schema §2.10 e PRD §5.13 ajustados aos campos reais;
+  - `crm_adm_contratos` (endpoint `App_`, limite 100) descartado.
+- **S1 Banco — FEITO (07/10):**
+  - migrations `20261007200000_carteira_locacao` e `20261007220000_carteira_locacao_v2`, testadas em transação e aplicadas;
+  - RLS testado: Gestão e ADM leem; corretor 0 linhas e sem RPC; anon negado.
+- **S2 Carga — FEITO (07/10):**
+  - n8n `carteira_locacao_diaria` (`5fGPj1tBxlqbB0N2`) com as credenciais do Eduardo; 3 rodadas manuais OK;
+  - **ainda não ativado.**
+  - Edge Function `carteira-locacao` v1 (lê tudo, inclusive as pagas; chamada pelo painel).
+  - **Falta a secret `IMOVIEW_API_KEY`** nas Edge Functions; sem ela os recebimentos não carregam.
+- **S3 Tela — FEITA no localhost (07/10):**
+  - `/dashboard/adm-locacao`: manchete + 8 capítulos, filtros, listas;
+  - conferida com dados reais logado como Gestão; `npm run build` ok.
+  - `oxlint` não roda nesta máquina (binário nativo ausente).
+- **S4 Publicar:**
+  - [ ] secret `IMOVIEW_API_KEY` no Supabase (Edge Functions → Secrets);
+  - [ ] ativar o n8n;
+  - [ ] commit + push na `main` + `main:teste`;
+  - [ ] conferir com a ADM na 1ª semana (atenção, reajustes vencidos, seguros).
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).
@@ -268,3 +292,6 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 | 2026-09-29 | Fase 12 (dados acumulados + dashboards v2) | Filtro de período não mudava os gráficos (safra fixa) e o banco sobrescrevia a fase do lead; Eduardo decidiu acumular histórico e assinar o Pro |
 | 2026-09-29 | Fase 12 ajustada | Eduardo: sem etapa Agendamento (funil de 7), sem filtro de time, captura 1×/dia, filtro geral só equipe comercial ativa |
 | 2026-10-06 | Fase 13 (campanha Km 32) | Pedido da direção; fonte = CRM via jornada; decisões C1–C6 do Eduardo |
+| 2026-10-07 | Fase 17 v2 | Eduardo: painel pela ótica do gestor (8 capítulos), manchete = administração recebida; "Atenção" virou "pagamento informado sem baixa" depois da 1ª carga |
+| 2026-10-07 | Fase 17 aprovada | Eduardo: receita = só administração; menu Dash ▸ Adm locação; "Moderação" = em ativação; inadimplência pela regra do Imoview + capítulo "Atenção" para cobranças vencidas fora da régua |
+| 2026-10-07 | Fase 17 (carteira de locação) | Pedido do Eduardo: visão gerencial dos contratos ativos para Gestão e ADM, fonte Imoview; começa por descoberta porque o endpoint de contratos não está confirmado |

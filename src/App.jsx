@@ -13,6 +13,7 @@ import RelatorioAtividades from './pages/RelatorioAtividades'
 import PainelGestao from './pages/PainelGestao'
 import PainelComercial from './pages/PainelComercial'
 import PainelPerformance from './pages/PainelPerformance'
+import PainelAdmLocacao from './pages/PainelAdmLocacao'
 import Configuracoes from './pages/Configuracoes'
 import Propostas from './pages/admin/Propostas'
 import Vendas from './pages/admin/Vendas'
@@ -53,6 +54,7 @@ export default function App() {
         <Route path="/dashboard/comercial" element={<ProtectedRoute papeis={ACESSO.dashComercial}><PainelComercial /></ProtectedRoute>} />
         <Route path="/dashboard/gestao" element={<ProtectedRoute papeis={ACESSO.dash}><PainelGestao /></ProtectedRoute>} />
         <Route path="/dashboard/performance" element={<ProtectedRoute papeis={ACESSO.dashPerformance}><PainelPerformance /></ProtectedRoute>} />
+        <Route path="/dashboard/adm-locacao" element={<ProtectedRoute papeis={ACESSO.dashAdmLocacao}><PainelAdmLocacao /></ProtectedRoute>} />
         {/* endereços antigos do Dash: redirecionam para os painéis novos */}
         <Route path="/dashboard" element={<Redirecionar para="/dashboard/gestao" />} />
         <Route path="/dashboard/performance-v2" element={<Redirecionar para="/dashboard/performance" />} />

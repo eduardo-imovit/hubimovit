@@ -1130,6 +1130,12 @@
 .pg-mesa-card { background: var(--pergaminho); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); }
 .pg-mesa-valor { font-size: 28px; font-weight: 500; color: var(--grafite); line-height: 1.1; }
 .pg-mesa-texto { font-size: var(--text-xs); color: var(--grafite-soft); margin-top: 4px; }
+/* Adm locação (PRD §5.13): cartões lado a lado, blocos empilhados no capítulo e listas que abrem */
+.pg-mesa--linha { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.pg-espaco { margin-top: var(--space-6); }
+.pg-lista { margin-top: var(--space-6); }
+.pg-lista-mais { margin-top: var(--space-2); }
+.pg-lista-mais summary { cursor: pointer; font-size: var(--text-xs); color: var(--coral-dark); padding: var(--space-2) 0; }
 @media (max-width: 640px) {
   .pg-funil--7 .pg-funil-linha { grid-template-columns: 96px 1fr 44px 28px; }
   .pg-funil--7 .pg-funil-passagem { padding-left: 0; }

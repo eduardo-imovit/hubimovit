@@ -46,6 +46,7 @@ export const ACESSO = {
   dash: ['gestao', 'marketing'], // Painel da Gestão (pessoas da equipe) e Comercial com todos os corretores
   dashPerformance: ['gestao', 'marketing', 'corretor'], // mídia e leads pagos da imobiliária inteira (decisão de 06/10)
   dashComercial: ['gestao', 'marketing', 'corretor'],
+  dashAdmLocacao: ['gestao'], // carteira de contratos de locação (PRD §5.13); só a Gestão por enquanto (07/10); RLS: is_gestao()
   campanha: ['gestao', 'adm', 'marketing', 'corretor', 'tvaccess'], // trilha da campanha na Home (PRD §5.9, C3) // Comercial (corretor: só os dados dele, PRD §5.8)
   configuracoes: ['gestao', 'marketing'],
   usuarios: ['gestao'],

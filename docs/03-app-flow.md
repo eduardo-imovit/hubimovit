@@ -10,6 +10,7 @@
         │     │          ├─ Dash ▾      Negócio ▸ Visão Geral · Leads        (gestao, marketing)
         │     │          │              Performance ▸ Performance · Campanhas
         │     │          │              Funil
+        │     │          │              Adm locação  (gestao) — RF26
         │     │          │              Kanban ▸ Quadro · Dados · Atividades (gestao, adm)
         │     │          ├─ TV Display                                         (gestao, adm, marketing, tvaccess)
         │     │          └─ Configurações                                      (gestao, marketing)
@@ -115,6 +116,20 @@ Configurações → aba → criar/editar/desativar item → aparece na Home e na
   - **atraso:** se a última leitura do CRM tiver mais de 1 dia, aviso "Dados do CRM de dd/mm";
   - **negócio sem valor:** "N negócios sem valor no CRM", contados no volume e fora do valor e do ticket;
   - **fora do período:** antes do início ou depois do fim, o bloco não aparece.
+
+### Adm locação — carteira de locação (RF26, PRD §5.13) — no localhost, 07/10
+Gestão → Dash ▸ Adm locação (`/dashboard/adm-locacao`) → manchete (administração recebida, ativos, inadimplência, novos × encerrados) → 8 capítulos (PRD §5.13). As listas mostram 8 linhas e abrem as demais em "Ver os outros".
+
+Ao abrir, a página chama a função `carteira-locacao`, que lê o Imoview se a última leitura tem mais de 12 h; "Atualizar agora" força a leitura.
+
+Estados:
+- carregando;
+- lendo o Imoview (aviso);
+- falha na leitura (aviso compacto: "os números são da última leitura");
+- vazio ("Nenhum contrato lido do Imoview ainda");
+- saúde dos dados no rodapé.
+
+Outros níveis não veem o item, e a rota redireciona para a Home.
 
 ## 4. Estados de tela
 | Tela | Vazio | Carregando | Erro | Sem permissão |
