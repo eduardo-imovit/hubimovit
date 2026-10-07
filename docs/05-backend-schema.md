@@ -206,6 +206,11 @@ Carga inicial: Km 32, de 06/10 a 31/12/2026. Venda: R$ 28.000.000 / 14. Aluguel:
 
 **RLS:** `campanhas` e `campanha_metas` com leitura por `pode_ler_comercial()` e escrita só pela Gestão.
 
+### 2.9 Jornada para análise (RF/PRD §5.12) — **PROPOSTA, não aplicada**
+- **View `vw_jornada_etapas`** (security_invoker, herda a RLS da jornada: o corretor vê só a dele): uma linha por passagem por etapa, com `codigo`, `finalidade`, `corretor`, `midia`, `fase_crm`, `posicao` (1–7 no funil do Hub), `entrou_em`, `saiu_em` (próximo evento do mesmo código), `dias_na_etapa`, `como_saiu` (`avancou` | `voltou` | `descartado` | `negocio` | `em_aberto`) e `entrada_conhecida` (false quando a passagem começa numa `primeira_leitura`).
+- **View `vw_jornada_descartes`** (security_invoker): descartes da jornada, com a etapa em que estavam, a data e o **motivo**, lido de `payload.interacoes` (a interação de descarte; o padrão exato do texto vai ser conferido no primeiro descarte capturado com a v5).
+- O front lê as views com os filtros da página, igual ao resto do Painel Comercial.
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 

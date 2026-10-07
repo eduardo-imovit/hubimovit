@@ -239,6 +239,12 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 - [x] "Ver o Hub como" (Gestão) — testado em localhost como Gabriel Simon: menu, Meus números, Kanban (13 cards, só dele), Relatório, Performance, pendências (33 leads sem contato)
 - [ ] Conferir com o primeiro corretor real logado
 
+## Fase 16 — Jornada do lead: tempos, perdas e motivos (PRD §5.12) — proposta (07/10)
+- **S0:** o Eduardo cola a v5 do "Marcar fase" (interações dos descartados), e eu confiro o primeiro descarte e o padrão do texto do motivo.
+- **S1:** views `vw_jornada_etapas` e `vw_jornada_descartes` (Schema §2.9), testadas em transação e com consulta de conferência.
+- **S2:** capítulo "Jornada do lead" no Comercial (etapas com tempo, passagem, perdas e motivos; tempo até o negócio; parados).
+- **S3:** publicar e acompanhar; os tempos ganham amostra com as semanas.
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).

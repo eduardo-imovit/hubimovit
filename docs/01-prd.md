@@ -284,6 +284,35 @@ Também mostra as paradas no último dia de cada mês (meta acumulada proporcion
 
 **"Ver o Hub como" (só Gestão):** o seletor da Home troca o Hub inteiro (menu, Home, pendências, Dash) para outro nível ou para um corretor específico, com uma faixa azul e "Sair da prévia". É uma prévia de tela: os dados são os que a Gestão lê, filtrados para a pessoa. A garantia do corretor é a RLS, testada no banco. Durante a prévia, o Perfil não pode ser editado.
 
+### 5.12 Jornada do lead: tempos, perdas e motivos (pedido do Eduardo, 07/10) — **PROPOSTA, aguardando aprovação**
+**Objetivo.** Ver quanto tempo o lead leva em cada etapa, onde ele se perde e por quê. A fonte é a jornada diária (`crm_atendimento_jornada`, fluxo `crm_jornada_diaria v3`, rodando desde 06/10).
+
+**Onde (revisto em 07/10, depois do feedback "fugiu do design kit").** Não vira um gráfico novo. A jornada completa dois capítulos que já existem na página Comercial, com os mesmos componentes:
+- **Capítulo 1 (funil):** a coluna "tempo na etapa", hoje reservada com "—", passa a mostrar a mediana em dias ("acum." com menos de 5 passagens). Embaixo, dois cartões `.pg-mesa-card`: tempo até o negócio e parados há N+ dias.
+- **Capítulo 3 ("Onde o lead se perde e por quê?"):** descartes pelas 7 etapas (`.pg-hbarras`, a maior em coral) + motivos de todas as etapas + motivos da etapa clicada. O simulador de ganho continua.
+
+Segue todos os filtros da página (período, finalidade, mídia, corretor) e o filtro geral; o corretor vê só a dele em "Meus números". Maquete: https://claude.ai/artifact/LWATNn1x2NedBQd3uYwgX8 (v2, CSS real do Hub).
+
+**O gráfico.** As 7 etapas em linha (Pré-atendimento → Seleção de perfil → Seleção de imóveis → Lead qualificado → Visita → Proposta → Negócio). Em cada etapa:
+- **Tempo mediano na etapa** (dias), com o n ao lado. Tempo na etapa = data em que saiu − data em que entrou, contando só passagens com as duas pontas observadas pela jornada;
+- **Passaram:** quantos leads entraram na etapa no período;
+- **Perdas na etapa:** quantos foram descartados estando nela, com os **3 principais motivos**.
+
+Ao lado: **tempo total até o negócio** (mediana, da entrada ao "NEGÓCIO REALIZADO") e **parados agora** (em atendimento há mais de X dias na etapa atual).
+
+**Motivos de descarte.** Não existem no banco hoje. Passam a ser capturados das interações do Imoview a partir da mudança no nó "Marcar fase" (v5, 07/10). Motivos de descartes anteriores ficam como "sem motivo registrado".
+
+**Limites que a tela deixa claros.**
+- Tempos só existem para passagens observadas desde 06/10. Até haver amostra (n ≥ 5 por etapa), a etapa mostra "acumulando".
+- Leads que já estavam no meio do funil em 06/10 têm a data de chegada na etapa desconhecida e ficam fora das médias.
+- Precisão de 1 dia: a leitura é diária.
+
+**Critérios de pronto.** Cada número bate com uma consulta de conferência na jornada; um descarte novo aparece com o motivo no dia seguinte.
+
+**Perguntas.**
+- **J1 Parado:** a partir de quantos dias na mesma etapa um lead conta como "parado"? *(Proposta: 7 dias.)*
+- **J2 Perdas por etapa:** contar só os descartes do período (eventos da jornada, desde 06/10), ou também os anteriores pela fase em que estavam ao descartar (base antiga, sem data nem motivo)? *(Proposta: só a jornada, para o número ser exato.)*
+
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.
 
