@@ -17,6 +17,7 @@ function buildLinksDash(perfil) {
   if (pode(perfil, 'dashComercial')) children.push({ to: '/dashboard/comercial', label: ehCorretor ? 'Meus números' : 'Comercial' })
   if (pode(perfil, 'dash')) children.push({ to: '/dashboard/gestao', label: 'Painel da Gestão' })
   if (pode(perfil, 'dashPerformance')) children.push({ to: '/dashboard/performance', label: 'Painel de Performance' })
+  if (pode(perfil, 'dashAdmLocacao')) children.push({ to: '/dashboard/adm-locacao', label: 'Adm locação' })
   if (pode(perfil, 'kanban')) {
     children.push({
       label: 'Kanban',

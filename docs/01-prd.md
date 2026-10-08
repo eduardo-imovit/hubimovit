@@ -73,6 +73,7 @@ Faltava um lugar único para:
 | RF23 | **Formulários no Hub** (§5.7): 1ª entrega Captação (link público por corretor, assinatura, PDF, lista) e Feedback de visita (PDF); depois apresentações públicas, Avaliação, Guia e Relatório | corretor, adm, gestao; proprietário | must | 1ª entrega no ar (28/09) |
 | RF24 | **Dados confiáveis e dashboards v2** (§5.8): histórico acumulado do funil no banco, páginas Comercial, Performance e Geral com todos os filtros respeitados e só a equipe comercial ativa, Kanban com código e filtro por etapa | gestao, marketing | must | Comercial v1 no localhost (29/09); histórico (S1–S2) aguarda o Pro |
 | RF25 | **Campanha "Km 32" na Home** (§5.9): trilha do 4º tri 2026 com valor realizado, volume e ticket médio por finalidade, a partir dos negócios realizados no CRM desde 06/10/2026, contra metas guardadas numa tabela de campanha | todos com nível | must | **no ar (06/10)** |
+| RF26 | **Adm locação** (§5.13): painel da carteira de contratos administrados pela ótica do gestor (administração recebida, crescimento, bairros e tipos, saídas e motivos, reajustes, inadimplência e atenção, proteção, proprietários), lido do Imoview | gestao | must | **no ar para a Gestão (07/10)** |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -283,6 +284,116 @@ Também mostra as paradas no último dia de cada mês (meta acumulada proporcion
 | Relatório de atividades | só as dele | RLS de atividades + filtro por `codigousuario` |
 
 **"Ver o Hub como" (só Gestão):** o seletor da Home troca o Hub inteiro (menu, Home, pendências, Dash) para outro nível ou para um corretor específico, com uma faixa azul e "Sair da prévia". É uma prévia de tela: os dados são os que a Gestão lê, filtrados para a pessoa. A garantia do corretor é a RLS, testada no banco. Durante a prévia, o Perfil não pode ser editado.
+
+### 5.12 Jornada do lead: tempos, perdas e motivos (pedido do Eduardo, 07/10) — **PROPOSTA, aguardando aprovação**
+**Objetivo.** Ver quanto tempo o lead leva em cada etapa, onde ele se perde e por quê. A fonte é a jornada diária (`crm_atendimento_jornada`, fluxo `crm_jornada_diaria v3`, rodando desde 06/10).
+
+**Onde (revisto em 07/10, depois do feedback "fugiu do design kit").** Não vira um gráfico novo. A jornada completa dois capítulos que já existem na página Comercial, com os mesmos componentes:
+- **Capítulo 1 (funil):** a coluna "tempo na etapa", hoje reservada com "—", passa a mostrar a mediana em dias ("acum." com menos de 5 passagens). Embaixo, dois cartões `.pg-mesa-card`: tempo até o negócio e parados há N+ dias.
+- **Capítulo 3 ("Onde o lead se perde e por quê?"):** descartes pelas 7 etapas (`.pg-hbarras`, a maior em coral) + motivos de todas as etapas + motivos da etapa clicada. O simulador de ganho continua.
+
+Segue todos os filtros da página (período, finalidade, mídia, corretor) e o filtro geral; o corretor vê só a dele em "Meus números". Maquete: https://claude.ai/artifact/LWATNn1x2NedBQd3uYwgX8 (v2, CSS real do Hub).
+
+**O gráfico.** As 7 etapas em linha (Pré-atendimento → Seleção de perfil → Seleção de imóveis → Lead qualificado → Visita → Proposta → Negócio). Em cada etapa:
+- **Tempo mediano na etapa** (dias), com o n ao lado. Tempo na etapa = data em que saiu − data em que entrou, contando só passagens com as duas pontas observadas pela jornada;
+- **Passaram:** quantos leads entraram na etapa no período;
+- **Perdas na etapa:** quantos foram descartados estando nela, com os **3 principais motivos**.
+
+Ao lado: **tempo total até o negócio** (mediana, da entrada ao "NEGÓCIO REALIZADO") e **parados agora** (em atendimento há mais de X dias na etapa atual).
+
+**Motivos de descarte.** Não existem no banco hoje. Passam a ser capturados das interações do Imoview a partir da mudança no nó "Marcar fase" (v5, 07/10). Motivos de descartes anteriores ficam como "sem motivo registrado".
+
+**Limites que a tela deixa claros.**
+- Tempos só existem para passagens observadas desde 06/10. Até haver amostra (n ≥ 5 por etapa), a etapa mostra "acumulando".
+- Leads que já estavam no meio do funil em 06/10 têm a data de chegada na etapa desconhecida e ficam fora das médias.
+- Precisão de 1 dia: a leitura é diária.
+
+**Critérios de pronto.** Cada número bate com uma consulta de conferência na jornada; um descarte novo aparece com o motivo no dia seguinte.
+
+**Perguntas.**
+- **J1 Parado:** a partir de quantos dias na mesma etapa um lead conta como "parado"? *(Proposta: 7 dias.)*
+- **J2 Perdas por etapa:** contar só os descartes do período (eventos da jornada, desde 06/10), ou também os anteriores pela fase em que estavam ao descartar (base antiga, sem data nem motivo)? *(Proposta: só a jornada, para o número ser exato.)*
+
+### 5.13 Adm locação: a carteira de contratos administrados (pedido do Eduardo, 07/10) — **APROVADO; no localhost em 07/10**
+**Objetivo.** Uma visão gerencial da carteira de locação, pelas perguntas que o gestor faz toda semana:
+- o que entra para a Imovit;
+- se a carteira cresce;
+- onde e o que alugamos;
+- quem sai e por quê;
+- o que reajusta;
+- quanto está em atraso;
+- se a carteira está protegida;
+- quem são os proprietários.
+
+**Regra da manchete (Eduardo, 07/10):** o número principal é o dinheiro que fica com a Imovit, a **administração recebida**. A soma dos aluguéis (R$ 1,3 mi/mês) é só o tamanho da carteira e aparece como contexto.
+
+**Quem vê.** Só a `gestao` por enquanto (decisão de 07/10; `ACESSO.dashAdmLocacao`; RLS `is_gestao()`). Abrir para o ADM depois é trocar a policy e o acesso. A página tem nomes de locatários e proprietários, valores e inadimplência.
+
+**Onde.** Dash ▸ **Adm locação** (`/dashboard/adm-locacao`), com capítulos `.pg-capitulo` e os componentes do Painel. Filtros na URL: destinação, tipo de imóvel, garantia e índice. Recebimentos e proprietários não seguem os filtros (a tela diz isso).
+
+**Fonte.** Imoview, só com a `chave`:
+- `GET /ContratoAluguel/RetornarContratos`: 817 contratos desde 2014; máx. 50 por página;
+- `GET /Movimento/RetornarMovimentos`: locação = `modulo 2`;
+  - `situacaoConta=1`: em aberto;
+  - `situacaoConta=2`: pagas. Aluguel no plano `7.1.1`; administração (`1.1.1.1`) e intermediação (`1.1.1.2`) retidas no repasse ao `Locador`.
+- Imóveis em Campinas/SP; o bairro sai do fim do endereço.
+
+Quem lê:
+- o n8n `carteira_locacao_diaria` (contratos + em aberto, 6h30);
+- a Edge Function `carteira-locacao` (tudo, inclusive as pagas), chamada ao abrir o painel quando a última leitura tem mais de 12 h ou pelo botão "Atualizar agora".
+
+**Manchete.**
+- Administração recebida no último mês fechado (sem as pagas: a prevista).
+- Contratos ativos (saudáveis × em atraso, + em ativação).
+- Inadimplência (%).
+- Novos × encerrados em 12 meses (saldo e rotatividade).
+- Linha de contexto: tamanho da carteira e ticket médio.
+
+**Capítulos.**
+1. **Quanto entra para a Imovit?**
+   - Administração e intermediação recebidas por mês, pela data do pagamento.
+   - Prevista (aluguel × taxa); taxa média; contratos que pagaram.
+2. **A carteira está crescendo?**
+   - Novos × encerrados por mês (24 meses), **pela regra do CRM** (conferida com o Eduardo em 07/10): novos pela data de início, encerrados pela data de rescisão. 2025 = 71 × 70; 2026 até out = 50 × 49. Os 28 rescindidos sem data de rescisão não contam como encerrados (saem dos ativos na data de fim).
+   - Rotatividade (encerrados em 12 meses ÷ média de ativos).
+   - Aluguel médio dos novos × carteira; permanência mediana.
+3. **Onde e o que alugamos?** Bairros (n e aluguel), tipo de imóvel, faixa de aluguel, destinação.
+4. **Quem está saindo e por quê?**
+   - Aviso de desocupação, com a administração em risco.
+   - **Último trimestre do prazo** (fim em até 90 dias).
+   - Prazo indeterminado.
+   - Motivos de rescisão em 12 meses. "Sem Administração" e "Proprietário tirou a administração" contam como um só motivo.
+   - Listas.
+5. **O que reajusta?** Reajustes nos próximos 90 dias por mês e índice; reajustes com a data vencida (lista).
+6. **Quanto está em atraso?**
+   - Inadimplência pela regra do Imoview: contrato ativo "Atrasado".
+   - Valor por tempo de atraso; **inadimplência por garantia**; contratos em cobrança.
+   - **Atenção:** pagamento informado e conta ainda em aberto, uma linha por contrato (achado de 07/10: o Imoview mantém em aberto cobranças pagas sem baixa).
+   - Débito de contratos encerrados (fora da taxa).
+7. **A carteira está protegida?** Seguro incêndio vencido, vencendo em 30 dias ou sem registro; garantia com validade vencida ou vencendo; lista para regularizar.
+8. **Quem são os nossos proprietários?** Quantos são; os 10 maiores pela administração e quanto concentram.
+
+**Fora (por enquanto).**
+- Ações e alertas da ADM (RF17).
+- Corretor ou proprietário vendo os próprios contratos.
+- Escrever no Imoview.
+- Cálculo oficial de reajuste.
+- Vacância (viria do cadastro de imóveis).
+
+**Dados pessoais.** CPF e CNPJ não são guardados: são tirados dos campos e mascarados em qualquer texto do payload (o resumo do locador traz CPF; achado de 07/10).
+
+**Critérios de pronto.**
+- Ativos, aluguéis, administração prevista e inadimplência batem com o Imoview. Conferido em 07/10: 157 ativos, R$ 1,30 mi, R$ 65,1 mil, 9 contratos / R$ 206,9 mil.
+- Corretor, marketing e "Sem nível" recebem zero linhas.
+
+**Decisões (07/10).**
+- L1/L6 inadimplência = regra do Imoview.
+- L2 receita = administração; a intermediação aparece à parte.
+- L3 a renovação não gera contrato novo.
+- L4 menu "Adm locação".
+- L5 "Moderação" = em ativação.
+- "Atenção" = pagamento informado sem baixa.
+- Manchete = administração recebida.
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.

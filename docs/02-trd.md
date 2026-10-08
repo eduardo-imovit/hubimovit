@@ -33,6 +33,7 @@
 | Serviço | Para quê | Auth | Riscos conhecidos |
 |---|---|---|---|
 | Imoview | Atendimentos, atividades, colaboradores (via n8n); sincronizar a proposta (via função) | `IMOVIEW_API_KEY` | Senha/chave em texto aberto em fluxos do n8n |
+| Imoview (contratos e cobranças) — RF26 | Adm locação: `ContratoAluguel/RetornarContratos` e `Movimento/RetornarMovimentos` (em aberto e pagas), via n8n `carteira_locacao_diaria` e Edge Function `carteira-locacao`; só leitura | `chave` (credencial no n8n; secret `IMOVIEW_API_KEY` na função) | Máx. 50 por página; filtro de vencimento solto; a API devolve CPF/CNPJ (mascarados na carga). **A secret `IMOVIEW_API_KEY` não está definida (07/10)**: a esteira-locacao também depende dela |
 | Meta Ads / Google Ads | Investimento e resultado diários (via n8n) | tokens no n8n | O fluxo `meta_ads` reinseria 14 dias (corrigido com trigger em 23/09) |
 | GTM + n8n `wpp_gtm` | Cliques no WhatsApp do site, com UTMs e gclid/fbclid | webhook público | Webhook sem chave; recebia chamadas vazias em massa (bloqueadas por trigger) |
 | n8n `wpp_entrada` | Leads do bot Severino | — | Correções publicadas em 24/09; falta ver o primeiro lead real |
