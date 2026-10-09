@@ -269,6 +269,29 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
   - [ ] commit + push na `main` + `main:teste`;
   - [ ] conferir com a ADM na 1ª semana (atenção, reajustes vencidos, seguros).
 
+## Fase 18 — Estoque de imóveis: painel + busca (RF27, PRD §5.14) — proposta (08/10)
+- **S0 Captador (E4, depende do Eduardo):** testar `App_RetornarDetalhesImovel` com o login do Imoview em 10 imóveis. Se trouxer o captador, entra na carga (só para o estoque, ~1.200 chamadas); se não, o campo fica vazio.
+- **S1 Banco:** migration do Schema §2.11 (tabela, views, RPC de carga), testada em transação. RLS: Gestão lê; corretor, ADM e anon recebem zero.
+- **S2 Carga (revista em 09/10, vem antes do resto):**
+  - fluxo n8n `estoque_imoveis_diario` que lê o Imoview direto (sem Edge Function) e grava pela RPC. Criado desligado; o Eduardo liga as credenciais Imoview e Supabase, roda uma vez e ativa às 5h30;
+  - a 1ª execução também mostra os nomes exatos dos campos de endereço; a RPC é ajustada se preciso;
+  - **pronto quando:** `estoque_cargas` mostra quantidade lida = quantidade da API nas duas finalidades.
+- **S2b Planilha de duplicados (pedido do Eduardo, 09/10):** `vw_estoque_duplicados` → `.xlsx` para o time (aba de grupos com certeza e "o que fazer" + aba de resumo por bairro/captador).
+- **S3 Painel:** maquete com o CSS do Hub → `/dashboard/estoque` (6 capítulos, lista de trabalho); testado no localhost como Gestão; publicar.
+- **S4 Busca por regras:**
+  - RPC `buscar_imoveis` com testes (exatos, cada margem, "o que mais restringe", nenhum campo proibido na resposta);
+  - maquete do cartão → `/imoveis/buscar` com chips;
+  - publicar para a Gestão.
+- **S5 Validação (Eduardo + time):** 2 semanas de uso; ajustar margens e ordenação.
+- **Depois:** liberar para o corretor (S6: acesso + `papel_atual()` na RPC) e texto livre com o Claude (S7, B3).
+
+## Fase 19 — Cadastro Locador PF no Hub (RF28, PRD §5.15) — aprovado (09/10)
+- **S1 Banco:** migration §2.12 (tabela + RLS), testada em transação. RLS: gestão/adm leem; anon zero.
+- **S2 Função:** `cadastro-locador` (evento `enviar`: valida → insere → Brevo para `administrativo3@` + cópia ao locador). Deploy pelo MCP.
+- **S3 Form público:** `/cadastro-locador` no padrão `CaptacaoPublica` (5 blocos, CSS do Hub), testado no localhost.
+- **S4 Produção Propostas:** `acessos.js` (gestão+adm, sem gate) + lista `/admin/cadastros-locador` + item no menu Propostas. Push `main`; conferir como gestão e como corretor.
+- **Depois:** upload de documentos no Hub (RF28.5); corretor nas Propostas; token por corretor/imóvel se o link fixo gerar ruído.
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).
@@ -292,6 +315,8 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 | 2026-09-29 | Fase 12 (dados acumulados + dashboards v2) | Filtro de período não mudava os gráficos (safra fixa) e o banco sobrescrevia a fase do lead; Eduardo decidiu acumular histórico e assinar o Pro |
 | 2026-09-29 | Fase 12 ajustada | Eduardo: sem etapa Agendamento (funil de 7), sem filtro de time, captura 1×/dia, filtro geral só equipe comercial ativa |
 | 2026-10-06 | Fase 13 (campanha Km 32) | Pedido da direção; fonte = CRM via jornada; decisões C1–C6 do Eduardo |
+| 2026-10-08 | Fase 18 (estoque + busca) | Pedido do Eduardo: controle de estoque pelo Imoview e busca "mais de conversa" com alternativas com margem; só Gestão; texto livre depois |
 | 2026-10-07 | Fase 17 v2 | Eduardo: painel pela ótica do gestor (8 capítulos), manchete = administração recebida; "Atenção" virou "pagamento informado sem baixa" depois da 1ª carga |
 | 2026-10-07 | Fase 17 aprovada | Eduardo: receita = só administração; menu Dash ▸ Adm locação; "Moderação" = em ativação; inadimplência pela regra do Imoview + capítulo "Atenção" para cobranças vencidas fora da régua |
 | 2026-10-07 | Fase 17 (carteira de locação) | Pedido do Eduardo: visão gerencial dos contratos ativos para Gestão e ADM, fonte Imoview; começa por descoberta porque o endpoint de contratos não está confirmado |
+| 2026-10-09 | Fase 19 (cadastro locador PF) | Eduardo: Google Form vira rota pública de link fixo (grava + e-mail a administrativo3); Propostas em produção só gestão/adm; documentos seguem por e-mail |

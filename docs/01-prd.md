@@ -74,6 +74,8 @@ Faltava um lugar único para:
 | RF24 | **Dados confiáveis e dashboards v2** (§5.8): histórico acumulado do funil no banco, páginas Comercial, Performance e Geral com todos os filtros respeitados e só a equipe comercial ativa, Kanban com código e filtro por etapa | gestao, marketing | must | Comercial v1 no localhost (29/09); histórico (S1–S2) aguarda o Pro |
 | RF25 | **Campanha "Km 32" na Home** (§5.9): trilha do 4º tri 2026 com valor realizado, volume e ticket médio por finalidade, a partir dos negócios realizados no CRM desde 06/10/2026, contra metas guardadas numa tabela de campanha | todos com nível | must | **no ar (06/10)** |
 | RF26 | **Adm locação** (§5.13): painel da carteira de contratos administrados pela ótica do gestor (administração recebida, crescimento, bairros e tipos, saídas e motivos, reajustes, inadimplência e atenção, proteção, proprietários), lido do Imoview | gestao | must | **no ar para a Gestão (07/10)** |
+| RF27 | **Estoque de imóveis** (§5.14): (A) painel Dash ▸ Estoque (quanto temos e vale, captações, tickets, parados, desatualizados +45 d, fora do site) e (B) **busca inteligente** Ferramentas ▸ Buscar imóveis (texto livre → filtros, resultados exatos + "quase lá" com margem e motivo), lido do Imoview 1×/dia | gestao (corretor depois, na busca) | must | **proposta (08/10)** |
+| RF28 | **Cadastro Locador PF no Hub** (§5.15): form público de link fixo com os 5 blocos do Google Form; grava no Supabase e avisa `administrativo3@`; lista em Propostas (só gestão/adm); Propostas em produção só gestão/adm | locador (público); gestao, adm | must | **aprovado (09/10)** |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -147,7 +149,7 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - **1ª entrega (decisão do Eduardo, 28/09): só os dois formulários.**
   1. **Captação de imóvel** (substitui o Tally "Acompanhamento personalizado"). Quem preenche é o **proprietário**:
      - **Link fixo por corretor**, público, sem login: `/captacao/<código aleatório>` (28/09: antes era o id do CRM, sequencial). Cada corretor vê **só o próprio link**, identificado pelo login; não há lista de corretores na página pública.
-     - Mesmos campos e textos do Tally: contato (nome, e-mail, telefone, CPF); natureza (tipo, finalidade venda/locação/ambos, exclusividade + período 30/90/180 dias/1 ano); endereço (rua, número, bairro, CEP, apto/sala, bloco, quadra); valores (locação, venda, condomínio, IPTU mensal); atributos (área interna, área do terreno, quartos, suítes, banheiros, salas, vagas, tipo de vaga); lazer (16 opções) e observações; **declaração de ciência com honorários** (locação: 1º aluguel; administração: 8% do aluguel bruto; venda: 6%) e **assinatura desenhada**.
+     - Mesmos campos e textos do Tally: contato (nome, e-mail, telefone, CPF); natureza (tipo, finalidade venda/locação/ambos, exclusividade + período 30/90/180 dias/1 ano); endereço (rua, número, bairro, CEP, apto/sala, bloco, quadra); valores (locação, venda, condomínio, IPTU mensal); atributos (área interna, área do terreno, quartos, suítes, banheiros, salas, vagas, tipo de vaga); lazer (16 opções) e observações; **declaração de ciência com honorários**, montada conforme a finalidade (locação: 1º aluguel, administração de 8% do aluguel bruto e vistoria por conta do locatário; venda: 6%; ambos: todas) e **assinatura desenhada**.
      - Ao assinar: o proprietário **baixa o PDF da autorização** na hora; a equipe recebe **e-mail**; a captação entra na lista **Captações** do Hub (PDF baixável, marcar "cadastrada no Imoview").
   2. **Feedback de visita** (substitui o Tally "Feedback da visita"). Quem preenche é o **corretor**, no Hub: código do imóvel, olhar do visitante, curadoria de ajustes, termômetro de interesse (1 a 5), corretor e nota do consultor. Gera um **PDF no padrão Imovit** para o corretor mandar ao proprietário (sem e-mail automático). Fica o histórico.
 - **Home:** "Links úteis" vira **Ferramentas**: os formulários do Hub primeiro; os links externos ficam enquanto não migram e **somem aos poucos**.
@@ -394,6 +396,136 @@ Quem lê:
 - L5 "Moderação" = em ativação.
 - "Atenção" = pagamento informado sem baixa.
 - Manchete = administração recebida.
+
+### 5.14 Estoque de imóveis: painel da Gestão + busca inteligente (pedido do Eduardo, 08/10) — **PROPOSTA, aguardando aprovação**
+**Objetivo.** Dois usos sobre a mesma base, o cadastro de imóveis do Imoview lido 1×/dia:
+1. **Painel do estoque** (Gestão): quanto temos e quanto vale, onde captamos, onde estão os maiores tickets, o que está parado, o que está desatualizado e o que está fora do site.
+2. **Busca no estoque** (Gestão agora; **corretor depois**): encontrar rápido o imóvel certo, num jeito "mais de conversa" que um formulário de filtros. Quando nada atende exatamente, o sistema **propõe alternativas com margem e diz o porquê**, por exemplo:
+   - "além desses, temos estes na faixa de preço, mas com 1 quarto a menos";
+   - "estes ficam até 10% acima do teto";
+   - "estes estão a 2 km do bairro pedido".
+
+**Quem vê.** Só `gestao` nos dois, por enquanto (decisão de 08/10). A busca já nasce sem nenhum dado que o corretor não possa ver: nada de proprietário, anotações ou número do endereço. Abrir para o corretor depois é trocar o acesso, não refazer.
+
+**Onde.**
+- Dash ▸ **Estoque** (`/dashboard/estoque`): painel em capítulos, como o Adm locação.
+- Ferramentas ▸ **Buscar imóveis** (`/imoveis/buscar`): a busca.
+
+**Fonte (análise de 08/10).** `POST /Imovel/RetornarImoveisDisponiveis` com `naoconsiderarmeusite: true`.
+- Traz o cadastro inteiro (4.443 de locação + 6.741 de venda), 20 por página; sem esse parâmetro, só o publicado no site.
+- Campos usados:
+  - finalidade, situação, tipo, destinação;
+  - bairro, cidade, CEP, latitude/longitude;
+  - valor, valor/m², condomínio, IPTU;
+  - quartos, suítes, banheiros, vagas, área principal/útil e do lote;
+  - características (piscina, varanda gourmet, mobiliado, permite animais…);
+  - fotos (quantidade + foto principal), vídeo;
+  - `exclusivo`, `placa`, `temproposta`/`temreserva`, título e descrição;
+  - datas: cadastro (= captação), última alteração, última validação, vago desde.
+- **Não vêm:** captador (E4) e proprietário.
+- O valor pode ser "Sob consulta" (fica sem valor e entra nas buscas sem filtro de preço).
+
+**Definições (decididas em 08/10).**
+- **Estoque** = todo imóvel ainda negociável: Vago/Disponível, Em moderação, Em reforma e Em desocupação. A situação é filtro. Alugado, vendido e desativado ficam fora.
+- **Desatualizado** = sem atualização há **mais de 45 dias**, contando a mais recente entre a última alteração e a última validação.
+- **Captação** = cadastro no período (`datahoracadastro`), em qualquer situação atual.
+- **Fora do site** = no estoque e ausente da leitura sem `naoconsiderarmeusite`.
+- **Tempo em estoque** = hoje − "vago desde".
+- **Exclusividade:** é usada, mas não incentivada internamente. Aparece como indicador (% de exclusivos no estoque e nas captações), sem meta.
+
+**Retrato de 08/10** (só Vago/Disponível; o painel recalcula com a definição acima):
+
+| | Locação | Venda |
+|---|---|---|
+| Disponíveis | 197 | 943 |
+| No site | 99 | 459 |
+| Captações em 12 meses | 329 | 563 |
+| Ticket mediano | R$ 12,7 mil/mês | R$ 2,39 mi |
+| Valor em estoque | R$ 3,4 mi/mês | R$ 3,26 bi |
+| Tempo mediano em estoque | 105 d | 310 d |
+
+#### A) Painel do estoque (Dash ▸ Estoque)
+**Manchete:**
+- estoque por finalidade e valor total;
+- captações do último mês × média de 12 meses;
+- **% do estoque desatualizado (+45 dias)**;
+- fora do site.
+
+**Capítulos:**
+1. **Quanto temos e quanto vale?** Por finalidade, situação e tipo; valor total; ticket mediano; faixas de valor.
+2. **Onde captamos?** Captações por mês (24 meses) e por bairro (12 meses); % exclusivos.
+3. **Onde estão os maiores tickets?** Ticket mediano e R$/m² por bairro (mín. 5 imóveis), por finalidade.
+4. **O que está parado?** Tempo em estoque por faixa (até 90 d, 91–180, 181–365, + 1 ano); bairros e tipos mais lentos; lista dos parados há + 1 ano.
+5. **O cadastro está em dia?**
+   - % desatualizado (+45 d) e por bairro;
+   - **lista de trabalho**: código, tipo, bairro, valor, dias sem atualizar, fotos; do mais antigo para o mais novo;
+   - sem foto ou com menos de 5.
+6. **O que está fora do site?** Por bairro e tipo, com o motivo provável (sem foto, sem valor, desatualizado, em moderação).
+
+Cada número abre a lista dos imóveis. O código leva ao imóvel no Imoview.
+
+#### B) Busca no estoque (Ferramentas ▸ Buscar imóveis)
+**Como funciona:**
+- **Uma caixa de busca em texto livre** (ex.: "casa em condomínio no Alphaville até 3 milhões com 4 suítes e piscina"), que vira filtros visíveis e editáveis em chips: finalidade, tipo, bairro(s), preço mín./máx., quartos/suítes/vagas mínimos, área mínima, características.
+- O usuário ajusta os chips à mão. Os filtros vão na URL, para mandar a busca a alguém.
+
+**Resultado em três blocos:**
+1. **Atendem a tudo:** ordenados por aderência e atualização. Cartão com foto principal, tipo, bairro, valor, quartos/suítes/vagas, área, situação, "atualizado há N dias" (selo de desatualizado acima de 45 d) e código do Imoview.
+2. **Quase lá:** imóveis que falham em **um** critério, dentro de uma margem, sempre com o motivo escrito:
+   - preço até **10%** acima do teto (ou abaixo do piso);
+   - **1** quarto, suíte ou vaga a menos;
+   - área até **10%** menor;
+   - outro bairro a até **2 km** (pela latitude/longitude) ou bairro do mesmo grupo;
+   - característica pedida ausente (ex.: sem piscina).
+3. **Se nada aparecer:** a busca diz qual critério mais restringe e quantos imóveis surgem ao afrouxá-lo ("sem o filtro de 4 suítes, são 12").
+
+**Inteligência:**
+- **Fase 1:** as alternativas saem de regras claras (as margens acima, configuráveis), sem custo por consulta e explicáveis.
+- **Fase 2:** o texto livre é interpretado por um modelo de linguagem (Claude), que só transforma a frase em filtros; a busca e as margens continuam nas regras. Se a interpretação falhar, ficam os chips.
+
+**Desempenho:** resposta em menos de 1 s para ~1.200 imóveis em estoque (busca no banco, com índices).
+
+**Fora (por enquanto).**
+- Corretor usando a busca: vem depois, já previsto.
+- Enviar imóveis ao cliente (link, apresentação).
+- Editar ou validar no Imoview: o Hub só lê.
+- Ranking de captadores (E4).
+- Cruzar com contratos de locação (vacância).
+
+**Dados.** Sem proprietário, anotações internas, número ou complemento do endereço. Bairro, CEP, coordenadas e características bastam.
+
+**Critérios de pronto.**
+- **Painel:** estoque, no site e captações do mês batem com o Imoview no mesmo dia; o % desatualizado bate com o filtro equivalente.
+- **Busca:**
+  - uma frase de teste traz os mesmos imóveis que o filtro manual no Imoview;
+  - toda alternativa "quase lá" mostra o motivo e fica dentro da margem;
+  - nenhum dado de proprietário sai da API do Hub.
+- Corretor, marketing e "Sem nível" recebem zero linhas (até a liberação do corretor).
+
+**Decisões (08/10).**
+- E1: só Gestão por enquanto.
+- E2: estoque = todo imóvel negociável.
+- E3: desatualizado = +45 dias sem atualização.
+- E5: exclusividade como indicador, sem incentivo.
+- B1: margens 10% (preço, área), 1 quarto/suíte/vaga e 2 km aprovadas.
+- B2: ordem de entrega = painel (A) → busca por regras (B fase 1) → texto livre (B fase 2).
+- **B3: texto livre com o Claude fica para depois da validação da busca por regras.** A fase 1 é só com filtros em chips (a caixa de texto entra na fase 2).
+- **Corretor (futuro):** vê o imóvel, o código, o **captador** e o condomínio (nome e valor); **não vê** proprietário nem endereço completo (rua, número, complemento, CEP). Bairro e cidade aparecem. As coordenadas ficam só no servidor (cálculo da distância), nunca na resposta.
+
+**Perguntas.**
+- **E4 Captador:** a consulta pública por imóvel (`Imovel/RetornarDetalhesImovelDisponivel`) dá 403 em 4 de 5 imóveis e não traz o captador (teste de 08/10). Resta a consulta com login de usuário (`Imovel/App_RetornarDetalhesImovel`, com `codigoacesso` do `App_ValidarAcesso`), que os fluxos do n8n já usam com o login do Eduardo. **Autorizar o teste em 10 imóveis com esse login?**
+- **E6 Condomínio para o corretor:** nome do condomínio e valor da taxa entram; o endereço do condomínio não. Confirmar.
+
+### 5.15 Cadastro Locador PF no Hub (pedido do Eduardo, 09/10) - **APROVADO**
+Traz o Google Form "Cadastro Locador(a) - Pessoa Física" para dentro do Hub, no visual do Hub e com os mesmos campos. O locador preenche pelo link fixo aberto (sem login); a resposta cai no Supabase e vai por e-mail para `administrativo3@imovit.com.br` (com cópia ao locador, como o Google fazia). A lista dos cadastros fica junto das Propostas, visível só para gestão/adm. Na mesma entrega, o módulo Propostas passa a aparecer em produção, só para gestão/adm (o corretor entra depois).
+
+- RF28.1: rota pública `/cadastro-locador`, página única, 5 blocos (e-mail; locador 14 campos/11 obrigatórios; cônjuge 8 opcionais; banco 6 obrigatórios + tipo de conta; imóvel + administradora) + lista de documentos com o e-mail `administrativo3@`.
+- RF28.2: envio grava em `cadastros_locador` (Schema §2.12) e dispara o e-mail via Brevo (mesmo `notificar` da esteira). Sem e-mail válido, não envia.
+- RF28.3: lista em `/admin/cadastros-locador` (só gestão/adm): quem, qual imóvel, quando, status do e-mail.
+- RF28.4: `ACESSO.esteira/vendas/propostas` = gestão+adm, sem gate `VITE_MODULO_PROPOSTAS`. Portal do cliente e captação não mudam. Corretor sem acesso até liberação futura.
+- RF28.5: documentos (RG/CPF, matrícula, IPTU, CPFL, Sanasa, gás) continuam por e-mail nesta versão — sem upload no Hub.
+
+**Critérios de pronto:** um cadastro de teste aparece na tabela e na lista, e os 2 e-mails chegam; logado como corretor, Propostas some; `npm run build` ok.
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.

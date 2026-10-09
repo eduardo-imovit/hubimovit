@@ -34,6 +34,7 @@
 |---|---|---|---|
 | Imoview | Atendimentos, atividades, colaboradores (via n8n); sincronizar a proposta (via função) | `IMOVIEW_API_KEY` | Senha/chave em texto aberto em fluxos do n8n |
 | Imoview (contratos e cobranças) — RF26 | Adm locação: `ContratoAluguel/RetornarContratos` e `Movimento/RetornarMovimentos` (em aberto e pagas), via n8n `carteira_locacao_diaria` e Edge Function `carteira-locacao`; só leitura | `chave` (credencial no n8n; secret `IMOVIEW_API_KEY` na função) | Máx. 50 por página; filtro de vencimento solto; a API devolve CPF/CNPJ (mascarados na carga). **A secret `IMOVIEW_API_KEY` não está definida (07/10)**: a esteira-locacao também depende dela |
+| Imoview (estoque de imóveis) — proposta RF27 | Estoque: `Imovel/RetornarImoveisDisponiveis` com `naoconsiderarmeusite` (cadastro inteiro) e sem ele (publicados no site), via Edge Function `estoque-imoveis`; só leitura | secret `IMOVIEW_API_KEY` | 20 por página (~560 páginas): a função lê uma finalidade por chamada para caber no tempo da Edge Function; valor pode ser "Sob consulta" |
 | Meta Ads / Google Ads | Investimento e resultado diários (via n8n) | tokens no n8n | O fluxo `meta_ads` reinseria 14 dias (corrigido com trigger em 23/09) |
 | GTM + n8n `wpp_gtm` | Cliques no WhatsApp do site, com UTMs e gclid/fbclid | webhook público | Webhook sem chave; recebia chamadas vazias em massa (bloqueadas por trigger) |
 | n8n `wpp_entrada` | Leads do bot Severino | — | Correções publicadas em 24/09; falta ver o primeiro lead real |
@@ -54,6 +55,20 @@
 - **Fuso:** agregados calculados em America/Sao_Paulo.
 - **Backup:** nenhum (plano Free). Risco aceito até segunda ordem.
 - **Limites do Free:** 1 GB de Storage, 5 GB de egress, 500 MB de banco.
+
+### Estoque e busca (RF27, PRD §5.14) — proposta, 08/10
+- **Carga (revista em 09/10): o próprio n8n lê o Imoview**, sem Edge Function. A chave do Imoview fica só na credencial do n8n.
+  - Fluxo novo `estoque_imoveis_diario` (5h30), criado desligado. O Eduardo liga as credenciais (Imoview e Supabase) e ativa.
+  - Por finalidade (1 locação, 2 venda): lê a 1ª página → calcula as páginas → lê em lotes de 20 (com espera curta entre lotes) → um nó Code enxuga cada imóvel (tira proprietários, anotações, descrição longa) → chama a RPC `carregar_estoque_imoveis` com a service role.
+  - Ao final, a RPC confere a quantidade lida × a informada pela API e registra a carga em `estoque_cargas`.
+  - O botão "Atualizar agora" do painel chama o webhook do mesmo fluxo (só Gestão, S3).
+  - Motivo da mudança: o deploy de uma Edge Function com a chave foi bloqueado pelo controle de permissões, e o n8n já guarda a credencial do Imoview.
+- **Busca:** RPC `buscar_imoveis(filtros jsonb)`, security definer, que confere o nível de quem chama (hoje `gestao`; depois `corretor`) e devolve **só as colunas liberadas**. Nunca devolve coordenadas, rua, número, complemento, CEP nem proprietário.
+  - Exatos e "quase lá" saem da mesma consulta, com o motivo calculado no banco.
+  - Distância por fórmula de Haversine sobre latitude/longitude (sem PostGIS).
+  - Alvo: < 1 s para ~1.200 imóveis em estoque.
+- **Texto livre (fase 2, depois da validação):** Edge Function chamando o Claude só para transformar a frase nos mesmos filtros da RPC. Não entra agora.
+- **Por que o painel não lê direto da API:** ~560 páginas a cada abertura seria lento; a base no Supabase permite a busca com índice e com as margens.
 
 ## 6. Ambientes e deploy
 - Só existe produção. Para rodar local: `npm run dev`, com `.env` contendo `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_WEATHER_API_KEY`, `VITE_SPOTIFY_CLIENT_ID` e `VITE_SPOTIFY_PLAYLIST_ID`.

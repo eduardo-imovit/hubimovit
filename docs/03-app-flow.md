@@ -11,6 +11,7 @@
         │     │          │              Performance ▸ Performance · Campanhas
         │     │          │              Funil
         │     │          │              Adm locação  (gestao) — RF26
+        │     │          │              Estoque  (gestao) — proposta RF27
         │     │          │              Kanban ▸ Quadro · Dados · Atividades (gestao, adm)
         │     │          ├─ TV Display                                         (gestao, adm, marketing, tvaccess)
         │     │          └─ Configurações                                      (gestao, marketing)
@@ -130,6 +131,27 @@ Estados:
 - saúde dos dados no rodapé.
 
 Outros níveis não veem o item, e a rota redireciona para a Home.
+
+### Estoque e busca de imóveis (RF27, PRD §5.14) — proposta, 08/10
+**Painel** — Gestão → Dash ▸ Estoque (`/dashboard/estoque`):
+- manchete + 6 capítulos;
+- filtros (finalidade, situação, tipo, bairro, faixa de valor) na URL;
+- a "lista de trabalho" dos desatualizados é paginada e ordenada do mais antigo;
+- o código abre o imóvel no Imoview.
+
+**Busca** — Gestão (depois o corretor) → Ferramentas ▸ Buscar imóveis (`/imoveis/buscar`):
+1. Chips de filtro: finalidade, tipo, bairros, preço mín./máx., quartos/suítes/vagas mín., área mín., características. Ficam na URL, então a busca é compartilhável.
+2. Resultado em blocos:
+   - "Atendem a tudo" (N);
+   - "Quase lá" (N), cada cartão com a etiqueta do motivo (ex.: "8% acima do teto", "1 suíte a menos", "1,4 km do bairro");
+   - "O que mais restringe" quando há poucos resultados ("sem 4 suítes, seriam 12").
+3. Cartão: foto, tipo, bairro, condomínio, valor, quartos/suítes/vagas, área, situação, captador (quando houver), "atualizado há N dias" com selo de desatualizado acima de 45 d, código.
+
+**Estados:**
+- carregando;
+- sem resultado exato (mostra "quase lá" e o critério que mais restringe);
+- nenhum resultado nem com margem (sugere tirar o filtro mais restritivo);
+- estoque desatualizado há mais de 1 dia (aviso + "Atualizar agora" para a Gestão).
 
 ## 4. Estados de tela
 | Tela | Vazio | Carregando | Erro | Sem permissão |

@@ -96,7 +96,7 @@ Triggers: `trg_propostas_locacao_expira` (bloqueia avanço quando expirada), `tr
 **Permissões:** `authenticated` só tem SELECT (RLS por `pode_ver_proposta_venda`: adm/gestao tudo, corretor as que criou, proponente pelo e-mail do JWT); anon nada. Toda escrita passa pelos RPCs, que só a `service_role` executa: `criar_proposta_venda(p_criado_por, …)`, `confirmar_proposta_venda(p_proposta_id, p_email_chamador, …)`, `descartar_proposta_venda`. A Edge Function valida o JWT e o papel e passa a identidade como parâmetro (com a service role, `auth.uid()`/`auth.jwt()` no banco não são do usuário). Única escrita do navegador: `registrar_documento_venda(p_proposta_id)` (authenticated; só o proponente, uma vez, com o PDF já no Storage).
 
 ### 2.5b Formulários (RF23, PRD §5.7) — migration `20260928160000_formularios_captacao_feedback`
-**`captacoes`**: id uuid PK · criado_em · corretor (nome) · corretor_crm_id int (colaboradores_raw.id_corretor_crm, opcional) · proprietário (nome!, email!, telefone!, cpf!) · tipo_imovel, finalidade (`Venda, Locação, Ambos`), exclusividade bool, exclusividade_periodo (`30 dias, 90 dias, 180 dias, 1 ano`) · endereço (logradouro!, numero!, bairro!, cep, complemento_apto, bloco, quadra) · valores (valor_locacao, valor_venda, condominio, iptu_mensal) · área_interna!, area_terreno, quartos, suites, banheiros, salas, vagas (texto, aceitam "5 ou mais"), tipo_vaga · lazer text[] · observacoes · declaracao (texto exato exibido e assinado, vindo da função) · assinatura (data URL PNG, até 400 KB, check no banco) · assinado_em · origem_ip/origem_user_agent (auditoria). Sem status: só registro.
+**`captacoes`**: id uuid PK · criado_em · corretor (nome) · corretor_crm_id int (colaboradores_raw.id_corretor_crm, opcional) · proprietário (nome!, email!, telefone!, cpf!) · tipo_imovel, finalidade (`Venda, Locação, Ambos`), exclusividade bool, exclusividade_periodo (`30 dias, 90 dias, 180 dias, 1 ano`) · endereço (logradouro!, numero!, bairro!, cep, complemento_apto, bloco, quadra) · valores (valor_locacao, valor_venda, condominio, iptu_mensal) · área_interna!, area_terreno, quartos, suites, banheiros, salas, vagas (texto, aceitam "5 ou mais"), tipo_vaga · lazer text[] · observacoes · declaracao (texto exato exibido e assinado, vindo da função e montado pela finalidade desde 09/10) · assinatura (data URL PNG, até 400 KB, check no banco) · assinado_em · origem_ip/origem_user_agent (auditoria). Sem status: só registro.
 - **Escrita:** só pela Edge Function `captacao` (service_role), chamada pelo formulário público: valida (zod), limita tamanho da assinatura, honeypot anti-robô. `anon` não tem grant na tabela.
 - **Leitura:** gestao/adm todas; corretor as dele (`corretor_email`, copiado de `colaboradores_raw.email_oficial` na gravação, = e-mail do login).
 
@@ -234,6 +234,41 @@ Escrita só pela RPC `carregar_carteira_locacao` (service role: n8n `carteira_lo
   - `vw_recebimentos_locacao_mensal` (pelo mês do pagamento);
   - `vw_proprietarios_locacao` (pelo percentual de cada locador).
 - `imoveis_locados` e `proprietarios_locacao` **não são usadas**. Achado: `proprietarios_locacao` tem grant total para `anon` (sem policy) → Fase 1.
+
+### 2.11 Estoque de imóveis (RF27, PRD §5.14) — **tabelas, carga e views APLICADAS em 09/10** (migration `20261009120000_estoque_imoveis`); `buscar_imoveis` ainda é proposta
+Escrita só pela RPC `carregar_estoque_imoveis` (service role). Leitura direta das tabelas: **só `is_gestao()`**. O corretor (futuro) nunca lê a tabela: só a RPC `buscar_imoveis`, que devolve as colunas liberadas.
+- **`imoveis_estoque`** (todo o cadastro, ~11 mil linhas; PK `(codigo, finalidade)`):
+  - finalidade, situação, tipo, destinação;
+  - bairro, cidade, uf, nome do condomínio;
+  - latitude, longitude (só no servidor);
+  - valor (null quando "Sob consulta"), valor/m², condomínio, IPTU;
+  - quartos, suítes, banheiros, vagas, área principal, área do lote;
+  - `caracteristicas text[]` (os booleanos verdadeiros: piscina, varanda gourmet, mobiliado…);
+  - título, descrição curta, `fotos_qtd`, `foto_principal_url`, `tem_video`;
+  - `exclusivo`, `placa`, `destaque`, `tem_proposta`, `tem_reserva`, `no_site`;
+  - `captador` (null até E4);
+  - datas: `cadastrado_em`, `alterado_em`, `validado_em`, `situacao_em`, `vago_desde`;
+  - `lido_em`.
+  - **Endereço (revisto em 09/10, para achar duplicados):** `logradouro`, `numero`, `complemento`, `bloco`, `cep` e `endereco_chave`. A chave é gerada (rua sem acento, abreviação ou pontuação + número + complemento só com dígitos). Só a Gestão lê; a RPC `buscar_imoveis` continua sem devolver esses campos.
+  - **Não guarda:** proprietário, anotações.
+- **`estoque_cargas`**: id, finalidade, `quantidade_api`, `quantidade_lida`, iniciada_em, terminada_em. Uma linha por carga, para conferir se veio tudo. Só a Gestão lê.
+- **Views** (security_invoker):
+  - `vw_estoque_imoveis`: só as situações negociáveis, com `atualizado_em = greatest(alterado_em, validado_em)`, `dias_sem_atualizar`, `desatualizado` (> 45), `dias_em_estoque`;
+  - `vw_estoque_captacoes_mensal`: captações por mês, finalidade e bairro;
+  - `vw_estoque_duplicados` (09/10): grupos de imóveis da mesma finalidade com o mesmo `endereco_chave`, com pelo menos 1 negociável. Traz o grau de certeza: **alta** quando tipo, área (±5%) e quartos batem; **revisar** quando só o endereço bate. Base da planilha para o time.
+- **RPC `carregar_estoque_imoveis(finalidade text, quantidade_api int, imoveis jsonb, publicados int[])`** (só service_role): recusa leitura incompleta (lidos ≠ `quantidade_api`), faz o upsert dos imóveis da finalidade (`'Aluguel'`/`'Venda'`, como vem da API), marca `no_site` pelos códigos publicados, guarda o `payload` (só campos simples, sem proprietários/anotações/descrição) e registra a carga em `estoque_cargas`. Auxiliares: `imoview_moeda`, `imoview_datahora`, `imoview_coordenada`, `endereco_tokens`, `endereco_chave`. Imóvel que sumiu da API fica com `lido_em` antigo e sai do estoque na view.
+- **RPC `buscar_imoveis(filtros jsonb, margens jsonb default null)`** (security definer):
+  - confere `papel_atual()` (hoje `gestao`);
+  - devolve `{exatos[], quase_la[], restricao}`:
+    - cada "quase lá" traz `motivo` em texto e o critério que falhou;
+    - margens padrão: preço 10%, área 10%, 1 quarto/suíte/vaga, 2 km.
+- **Índices:** `(finalidade, situacao)`, `bairro`, `valor`, `quartos`.
+
+### 2.12 Cadastros de locador (RF28, PRD §5.15) — **PROPOSTA, não aplicada**
+Escrita só pela Edge Function `cadastro-locador` (service role). Leitura direta: **só `is_adm_ou_gestao()`**. Anon não lê nem escreve.
+- **`cadastros_locador`**: `email` (locador), `locador jsonb` (nome, cpf, rg, nascimento, estado_civil, nacionalidade, profissao, celular, telefone, endereco completo), `conjuge jsonb` (nullable), `banco jsonb` (favorecido, cpf, banco, agencia, tipo_conta, numero_conta), `imovel jsonb` (endereco completo + administradora + telefone), `email_ok bool default false`, `created_at`.
+- **Sem CPF em coluna própria:** fica dentro do jsonb (mesmo padrão dos locadores da carteira); nada de dado pessoal em índice ou view.
+- **Edge Function `cadastro-locador`** (eventos `enviar`): valida obrigatórios + e-mail, insere, chama `notificar(['administrativo3@imovit.com.br'])` com o resumo e cópia ao locador, marca `email_ok`.
 
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
