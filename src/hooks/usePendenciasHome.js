@@ -47,10 +47,10 @@ async function pendenciasAdm() {
   return out
 }
 
-/** Pendências do Corretor: as propostas dele (a RLS já filtra) e os leads dele sem contato. */
+/** Pendências do Corretor: sem Propostas por enquanto (RF28, só gestão/adm); só os leads dele sem contato. */
 async function pendenciasCorretor(email, hoje) {
   const out = []
-  const propostas = PROPOSTAS_ATIVAS ? await dados(supabase.from('propostas_locacao').select('id, status, link_expira_em, updated_at')) : []
+  const propostas = []
   const abertas = propostas.filter((p) => !ENCERRADAS.includes(p.status))
   const correcoes = abertas.filter((p) => p.status === 'correcao_solicitada').length
   if (correcoes) out.push({ tom: 'ruim', n: correcoes, texto: plural(correcoes, 'locatário pediu correção na sua proposta', 'locatários pediram correção nas suas propostas'), to: '/admin/propostas', acao: 'Corrigir' })

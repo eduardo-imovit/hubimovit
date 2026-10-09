@@ -28,9 +28,7 @@ const TODOS_ATALHOS = {
     { to: '/configuracoes?aba=plantao', titulo: 'Plantão', descricao: 'Importar a escala do mês', icone: 'calendario' },
   ],
   corretor: [
-    { to: '/admin/propostas', titulo: 'Nova proposta', descricao: 'Locação: enviar o link ao locatário', icone: 'mais' },
-    { to: '/admin/vendas', titulo: 'Nova proposta de venda', descricao: 'Compra: enviar o link ao proponente', icone: 'mais' },
-    { to: '/admin/esteiras', titulo: 'Minhas propostas', descricao: 'Onde cada uma está', icone: 'documento' },
+    // Sem Propostas por enquanto (RF28, só gestão/adm; o corretor volta depois).
     { to: '/dashboard/comercial', titulo: 'Meus números', descricao: 'Leads, funil e visitas', icone: 'grafico' },
     { to: '/kanban', titulo: 'Meus atendimentos', descricao: 'Quadro por fase', icone: 'kanban' },
     { to: '/captacoes', titulo: 'Captações', descricao: 'Meu link e as captações', icone: 'pasta' },
@@ -68,6 +66,7 @@ const PAGINAS = [
   { titulo: 'Propostas de locação', to: '/admin/propostas', acesso: 'esteira', termos: 'proposta locacao aluguel nova locatario' },
   { titulo: 'Esteira de locação', to: '/admin/esteiras', acesso: 'esteira', termos: 'esteira documentos aprovar reprovar ajustes' },
   { titulo: 'Processos', to: '/admin/processos', acesso: 'esteira', termos: 'processos concluidos finalizar zip imoview' },
+  { titulo: 'Cadastros de locador', to: '/admin/cadastros-locador', acesso: 'esteira', termos: 'cadastro locador pessoa fisica formulario link' },
   { titulo: 'Configurações · Avisos e links', to: '/configuracoes?aba=avisos', acesso: 'configuracoes', termos: 'avisos links manuais conteudo home' },
   { titulo: 'Configurações · Banners', to: '/configuracoes?aba=banners', acesso: 'configuracoes', termos: 'banner carrossel imagem home' },
   { titulo: 'Configurações · Plantão', to: '/configuracoes?aba=plantao', acesso: 'configuracoes', termos: 'plantao escala pdf importar' },
