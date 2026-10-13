@@ -357,7 +357,7 @@ export default function CaptacaoPublica() {
         {etapa === 6 && (
           <>
             <div style={{ whiteSpace: 'pre-line', background: 'var(--gray-50, #fafafa)', padding: 'var(--space-4)', borderRadius: 'var(--radius-md)' }}>
-              {config.declaracao}
+              {config.declaracoes?.[form.finalidade] ?? config.declaracao}
             </div>
             <div className="field">
               <label>Assinatura do proprietário</label>

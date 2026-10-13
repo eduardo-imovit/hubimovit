@@ -72,10 +72,22 @@
 ### Trilha de campanha (`.km32`, `src/components/home/TrilhaKm32.jsx`) — 06/10
 - **Bloco:** fundo grafite, com o mesmo tratamento da manchete dos painéis; título em serif "Km N de 42"; rótulo pequeno em caixa alta (coral) com o nome da campanha.
 - **Trilha:** trilho cinza, preenchimento e ponto do realizado em **coral** (`--coral`), paradas como anéis no último dia de cada mês (mesma régua do tempo; o título da parada mostra a meta acumulada), e a chegada com bandeira quadriculada. O marcador **"hoje"** é uma linha tracejada clara com o rótulo "HOJE".
-- **Números:** 4 colunas (valor, negócios, ticket, ritmo); número grande em serif e legenda pequena. Ritmo negativo usa a cor de atenção, sempre com texto ("x pontos atrás do calendário").
+- **Números:** 4 colunas (valor, ticket, esperado até hoje, em proposta); número grande em serif e legenda pequena. No "esperado", o realizado fica em destaque na legenda e usa a cor de atenção quando está abaixo do esperado, sempre com texto.
 - **Abas:** pílula segmentada (Venda | Locação), com a ativa em coral.
 - **Acessibilidade:** a trilha tem `role="img"` com `aria-label` descrevendo o avanço em texto. A animação de entrada respeita `prefers-reduced-motion`. Números em pt-BR (vírgula decimal).
 - **Formatos:** venda em "R$ x,y MM"; locação em "R$ x,y mil"; ticket no mesmo formato da finalidade.
+
+### Busca de imóveis (RF27) — proposta, 08/10; maquete antes de codar
+- **Chips de filtro:** reaproveitar `.badge` + `.btn-ghost` (o chip ativo em coral, com "×" para remover); nada de componente de terceiros.
+- **Cartão de imóvel (`.imovel-card`, novo):** a única peça nova, montada com os tokens.
+  - foto principal 4:3 com `--radius-md`;
+  - título curto (tipo · bairro);
+  - valor em destaque (`--font-sans` 500);
+  - linha de atributos (quartos · suítes · vagas · m²);
+  - rodapé com código e "atualizado há N dias".
+- **Etiqueta de motivo** do "quase lá": `.badge badge-warning` com o texto exato (nunca só cor).
+- **Desatualizado:** `.badge badge-gray` "sem atualização há N dias" (+45 d).
+- **Painel:** os mesmos componentes do Adm locação (`.pg-capitulo`, `.pg-indice`, `.pg-hbarras`, `.pg-mesa--linha`, listas com "Ver os outros").
 
 ## 4. Padrões de tela
 - **Layout base:** `AppShell` = Navbar no topo (menu por nível) + conteúdo em container. Título de página com `.page-title`.

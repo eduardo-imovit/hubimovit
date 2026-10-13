@@ -27,20 +27,20 @@ export const PAPEIS_SOLICITAVEIS = ['corretor', 'adm', 'marketing', 'gestao']
 export const PAPEIS_ATRIBUIVEIS = ['gestao', 'adm', 'marketing', 'corretor', 'user', 'tvaccess']
 
 /**
- * Módulo de Propostas (locação, venda, esteira, processos): por enquanto só no
- * ambiente de teste (VITE_MODULO_PROPOSTAS=on, branch `teste` na Vercel). Em
- * produção os níveis abaixo ficam vazios, e somem menu, atalho, busca e rota.
- * O portal do cliente (/portal, /venda) continua acessível pelo link do e-mail.
+ * Módulo de Propostas (locação, venda, esteira, processos, cadastros de
+ * locador): em produção desde 09/10 (RF28), só gestão e adm. O corretor
+ * volta depois (decisão do Eduardo). O portal do cliente (/portal, /venda)
+ * continua acessível pelo link do e-mail.
  */
-export const PROPOSTAS_ATIVAS = import.meta.env.VITE_MODULO_PROPOSTAS === 'on'
-const soComPropostas = (papeis) => (PROPOSTAS_ATIVAS ? papeis : [])
+export const PROPOSTAS_ATIVAS = true
+const soComPropostas = (papeis) => papeis
 
 export const ACESSO = {
-  esteira: soComPropostas(['gestao', 'adm', 'corretor']), // Propostas / Esteira / Processos (corretor: só as dele)
+  esteira: soComPropostas(['gestao', 'adm']), // Propostas / Esteira / Processos / Cadastros locador
   esteiraDecidir: soComPropostas(['gestao', 'adm']), // aprovar, descartar, decidir documentos, solicitar ajustes, finalizar
-  vendas: soComPropostas(['gestao', 'adm', 'corretor']), // Propostas de venda (corretor: só as dele)
+  vendas: soComPropostas(['gestao', 'adm']), // Propostas de venda
   vendasDecidir: soComPropostas(['gestao', 'adm']), // descartar proposta de venda
-  propostas: soComPropostas(['gestao', 'adm', 'corretor']), // menu Propostas (locação ou venda)
+  propostas: soComPropostas(['gestao', 'adm']), // menu Propostas (locação ou venda)
   formularios: ['gestao', 'adm', 'corretor'], // Ferramentas: Captações e Feedback de visita (corretor: os dele)
   kanban: ['gestao', 'adm', 'corretor'], // corretor: só os atendimentos e atividades dele (RLS)
   dash: ['gestao', 'marketing'], // Painel da Gestão (pessoas da equipe) e Comercial com todos os corretores

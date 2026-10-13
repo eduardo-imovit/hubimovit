@@ -8,8 +8,8 @@ const SLUG = 'km32-4tri-2026'
 const KM_INICIO = 32
 const KM_FIM = 42
 const ABAS = [
-  { chave: 'Venda', rotulo: 'Venda', unidade: 'vendas' },
-  { chave: 'Aluguel', rotulo: 'Locação', unidade: 'locações' },
+  { chave: 'Venda', rotulo: 'Venda' },
+  { chave: 'Aluguel', rotulo: 'Locação' },
 ]
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
 
@@ -85,15 +85,13 @@ export function TrilhaKm32() {
   const f = dados?.finalidades?.[aba]
   const progresso = f ? Math.min(1, f.valor / f.meta_valor) : 0
   const tempo = dados ? fracaoAte(dados.inicio, dados.fim, dataLocal(dados.hoje)) : 0
-  const diferenca = progresso - tempo
   const paradas = dados ? paradasDa(dados.inicio, dados.fim) : []
   const abaAtual = ABAS.find((a) => a.chave === aba)
-  const ritmo = Math.abs(diferenca) < 0.01
-    ? 'no ritmo do calendário'
-    : (() => {
-        const pontos = Math.round(Math.abs(diferenca * 100))
-        return `${pontos} ${pontos === 1 ? 'ponto' : 'pontos'} ${diferenca > 0 ? 'à frente' : 'atrás'} do calendário`
-      })()
+  // Esperado até hoje: meta total ÷ dias da campanha × dias já passados (= meta × fração do calendário)
+  const esperado = f ? f.meta_valor * tempo : 0
+  const diferenca = f ? f.valor - esperado : 0
+  const noRitmo = f ? Math.abs(diferenca) < f.meta_valor * 0.01 : true
+  const hojeCurto = dados ? dataLocal(dados.hoje).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''
 
   const leitura = dados?.ultima_leitura ? new Date(dados.ultima_leitura) : null
   const atrasado = leitura && (dataLocal(dados.hoje) - new Date(leitura.getFullYear(), leitura.getMonth(), leitura.getDate())) / DIA_MS > 1
@@ -142,24 +140,31 @@ export function TrilhaKm32() {
             <span className="km32-l">de {moeda(aba, f.meta_valor)} · {pctTexto(progresso)}</span>
           </div>
           <div>
-            <span className="km32-n">{f.negocios} <small>de {f.meta_negocios}</small></span>
-            <span className="km32-l">{abaAtual.unidade}</span>
-          </div>
-          <div>
             <span className="km32-n">{moeda(aba, f.ticket)}</span>
             <span className="km32-l">ticket médio</span>
           </div>
           <div>
-            <span className={`km32-n ${diferenca < -0.01 ? 'is-atras' : ''}`}>{diferenca > 0 ? '+' : ''}{Math.round(diferenca * 100)} pts</span>
-            <span className="km32-l">{ritmo}</span>
+            <span className="km32-n">{moeda(aba, esperado)}</span>
+            <span className="km32-l"
+              title={noRitmo ? 'No ritmo do esperado' : `${moeda(aba, Math.abs(diferenca))} ${diferenca > 0 ? 'acima' : 'abaixo'} do esperado`}>
+              esperado até {hojeCurto} · estamos com <strong className={!noRitmo && diferenca < 0 ? 'is-atras' : ''}>{moeda(aba, f.valor)}</strong>
+            </span>
           </div>
+          {f.em_proposta != null && (
+            <div>
+              <span className="km32-n">{moeda(aba, f.em_proposta)}</span>
+              <span className="km32-l" title="Propostas em análise no CRM, com interação nos últimos 30 dias">
+                em proposta · {f.propostas} {f.propostas === 1 ? 'ativa' : 'ativas'} (30 dias)
+              </span>
+            </div>
+          )}
         </div>
       )}
 
       {dados && (
         <p className="km32-rodape">
           {f && f.negocios === 0 && `A largada foi dada em ${inicioTexto}. Nenhum negócio realizado ainda. `}
-          {f && f.sem_valor > 0 && `${f.sem_valor} ${f.sem_valor === 1 ? 'negócio' : 'negócios'} sem valor no CRM (contam no volume, fora do valor e do ticket). `}
+          {f && f.sem_valor > 0 && `${f.sem_valor} ${f.sem_valor === 1 ? 'negócio' : 'negócios'} sem valor no CRM (fora do valor e do ticket). `}
           Negócios realizados no CRM desde {inicioTexto}
           {leitura && ` · atualizado em ${leitura.toLocaleDateString('pt-BR')} às ${leitura.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
           {atrasado && <strong className="km32-atraso"> · dados do CRM atrasados</strong>}

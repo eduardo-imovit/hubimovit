@@ -1,5 +1,39 @@
 # Handoff — Hub Imovit
 
+## ▶ 2026-10-13 — Trilha Km 32 com meta MENSAL (temporário, para a reunião)
+
+**Objetivo:** pedido do Eduardo: mostrar na Home a meta de outubro em vez da do trimestre, só para a reunião. Depois volta ao trimestral.
+
+### Feito
+- **Banco (Imovit Database `vlsrmtryzwddqkwqugfr`), sem deploy:** campanha `km32-4tri-2026` (id 1) alterada direto nas tabelas. Meta **proporcional aos dias** (opção escolhida pelo Eduardo): outubro = 26 dos 87 dias da campanha = 29,9%. Início mantido em 06/10.
+  | | Antes (trimestral) | Agora (outubro) |
+  |---|---|---|
+  | `campanhas.nome` | Km 32 · Campanha 4º Tri 2026 | Meta de outubro · Km 32 |
+  | `campanhas.fim` | 2026-12-31 | 2026-10-31 |
+  | Venda | R$ 28.000.000 · 14 negócios | R$ 8.367.816 · 4 negócios |
+  | Aluguel | R$ 160.000 · 18 negócios | R$ 47.816 · 5 negócios |
+- **Código (commit `1355810`, em produção pela Vercel):** em `TrilhaKm32.jsx`, o quadro de ritmo trocou "+X pts" pela diferença **em reais** entre o realizado e o esperado até hoje (meta × fração do calendário): "+R$ 1,3 MM · acima do esperado até hoje" / "−R$ 1,2 mil · abaixo…" (vermelho). Diferença menor que 1% da meta = "no ritmo do esperado até hoje". O esperado aparece no `title` do texto.
+- A contagem continua igual: só negócios com interação "NEGÓCIO REALIZADO" dentro do período (06/10–31/10).
+
+### Estado atual
+- Conferido: tabelas relidas depois do update; build ok; deploy de produção da Vercel com sucesso. **A tela não foi aberta em produção** (o Eduardo vai conferir). `campanha_resumo` não roda pelo SQL do conector (exige usuário logado).
+- Números em 13/10: Venda 1 negócio (atendimento 6008, 12/10, R$ 3.915.000); Aluguel 1 negócio (6294, 08/10, R$ 13.500).
+
+### Pendências
+- [ ] **"Tira o 1 de vendas"** — sem resposta: (a) esconder o quadro "1 de 4 vendas" ou (b) tirar o negócio 6008 da conta?
+- [ ] **Voltar ao trimestral depois da reunião:**
+  ```sql
+  begin;
+  update campanhas set nome = 'Km 32 · Campanha 4º Tri 2026', fim = date '2026-12-31' where slug = 'km32-4tri-2026';
+  update campanha_metas set meta_valor = 28000000, meta_negocios = 14 where campanha_id = 1 and finalidade = 'Venda';
+  update campanha_metas set meta_valor = 160000,   meta_negocios = 18 where campanha_id = 1 and finalidade = 'Aluguel';
+  commit;
+  ```
+- [ ] Decidir se o ritmo em reais fica de vez ou volta para pontos (reverter `1355810`) junto com o trimestral.
+- [ ] PRD §5.9 ainda descreve o ritmo em pontos: atualizar se o valor em reais ficar.
+
+---
+
 ## ▶ Sprint 2026-09-24 — ENCERRADO: Home por nível (Fase 8, RF20)
 
 **Objetivo:** Home simples de navegar, diferente por nível, que leva cada pessoa ao próprio trabalho. Encerrado pelo Eduardo em 24/09.

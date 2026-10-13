@@ -21,10 +21,12 @@ import PropostasInicio from './pages/PropostasInicio'
 import Captacoes from './pages/admin/Captacoes'
 import FeedbackVisita from './pages/FeedbackVisita'
 import CaptacaoPublica from './pages/publico/CaptacaoPublica'
+import CadastroLocador from './pages/publico/CadastroLocador'
 import ApresentacaoImovit from './pages/publico/ApresentacaoImovit'
 import MateriaisClientes from './pages/MateriaisClientes'
 import Esteiras from './pages/admin/Esteiras'
 import Processos from './pages/admin/Processos'
+import CadastrosLocador from './pages/admin/CadastrosLocador'
 import PortalLogin from './pages/portal/PortalLogin'
 import PortalStatus from './pages/portal/PortalStatus'
 import PortalVendaLogin from './pages/portal/PortalVendaLogin'
@@ -67,6 +69,7 @@ export default function App() {
         <Route path="/admin/vendas/processos" element={<ProtectedRoute papeis={ACESSO.vendas}><Vendas key="processos" modo="processos" /></ProtectedRoute>} />
         <Route path="/admin/esteiras" element={<ProtectedRoute papeis={ACESSO.esteira}><Esteiras /></ProtectedRoute>} />
         <Route path="/admin/processos" element={<ProtectedRoute papeis={ACESSO.esteira}><Processos /></ProtectedRoute>} />
+        <Route path="/admin/cadastros-locador" element={<ProtectedRoute papeis={ACESSO.esteira}><CadastrosLocador /></ProtectedRoute>} />
         <Route path="/captacoes" element={<ProtectedRoute papeis={ACESSO.formularios}><Captacoes /></ProtectedRoute>} />
         <Route path="/feedback-visita" element={<ProtectedRoute papeis={ACESSO.formularios}><FeedbackVisita /></ProtectedRoute>} />
         <Route path="/materiais" element={<ProtectedRoute papeis={ACESSO.formularios}><MateriaisClientes /></ProtectedRoute>} />
@@ -74,6 +77,8 @@ export default function App() {
         {/* público (proprietário, sem login): link fixo de captação do corretor (código aleatório) */}
         <Route path="/captacao" element={<CaptacaoPublica />} />
         <Route path="/captacao/:token" element={<CaptacaoPublica />} />
+        {/* público (locador, sem login): cadastro de locador PF, link fixo */}
+        <Route path="/cadastro-locador" element={<CadastroLocador />} />
         {/* público (leads): Apresentação Imovit, personalizada pelo código do corretor */}
         <Route path="/apresentacao" element={<ApresentacaoImovit />} />
         <Route path="/apresentacao/:token" element={<ApresentacaoImovit />} />

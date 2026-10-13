@@ -29,7 +29,7 @@ export default function Propostas() {
   const { propostas, carregando, erro, recarregar } = usePropostasLocacao()
   const { perfil } = usePerfil()
   const corretores = useCorretores()
-  // Corretor cria e acompanha as dele (o banco já filtra); descartar é da Admin/Gestão.
+  // Só gestão/adm aqui (RF28); o corretor volta depois. Descartar é da Admin/Gestão.
   const podeDescartar = pode(perfil, 'esteiraDecidir')
   const [mostrarForm, setMostrarForm] = useState(false)
   const [editando, setEditando] = useState(null)

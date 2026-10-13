@@ -9,7 +9,8 @@
 // corretor por e-mail. Só registro: o corretor é o responsável pelo processo.
 //
 // Eventos:
-//   formulario -- nome do corretor do token e o texto oficial da declaração,
+//   formulario -- nome do corretor do token e o texto oficial da declaração
+//                 por finalidade (Venda, Locação, Ambos),
 //                 que a página exibe tal como será gravado (sem lista de nomes)
 //   enviar     -- grava a captação; honeypot `site` precisa vir vazio
 //   consultor  -- nome e WhatsApp do corretor do token, para o cartão da
@@ -36,16 +37,36 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-// Texto do Tally "Acompanhamento personalizado" (28/09). Mudou aqui, muda o
-// que o proprietário lê e o que fica gravado nas próximas captações.
-export const DECLARACAO = [
+// Texto do Tally "Acompanhamento personalizado" (28/09), montado conforme a
+// finalidade (09/10): o proprietário só lê as condições do que está ofertando.
+// Mudou aqui, muda o que o proprietário lê e o que fica gravado nas próximas
+// captações (as antigas guardam o texto que assinaram).
+const ABERTURA = [
   'Ao assinar, você autoriza nossa equipe de especialistas a iniciar a estratégia de posicionamento e divulgação do seu imóvel em nossa vitrine exclusiva.',
   'Autorizo a Imovit a representar meu imóvel, aplicando os mais altos padrões de marketing e atendimento para garantir uma transação segura e sofisticada.',
   'Ao autorizar a intermediação da Imovit, o proprietário declara ciência e concordância com as seguintes condições comerciais:',
+]
+const CONDICOES_LOCACAO = [
   '- Intermediação de Locação: para a consolidação do novo contrato de aluguel, os honorários de intermediação correspondem ao valor integral do primeiro aluguel.',
   '- Gestão Patrimonial e Administração: pelo acompanhamento contínuo, suporte jurídico e gestão do contrato, será aplicada uma taxa de administração de 8% (oito por cento) sobre o valor bruto mensal do aluguel.',
-  'Em caso de conclusão da venda por intermediação da Imovit, será devida a título de honorários a comissão de 6% (seis por cento) sobre o valor total da transação.',
-].join('\n')
+  '- Vistoria do Imóvel: o custo da vistoria do imóvel é de responsabilidade do locatário.',
+]
+const CONDICOES_VENDA = [
+  '- Intermediação de Venda: em caso de conclusão da venda por intermediação da Imovit, será devida a título de honorários a comissão de 6% (seis por cento) sobre o valor total da transação.',
+]
+
+const FINALIDADES = ['Venda', 'Locação', 'Ambos'] as const
+type Finalidade = (typeof FINALIDADES)[number]
+
+export function declaracaoPara(finalidade: Finalidade) {
+  return [
+    ...ABERTURA,
+    ...(finalidade !== 'Venda' ? CONDICOES_LOCACAO : []),
+    ...(finalidade !== 'Locação' ? CONDICOES_VENDA : []),
+  ].join('\n')
+}
+
+const DECLARACOES = Object.fromEntries(FINALIDADES.map((f) => [f, declaracaoPara(f)]))
 
 const texto = (max = 200) => z.string().trim().max(max)
 const opcional = (max = 200) => texto(max).optional().transform((v) => (v ? v : null))
@@ -62,7 +83,7 @@ const enviarSchema = z.object({
   proprietario_telefone: texto(40).min(8),
   proprietario_cpf: z.string().trim().regex(/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/, 'CPF inválido'),
   tipo_imovel: texto(60).min(1),
-  finalidade: z.enum(['Venda', 'Locação', 'Ambos']),
+  finalidade: z.enum(FINALIDADES),
   exclusividade: z.boolean(),
   exclusividade_periodo: z.enum(['30 dias', '90 dias', '180 dias', '1 ano']).optional().nullable(),
   logradouro: texto(200).min(2),
@@ -181,7 +202,8 @@ Deno.serve(async (req) => {
     if (!corretor) return json({ erro: 'Este link de captação não é válido. Peça um novo ao seu corretor.' }, 404)
 
     if (evento.evento === 'formulario') {
-      return json({ declaracao: DECLARACAO, corretor: corretor.nome_completo })
+      // `declaracao` (texto de Ambos) fica para a página antiga em cache
+      return json({ declaracoes: DECLARACOES, declaracao: DECLARACOES.Ambos, corretor: corretor.nome_completo })
     }
 
     if (evento.evento === 'consultor') {
@@ -200,7 +222,7 @@ Deno.serve(async (req) => {
       corretor: corretor.nome_completo,
       corretor_crm_id: corretor.id_corretor_crm,
       corretor_email: corretor.email_oficial,
-      declaracao: DECLARACAO,
+      declaracao: declaracaoPara(evento.finalidade),
       origem_ip: (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || null,
       origem_user_agent: (req.headers.get('user-agent') ?? '').slice(0, 300) || null,
     }

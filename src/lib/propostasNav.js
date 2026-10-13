@@ -13,6 +13,7 @@ export const AREAS_PROPOSTAS = [
       { to: '/admin/propostas', label: 'Propostas' },
       { to: '/admin/esteiras', label: 'Esteira' },
       { to: '/admin/processos', label: 'Processos' },
+      { to: '/admin/cadastros-locador', label: 'Cadastros locador' },
     ],
   },
   {

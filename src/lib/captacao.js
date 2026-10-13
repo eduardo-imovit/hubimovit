@@ -16,8 +16,11 @@ export const VAGAS = ['0', '1', '2', '3', '4 ou mais']
 export const TIPOS_VAGA = ['Coberta', 'Livre', 'Ambas']
 export const LAZER = ['Academia', 'Churrasqueira', 'Hidromassagem', 'Home cinema', 'Piscina', 'Playground', 'Quadra poliesportiva', 'Quadra de tênis', 'Sala de massagem', 'Salão de festas', 'Salão de jogos', 'Sauna', 'Espaço gourmet', 'Garage band', 'Quadra de squash', 'Quadra de beach tênis']
 
-export const carregarFormularioCaptacao = (token) => chamarFuncao('captacao', { evento: 'formulario', token })
-export const enviarCaptacao = (dados) => chamarFuncao('captacao', { evento: 'enviar', ...dados })
+// Em dev dá para apontar para uma cópia da função (ex.: captacao-v2) sem tocar produção.
+const FUNCAO_CAPTACAO = import.meta.env.VITE_FUNCAO_CAPTACAO || 'captacao'
+
+export const carregarFormularioCaptacao = (token) => chamarFuncao(FUNCAO_CAPTACAO, { evento: 'formulario', token })
+export const enviarCaptacao = (dados) => chamarFuncao(FUNCAO_CAPTACAO, { evento: 'enviar', ...dados })
 
 /** Link fixo de captação de um corretor (código aleatório de captacao_links). */
 export const linkCaptacao = (token) => `${window.location.origin}/captacao/${token}`
