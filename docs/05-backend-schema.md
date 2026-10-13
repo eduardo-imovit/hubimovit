@@ -190,7 +190,7 @@ Na primeira leitura, um código que já está além do Pré-atendimento vira `pr
   - anon: 0.
 - ~~Achado: "Sem nível" lia os dados comerciais~~ fechado em 01/10 (2.6b).
 
-### 2.8 Campanhas (RF25, PRD §5.9) — **PROPOSTA, não aplicada**
+### 2.8 Campanhas (RF25, PRD §5.9) — aplicada (06/10; `em_proposta` em 13/10)
 **`campanhas`**: `id` bigint identity PK, `slug` text unique (ex.: `km32-4tri-2026`), `nome` text!, `inicio` date!, `fim` date! (check `fim >= inicio`), `ativa` bool default true, `criado_em` timestamptz.
 
 **`campanha_metas`**: `campanha_id` → campanhas (cascade), `finalidade` text check (`Venda`, `Aluguel`), `meta_valor` numeric!, `meta_negocios` int!, PK (`campanha_id`, `finalidade`).
@@ -202,7 +202,7 @@ Carga inicial: Km 32, de 06/10 a 31/12/2026. Venda: R$ 28.000.000 / 14. Aluguel:
 - **valor** = soma de `payload.imoveisnegocio[].valornegocio`;
 - 1 negócio por código de atendimento: vale o registro mais recente (por exemplo, reaberto e fechado de novo).
 
-**Função `campanha_resumo(p_slug text)`** (security definer, só para quem `pode_ler_comercial()`): devolve o período e, por finalidade, `valor`, `negocios`, `ticket`, `sem_valor`, `meta_valor` e `meta_negocios`, além de `ultima_leitura` (`crm_leituras`). Devolve só agregados, nunca linhas: assim o corretor vê o total da imobiliária (C3) sem ler atendimentos de outros.
+**Função `campanha_resumo(p_slug text)`** (security definer, só para quem `pode_ler_comercial()`): devolve o período e, por finalidade, `valor`, `negocios`, `ticket`, `sem_valor`, `meta_valor`, `meta_negocios`, `em_proposta` e `propostas`, além de `ultima_leitura` (`crm_leituras`). `em_proposta` (migration `20261013120000`) soma `imoveisproposta[].negociacoes[]` (a mais recente de cada imóvel, situação "Em análise", `valorproposta`) dos atendimentos em atendimento com `fase_crm = 5` (Proposta) e `datahoraultimainteracao` nos últimos 30 dias (migration `20261013130000`; a 1ª versão usava 15). A tabela `crm_funil_etapas` citada acima não existe no banco (conferido em 13/10): o 5 está fixo na função. Devolve só agregados, nunca linhas: assim o corretor vê o total da imobiliária (C3) sem ler atendimentos de outros.
 
 **RLS:** `campanhas` e `campanha_metas` com leitura por `pode_ler_comercial()` e escrita só pela Gestão.
 

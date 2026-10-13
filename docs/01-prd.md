@@ -212,10 +212,12 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 | Número | Fórmula |
 |---|---|
 | Valor realizado | soma do valor dos negócios da campanha |
-| Volume de negócios | quantidade de negócios da campanha |
-| Ticket médio | valor realizado ÷ volume (“—” com 0 negócios) |
+| Ticket médio | valor realizado ÷ volume de negócios (“—” com 0 negócios) |
 | Avanço na trilha | valor realizado ÷ meta de valor, convertido em Km (32 + 10 × fração), limitado ao Km 42 |
-| Ritmo | avanço da meta − fração do calendário já passada, em pontos ("5 pontos à frente/atrás do calendário") |
+| Esperado até hoje | meta total ÷ dias da campanha × dias já passados: "esperado até 13/10 R$ X · estamos com R$ Y" (Y em vermelho se abaixo) |
+| Em proposta | soma das propostas "verdes" do CRM: atendimento em atendimento na fase Proposta, com interação nos últimos 30 dias, contando hoje (15 na 1ª versão; 30 por decisão do Eduardo em 13/10); em cada imóvel vale a negociação mais recente, e só conta se estiver "Em análise" |
+
+**Ajuste de 13/10 (Eduardo):** volta a meta total do trimestre (a meta mensal de outubro foi só para a reunião), sai o quadro "1 de 14 vendas" (o volume continua no banco), o ritmo em pontos virou o quadro "esperado até hoje" e entrou o quadro "em proposta".
 
 Também mostra as paradas no último dia de cada mês (meta acumulada proporcional aos dias) e o marcador "hoje".
 
@@ -241,9 +243,9 @@ Também mostra as paradas no último dia de cada mês (meta acumulada proporcion
 **Requisitos.**
 - RF25.1: a trilha lê os negócios da campanha do banco; nenhum número fica no código.
 - RF25.2: metas, período e data de corte vêm da tabela da campanha.
-- RF25.3: valor realizado, volume e ticket médio por finalidade, com a mesma regra de contagem em todos.
+- RF25.3: valor realizado, volume e ticket médio por finalidade, com a mesma regra de contagem em todos. Na tela: valor e % da meta, ticket, esperado até hoje e em proposta (13/10).
 - RF25.4: cada número mostra de onde veio (subtexto) e a data da última informação do CRM. Se a fonte estiver atrasada mais de 1 dia, aparece um aviso.
-- RF25.5: se um negócio não tiver valor no CRM, ele conta no volume, fica fora do valor e do ticket, e a tela informa quantos estão nessa situação ("2 negócios sem valor no CRM").
+- RF25.5: se um negócio não tiver valor no CRM, ele fica fora do valor e do ticket, e a tela informa quantos estão nessa situação ("2 negócios sem valor no CRM").
 - RF25.6: acessível: o avanço é dito em texto (não só pela posição do ponto), e a animação respeita `prefers-reduced-motion`.
 
 **Critérios de sucesso.**

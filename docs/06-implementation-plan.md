@@ -217,6 +217,7 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 **S2 — Tela**
 - [x] `TrilhaKm32.jsx` lê `campanha_resumo('km32-4tri-2026')`; sai a constante fictícia
 - [x] 4 números (valor, negócios, ticket, ritmo), rodapé com a regra e a atualização, e os estados do App Flow
+- [x] 13/10: meta total de volta no banco; quadros = valor/% da meta, ticket, esperado até hoje e em proposta (migrations `20261013120000_campanha_resumo_em_proposta` e `20261013130000_campanha_resumo_proposta_30_dias`, verde = interação em até 30 dias); sai o quadro de volume
 - [x] Bloco só para quem tem nível; "hoje" a partir de 06/10
 - **Pronto quando:** com dados reais, a tela mostra o mesmo que a consulta de conferência; build ok.
 
