@@ -85,15 +85,13 @@ export function TrilhaKm32() {
   const f = dados?.finalidades?.[aba]
   const progresso = f ? Math.min(1, f.valor / f.meta_valor) : 0
   const tempo = dados ? fracaoAte(dados.inicio, dados.fim, dataLocal(dados.hoje)) : 0
-  const diferenca = progresso - tempo
   const paradas = dados ? paradasDa(dados.inicio, dados.fim) : []
   const abaAtual = ABAS.find((a) => a.chave === aba)
-  const ritmo = Math.abs(diferenca) < 0.01
-    ? 'no ritmo do calendário'
-    : (() => {
-        const pontos = Math.round(Math.abs(diferenca * 100))
-        return `${pontos} ${pontos === 1 ? 'ponto' : 'pontos'} ${diferenca > 0 ? 'à frente' : 'atrás'} do calendário`
-      })()
+  // Ritmo em reais: realizado − o que a meta pedia até hoje (meta × fração do calendário)
+  const esperado = f ? f.meta_valor * tempo : 0
+  const diferenca = f ? f.valor - esperado : 0
+  const noRitmo = f ? Math.abs(diferenca) < f.meta_valor * 0.01 : true
+  const ritmo = noRitmo ? 'no ritmo do esperado até hoje' : `${diferenca > 0 ? 'acima' : 'abaixo'} do esperado até hoje`
 
   const leitura = dados?.ultima_leitura ? new Date(dados.ultima_leitura) : null
   const atrasado = leitura && (dataLocal(dados.hoje) - new Date(leitura.getFullYear(), leitura.getMonth(), leitura.getDate())) / DIA_MS > 1
@@ -150,8 +148,8 @@ export function TrilhaKm32() {
             <span className="km32-l">ticket médio</span>
           </div>
           <div>
-            <span className={`km32-n ${diferenca < -0.01 ? 'is-atras' : ''}`}>{diferenca > 0 ? '+' : ''}{Math.round(diferenca * 100)} pts</span>
-            <span className="km32-l">{ritmo}</span>
+            <span className={`km32-n ${!noRitmo && diferenca < 0 ? 'is-atras' : ''}`}>{noRitmo ? '' : diferenca > 0 ? '+' : '−'}{moeda(aba, Math.abs(diferenca))}</span>
+            <span className="km32-l" title={`Esperado até hoje: ${moeda(aba, esperado)}`}>{ritmo}</span>
           </div>
         </div>
       )}
