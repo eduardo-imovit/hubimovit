@@ -108,7 +108,7 @@ Configurações → aba → criar/editar/desativar item → aparece na Home e na
 - **Conteúdo por aba:**
   - "Km N de 42";
   - a trilha com as paradas Out/Nov/Dez, o marcador "hoje" e o ponto do realizado;
-  - 4 números (13/10): valor realizado de R$ meta (%), ticket médio, esperado até hoje × realizado, e valor em proposta (propostas em análise com interação nos últimos 30 dias).
+  - 4 números (13/10): valor realizado de R$ meta (%), ticket médio, próxima parada (quanto falta, em quantos dias e por dia), e valor em proposta (propostas em análise com interação nos últimos 30 dias).
 - **Rodapé:** "Negócios realizados no CRM desde 06/10/2026 · atualizado em dd/mm às hh:mm".
 - **Estados:**
   - **carregando:** a trilha aparece vazia, sem números (sem "pulo" de layout);

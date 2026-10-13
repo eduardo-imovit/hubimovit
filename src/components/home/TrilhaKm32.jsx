@@ -20,8 +20,8 @@ const dataLocal = (iso) => {
 }
 
 const fmtUm = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-/** Venda em milhões, locação em mil (é aluguel mensal). */
-const moeda = (finalidade, v) => (v == null ? '—' : finalidade === 'Venda' ? `R$ ${fmtUm(v / 1_000_000)} MM` : `R$ ${fmtUm(v / 1_000)} mil`)
+/** Venda em milhões (abaixo de R$ 1 MM, em mil); locação em mil (é aluguel mensal). */
+const moeda = (finalidade, v) => (v == null ? '—' : finalidade === 'Venda' && Math.abs(v) >= 1_000_000 ? `R$ ${fmtUm(v / 1_000_000)} MM` : `R$ ${fmtUm(v / 1_000)} mil`)
 const km = (fracao) => Math.round(KM_INICIO + (KM_FIM - KM_INICIO) * fracao)
 // `pct` é só para posições no CSS; `pctTexto` é para ler (vírgula decimal)
 const pct = (f) => `${(f * 100).toFixed(2)}%`
@@ -45,7 +45,8 @@ function paradasDa(inicio, fim) {
   const paradas = []
   for (let d = new Date(a.getFullYear(), a.getMonth(), 1); d <= b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
     const fimDoMes = new Date(d.getFullYear(), d.getMonth() + 1, 0)
-    paradas.push({ mes: MESES[d.getMonth()], fracao: fracaoAte(inicio, fim, fimDoMes < b ? fimDoMes : b) })
+    const data = fimDoMes < b ? fimDoMes : b
+    paradas.push({ mes: MESES[d.getMonth()], data, fracao: fracaoAte(inicio, fim, data) })
   }
   return paradas
 }
@@ -91,7 +92,13 @@ export function TrilhaKm32() {
   const esperado = f ? f.meta_valor * tempo : 0
   const diferenca = f ? f.valor - esperado : 0
   const noRitmo = f ? Math.abs(diferenca) < f.meta_valor * 0.01 : true
-  const hojeCurto = dados ? dataLocal(dados.hoje).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''
+  // Urgência: a próxima parada que o realizado ainda não alcançou, quanto falta e quanto por dia
+  const hojeData = dados ? dataLocal(dados.hoje) : null
+  const alvo = f ? paradas.find((p) => p.data >= hojeData && f.meta_valor * p.fracao > f.valor) : null
+  const alvoMeta = alvo ? f.meta_valor * alvo.fracao : 0
+  const falta = alvo ? alvoMeta - f.valor : 0
+  const diasAteAlvo = alvo ? Math.round((alvo.data - hojeData) / DIA_MS) + 1 : 0
+  const dataCurta = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 
   const leitura = dados?.ultima_leitura ? new Date(dados.ultima_leitura) : null
   const atrasado = leitura && (dataLocal(dados.hoje) - new Date(leitura.getFullYear(), leitura.getMonth(), leitura.getDate())) / DIA_MS > 1
@@ -143,12 +150,19 @@ export function TrilhaKm32() {
             <span className="km32-n">{moeda(aba, f.ticket)}</span>
             <span className="km32-l">ticket médio</span>
           </div>
-          <div>
-            <span className="km32-n">{moeda(aba, esperado)}</span>
-            <span className="km32-l"
-              title={noRitmo ? 'No ritmo do esperado' : `${moeda(aba, Math.abs(diferenca))} ${diferenca > 0 ? 'acima' : 'abaixo'} do esperado`}>
-              esperado até {hojeCurto} · estamos com <strong className={!noRitmo && diferenca < 0 ? 'is-atras' : ''}>{moeda(aba, f.valor)}</strong>
-            </span>
+          <div title={`Esperado até hoje: ${moeda(aba, esperado)}${noRitmo ? ' (no ritmo)' : ` · ${moeda(aba, Math.abs(diferenca))} ${diferenca > 0 ? 'acima' : 'abaixo'}`}`}>
+            {alvo ? (
+              <>
+                <span className={`km32-n ${!noRitmo && diferenca < 0 ? 'is-atras' : ''}`}>{moeda(aba, falta)}</span>
+                <span className="km32-l">faltam para a parada de {dataCurta(alvo.data)} ({moeda(aba, alvoMeta)})</span>
+                <span className="km32-l">{diasAteAlvo} {diasAteAlvo === 1 ? 'dia' : 'dias'} · {moeda(aba, falta / diasAteAlvo)} por dia</span>
+              </>
+            ) : (
+              <>
+                <span className="km32-n">Meta batida</span>
+                <span className="km32-l">{moeda(aba, f.valor)} de {moeda(aba, f.meta_valor)}</span>
+              </>
+            )}
           </div>
           {f.em_proposta != null && (
             <div>
