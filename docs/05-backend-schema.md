@@ -270,6 +270,54 @@ Escrita só pela Edge Function `cadastro-locador` (service role). Leitura direta
 - **Sem CPF em coluna própria:** fica dentro do jsonb (mesmo padrão dos locadores da carteira); nada de dado pessoal em índice ou view.
 - **Edge Function `cadastro-locador`** (eventos `enviar`): valida obrigatórios + e-mail, insere, chama `notificar(['administrativo3@imovit.com.br'])` com o resumo e cópia ao locador, marca `email_ok`.
 
+### 2.13 Distratos (RF29, PRD §5.16) — migration `20261014120000_distratos`, **APLICADA em 14/10**; Edge Function `distrato` v2 publicada; **só Gestão** desde `20261014130000_distratos_so_gestao` (policy "gestao le" e RPC com `is_gestao()`)
+A escrita é feita só pela Edge Function `distrato` (service role). A leitura direta fica restrita a `is_adm_ou_gestao()`. O anon não lê nem escreve: o locatário só acessa pelo token, via função.
+
+**Tabela `distratos`**
+- Identificação: `id` uuid, `origem` (`hub` | `planilha`), `token` text unique (aleatório, 48 hex; obrigatório na origem `hub`, nulo nas importadas) e `contrato_codigo` (= `contratos_locacao.codigo`).
+- `respostas_originais` jsonb: só na origem `planilha`, a linha da planilha como veio (os cadastros antigos, pedido de 14/10).
+- Retrato do contrato no momento da criação:
+  - `imovel_resumo`, `imovel_endereco`;
+  - `locatario_nome`, `locatario_email`, `locatario_telefone`;
+  - `contrato_inicio`, `contrato_fim`, `aluguel`.
+- Controle: `criado_por` uuid (perfis), `created_at`, `expira_em` (created_at + 15 dias) e `status` (`link_enviado` | `aviso_recebido` | `cancelado`). "Expirado" é calculado.
+- Ciência: `ciente_procedimento_em`.
+- Aviso:
+  - `aviso_em`: data e hora do servidor; é o aviso oficial;
+  - `data_prevista_saida` (date);
+  - `fim_aviso_previo` (aviso_em + 30 dias);
+  - `dentro_prazo` (bool);
+  - `contato_telefone`, `contato_email`.
+- Motivo: `motivo` (lista do PRD §5.16, check), `motivo_detalhe` (text), `motivo_com_quem` (`imovit` | `outra_imobiliaria` | `proprietario_direto`, null; obrigatório em "Alugou/Comprou outro imóvel") e `motivo_fator` (text, null).
+- Pesquisa:
+  - `nps` (smallint 0–10, null);
+  - `notas` (jsonb `{atendimento, manutencao, financeiro, comunicacao, estado_entrada}`, de 1 a 5);
+  - `alugaria_de_novo` (`sim` | `talvez` | `nao`);
+  - `comentario`.
+- E-mail e cancelamento: `email_ok` (bool), `cancelado_em`, `cancelado_por`.
+- Não guarda CPF.
+
+**RPC `contratos_para_distrato(busca text)`**
+- `security definer`. Exige `is_gestao()` (desde `20261014130000`); sem isso, devolve zero linhas.
+- Devolve código, imóvel, endereço, locatário (nome, e-mail, telefone), início, fim e aluguel.
+- Só contratos com `situacao = 'Ativo'`, até 20 linhas.
+
+**Edge Function `distrato`**, eventos:
+- `criar` (JWT gestão): copia o contrato e gera o token.
+- `abrir` (token): devolve os dados do passo 1 ou o comprovante.
+- `enviar` (token): valida, grava, manda e-mail **só** a `administrativo@` e o comprovante ao locatário, e marca `email_ok`. O proprietário não recebe nada.
+- `cancelar` (JWT).
+- `reenviar_email` (JWT, opcional).
+
+### 2.14 Central de Cadastros (RF30, PRD §5.17) — **PROPOSTA, não aplicada**
+Generaliza a §2.12: em vez de 1 tabela por formulário, **1 tabela `cadastros`** com `tipo` e jsonbs de papel genérico. Escrita só pela Edge Function `cadastro-locador` (service role, com o parâmetro `tipo`). Leitura direta: **só `is_adm_ou_gestao()`**. Anon não lê nem escreve.
+
+- **`cadastros`**: `tipo` (check: `locador-pf`, `locador-pj`, `locatario-pf`, `locatario-pj`, `fiador-pf`, `fiadora-pj`), `email` (quem preenche), `pessoa jsonb` (PF: os 14 campos do locador; PJ: razão, cnpj, inscrições, contato + endereço), `acompanhante jsonb` nullable (cônjuge no PF; sócio administrador no PJ; representante na fiadora), `financeiro jsonb` nullable (banco no locador; empresa + salário + referências no fiador), `imovel jsonb` nullable (só locador), `destino text` (e-mail da equipe que recebeu), `origem` (`hub` | `planilha`, default `hub`), `email_ok bool default false`, `created_at`.
+- **Sem CPF/CNPJ em coluna própria:** ficam dentro dos jsonbs (mesmo padrão da §2.12); nada de dado pessoal em índice ou view.
+- **Migração da `cadastros_locador`:** as linhas existentes viram `tipo = 'locador-pf'` (`locador→pessoa`, `conjuge→acompanhante`, `banco→financeiro`, `destino = 'administrativo3@imovit.com.br'`, `origem = 'hub'`). A tabela antiga **não é apagada nem recebe escrita nova** (a função passa a gravar só em `cadastros`).
+- **Importe do histórico:** script local (`scripts/importar_cadastros_planilha.mjs`) lê os CSVs exportados das planilhas e insere com `origem = 'planilha'` e `email_ok = true` (e-mail já foi pelo Google; não reenvia). O mapa de colunas fica no topo do script, ajustável por planilha. Roda com a service_role local do Eduardo; nada de chave no repo.
+- **Edge Function `cadastro-locador`** (evento `enviar` + `tipo`): valida por tipo (zod discriminated union; sem `tipo` = locador-pf, compatível com o front já publicado), insere em `cadastros`, chama `notificar([destino_do_tipo, email_de_quem_preencheu])` com o resumo e o link de `/admin/cadastros`, marca `email_ok`. Destinos: locador-pf/pj → `administrativo3@`; fiador-pf → `administrativo@`; fiadora-pj → `pamela@`; locatários → a confirmar.
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 

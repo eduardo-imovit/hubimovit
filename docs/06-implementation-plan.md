@@ -293,6 +293,32 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 - **S4 Produção Propostas:** `acessos.js` (gestão+adm, sem gate) + lista `/admin/cadastros-locador` + item no menu Propostas. Push `main`; conferir como gestão e como corretor.
 - **Depois:** upload de documentos no Hub (RF28.5); corretor nas Propostas; token por corretor/imóvel se o link fixo gerar ruído.
 
+## Fase 20 — Distratos (RF29, PRD §5.16) — **NO AR em 14/10** (commit 4c64908, só Gestão); falta importar as planilhas (S5)
+- **S0 Aprovação:** P1–P3 respondidas e "pode construir" em 14/10; só Gestão (D8).
+- **S1 Banco:** migration §2.13 (tabela `distratos` + RLS + RPC `contratos_para_distrato`). Testar em transação desfeita: gestão e adm veem; corretor e anon recebem zero.
+- **S2 Função:** `distrato` (criar/abrir/enviar/cancelar), com os e-mails pelo Brevo (`notificar` da `cadastro-locador`). Deploy pelo MCP.
+- **S3 Link público:** `/distrato/<token>`, com 3 passos + comprovante, no padrão `CadastroLocador`/`CaptacaoPublica`. Testar no localhost e no celular (375 px).
+- **S4 Lista ADM:**
+  - `/admin/distratos` com novo distrato, lista, detalhe e resumo de motivos/NPS;
+  - item no menu Propostas (`acessos.js`);
+  - push `main` + `main:teste`;
+  - conferir como gestão e como corretor.
+- **S5 Importar o histórico:** as 2 planilhas do Google (respostas antigas) → `distratos` com `origem = planilha`. Bloqueado: o conector do Drive não acha os arquivos (outra conta); precisa de compartilhamento ou CSV.
+- **Pronto quando:** os critérios do PRD §5.16 forem atendidos, com um distrato de teste ponta a ponta e os 2 e-mails recebidos. Apagar o teste depois.
+- **Depois:**
+  - etapas após o aviso (vistoria, aprovação do proprietário, chaves, documentos);
+  - motivos e NPS no capítulo 4 do Adm locação;
+  - upload de contas e CND.
+
+## Fase 21 — Central de Cadastros (RF30, PRD §5.17) — aprovada (14/10, pode construir)
+- **S1 Banco:** migration §2.14 (tabela `cadastros` + RLS + migração das linhas de `cadastros_locador`), testada em transação desfeita. RLS: gestão/adm leem; anon zero.
+- **S2 Função:** estender `cadastro-locador` (parâmetro `tipo` + destinos por tipo + validação PJ), mantendo compat com o payload sem `tipo`. Deploy pelo MCP.
+- **S3 Front (piloto Locador PJ):** `src/lib/cadastros.js` (config dos tipos + links) + blocos compartilhados + rota dinâmica `/cadastro/:tipo` + `/cadastros` (seletor) + redirect de `/cadastro-locador`; lista `/admin/cadastros` com filtro (redirect da antiga); Ferramentas ▸ Cadastros com os links. Só `locador-pf` e `locador-pj` habilitados.
+- **S4 Histórico:** `scripts/importar_cadastros_planilha.mjs` (CSV → `cadastros`, `origem = 'planilha'`, sem e-mail). Eduardo exporta as 2 planilhas em CSV e roda local; conferir contagem × linhas na lista.
+- **S5 Publicar:** push `main` + `main:teste`; teste ponta a ponta de um Locador PJ (tabela, lista, 2 e-mails); conferir como corretor (só links, sem lista).
+- **Pronto quando:** os critérios do PRD §5.17 forem atendidos.
+- **Depois:** habilitar fiador-pf → fiadora-pj → locatários na mesma estrutura (S2/S3 por tipo, sem migração nova); upload de documentos (RF28.5).
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).
@@ -321,3 +347,5 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 | 2026-10-07 | Fase 17 aprovada | Eduardo: receita = só administração; menu Dash ▸ Adm locação; "Moderação" = em ativação; inadimplência pela regra do Imoview + capítulo "Atenção" para cobranças vencidas fora da régua |
 | 2026-10-07 | Fase 17 (carteira de locação) | Pedido do Eduardo: visão gerencial dos contratos ativos para Gestão e ADM, fonte Imoview; começa por descoberta porque o endpoint de contratos não está confirmado |
 | 2026-10-09 | Fase 19 (cadastro locador PF) | Eduardo: Google Form vira rota pública de link fixo (grava + e-mail a administrativo3); Propostas em produção só gestão/adm; documentos seguem por e-mail |
+| 2026-10-14 | Fase 20 (distratos) | Pedido do Eduardo: procedimento de desocupação + motivo + pesquisa de satisfação pelo Hub; o ADM gera o link por contrato; o envio é o aviso oficial; 1ª entrega só com registro + lista |
+| 2026-10-14 | Fase 21 (central de cadastros) | Eduardo: 6 cadastros do Google num motor único (1 página + 1 tabela + 1 função + 1 lista); piloto Locador PJ; destino de e-mail por tipo; histórico das 2 planilhas importado; pode construir |

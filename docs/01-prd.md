@@ -76,6 +76,8 @@ Faltava um lugar único para:
 | RF26 | **Adm locação** (§5.13): painel da carteira de contratos administrados pela ótica do gestor (administração recebida, crescimento, bairros e tipos, saídas e motivos, reajustes, inadimplência e atenção, proteção, proprietários), lido do Imoview | gestao | must | **no ar para a Gestão (07/10)** |
 | RF27 | **Estoque de imóveis** (§5.14): (A) painel Dash ▸ Estoque (quanto temos e vale, captações, tickets, parados, desatualizados +45 d, fora do site) e (B) **busca inteligente** Ferramentas ▸ Buscar imóveis (texto livre → filtros, resultados exatos + "quase lá" com margem e motivo), lido do Imoview 1×/dia | gestao (corretor depois, na busca) | must | **proposta (08/10)** |
 | RF28 | **Cadastro Locador PF no Hub** (§5.15): form público de link fixo com os 5 blocos do Google Form; grava no Supabase e avisa `administrativo3@`; lista em Propostas (só gestão/adm); Propostas em produção só gestão/adm | locador (público); gestao, adm | must | **aprovado (09/10)** |
+| RF29 | **Distratos** (§5.16): o ADM gera o link por contrato; o locatário lê o procedimento e envia o aviso oficial (data registrada), o motivo e a pesquisa de satisfação; e-mail a `administrativo@` + comprovante; lista com motivos e NPS | gestao (adm depois); locatário (link) | must | **no ar (14/10), só Gestão** |
+| RF30 | **Central de Cadastros** (§5.17): os 6 cadastros do Google (Locador/Locatário/Fiador × PF/PJ) num motor único — 1 página pública com seletor + links diretos, 1 tabela, 1 função, 1 lista admin com filtro; piloto Locador PJ; histórico das planilhas importado | locador/locatário/fiador (público); gestao, adm; corretor (só links) | must | **aprovado (14/10, pode construir)** |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -214,7 +216,7 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 | Valor realizado | soma do valor dos negócios da campanha |
 | Ticket médio | valor realizado ÷ volume de negócios (“—” com 0 negócios) |
 | Avanço na trilha | valor realizado ÷ meta de valor, convertido em Km (32 + 10 × fração), limitado ao Km 42 |
-| Próxima parada (urgência) | a 1ª parada de fim de mês que o realizado ainda não alcançou: "R$ X faltam para a parada de 31/10 (R$ meta acumulada) · N dias · R$ Z por dia". Em coral se o realizado estiver abaixo do esperado até hoje (meta ÷ dias da campanha × dias passados, mostrado no `title`). Com a meta total alcançada: "Meta batida" |
+| Próxima parada (urgência) | a 1ª parada de fim de mês que o realizado ainda não alcançou: "R$ X faltam para a parada de 31/10 (R$ meta acumulada) · N dias · R$ Z por dia". O número fica sempre em coral (destaque, pedido do Eduardo); abaixo do esperado até hoje (meta ÷ dias da campanha × dias passados, mostrado no `title`), a legenda ganha "· abaixo do esperado". Com a meta total alcançada: "Meta batida" |
 | Em proposta | soma das propostas "verdes" do CRM: atendimento em atendimento na fase Proposta, com interação nos últimos 30 dias, contando hoje (15 na 1ª versão; 30 por decisão do Eduardo em 13/10); em cada imóvel vale a negociação mais recente, e só conta se estiver "Em análise" |
 
 **Ajuste de 13/10 (Eduardo):** volta a meta total do trimestre (a meta mensal de outubro foi só para a reunião), sai o quadro "1 de 14 vendas" (o volume continua no banco), o ritmo em pontos virou o quadro "esperado até hoje" e entrou o quadro "em proposta". No mesmo dia o "esperado até hoje" virou "próxima parada": estando à frente, o time relaxava; o alvo do fim do mês mantém a urgência (Eduardo).
@@ -528,6 +530,122 @@ Traz o Google Form "Cadastro Locador(a) - Pessoa Física" para dentro do Hub, no
 - RF28.5: documentos (RG/CPF, matrícula, IPTU, CPFL, Sanasa, gás) continuam por e-mail nesta versão — sem upload no Hub.
 
 **Critérios de pronto:** um cadastro de teste aparece na tabela e na lista, e os 2 e-mails chegam; logado como corretor, Propostas some; `npm run build` ok.
+
+### 5.16 Distratos: aviso de desocupação, motivo e satisfação (pedido do Eduardo, 14/10) — **NO AR em 14/10 (commit 4c64908), só Gestão**
+**Problema.** Hoje o aviso de desocupação chega por e-mail em `administrativo@imovit.com.br`, com o motivo em texto livre. O procedimento vai como PDF ("PROCEDIMENTO DESOCUPAÇÃO"). Não existe nenhuma medida de satisfação de quem sai. O motivo só aparece depois, no Imoview (`motivo_rescisao`), preenchido pelo ADM.
+
+**Objetivo.**
+- Tratar o distrato pelo Hub. Com um link só, o locatário:
+  - recebe o procedimento;
+  - avisa a saída e informa o motivo;
+  - responde a uma pesquisa de satisfação.
+- O envio vale como **aviso oficial**, com data e hora registradas para contar os 30 dias.
+- A Gestão passa a saber **por que** os locatários saem e **como avaliam** a Imovit.
+
+**Decisões do Eduardo (14/10).**
+- D1. O link é **por contrato**. O ADM gera o link no Hub a partir do contrato e envia ao locatário. Não há link fixo público.
+- D2. O formulário **substitui o e-mail de aviso**. O envio é o aviso oficial e dispara e-mail para `administrativo@`. O texto do procedimento muda de "encaminhar por e-mail" para "pelo link".
+- D3. A 1ª entrega é **só registro + lista**. As etapas (vistoria, aprovação do proprietário, chaves, documentos, rescisão) ficam para depois.
+
+**Fluxo.**
+1. O locatário comunica ao ADM que vai sair (telefone, WhatsApp ou e-mail).
+2. Em Propostas ▸ **Distratos**, o ADM clica em "Novo distrato" e busca o contrato ativo (código, imóvel ou nome do locatário). Imóvel, locatário, contato e datas do contrato vêm da carteira (`contratos_locacao`).
+3. O Hub gera `/distrato/<token>`, válido por 15 dias. O ADM copia o link ou abre o WhatsApp com uma mensagem pronta. Também pode enviar por e-mail ao locatário (Brevo).
+4. O locatário abre o link, sem login, e passa por 3 passos:
+   - **Procedimento de desocupação.** O conteúdo do PDF: os 6 itens, a lista de documentos 6.1–6.3 e o aviso de multa. O locatário marca "Li e estou ciente".
+   - **Aviso de desocupação.** Confere imóvel e nome (só leitura). Informa a data prevista de entrega das chaves, o motivo, um detalhe (opcional) e um telefone ou e-mail de contato.
+   - **Pesquisa de satisfação.** É opcional e não impede o aviso.
+5. Ao enviar:
+   - o Hub grava data e hora (= data do aviso);
+   - manda e-mail a `administrativo@` com o resumo e cópia ao locatário. A cópia serve de **comprovante**: data do aviso, fim dos 30 dias e procedimento;
+   - o link passa a mostrar só o comprovante (uso único).
+6. O distrato aparece na lista com o status: link enviado · aviso recebido · link expirado · cancelado.
+
+**Motivo (lista fechada).** São os mesmos nomes do Imoview, para o ADM lançar igual no `motivo_rescisao`:
+- Mudou de cidade
+- Foi transferido
+- Comprou outro imóvel
+- Alugou outro imóvel
+- Valor do aluguel
+- Dificuldade financeira
+- Fechou empresa
+- O proprietário solicitou o imóvel de volta
+- Vencimento do contrato
+- Outro (texto obrigatório)
+
+Algumas respostas abrem perguntas extras (Eduardo, 14/10):
+- **"Alugou outro imóvel"** e **"Comprou outro imóvel"** perguntam **"Com quem?"**: com a Imovit · com outra imobiliária · direto com o proprietário.
+  - Se a resposta for "com a Imovit", o imóvel continuou com a gente. Na lista, isso aparece como "retido".
+- **"Alugou outro imóvel"** e **"Valor do aluguel"** também perguntam **"O que pesou mais?"**: preço · tamanho · localização · estado do imóvel · outro.
+
+Achado: "Valor do aluguel" aparece em 489 rescisões, a última em 01/2025. Parece um valor padrão antigo do Imoview, não um motivo real. Por isso não entra na análise de motivos antes de 2025.
+
+**Pesquisa de satisfação.**
+- NPS de 0 a 10: "Recomendaria a Imovit a um amigo?"
+- Nota de 1 a 5 em cada área:
+  - atendimento da equipe;
+  - manutenção e reparos;
+  - financeiro (boletos, repasses, reajustes);
+  - comunicação e prazo de resposta;
+  - estado do imóvel na entrada.
+- "Alugaria com a Imovit de novo?" (sim / talvez / não).
+- Comentário livre.
+
+**Prazo de 30 dias.** Se a data prevista for antes de hoje + 30 dias, a tela mostra o aviso de multa do procedimento ("será cobrado 1 mês de aluguel e encargos") e pede confirmação. O envio não é bloqueado.
+
+**Lista no Hub (só Gestão, D8).**
+- Colunas: contrato, imóvel, locatário, data do aviso, data prevista, fim dos 30 dias, motivo, NPS, status.
+- Detalhe: a pesquisa completa, "Copiar motivo para o Imoview" e "Cancelar" (locatário desistiu).
+- Resumo no topo: avisos no mês, motivos em 12 meses, quantos ficaram com a Imovit (alugou ou comprou com a gente), NPS de saída e médias por área.
+
+**Quem vê.**
+- Só a `gestao` cria, vê e cancela (D8, 14/10). O `adm` entra depois.
+- ADM, corretor, marketing e "Sem nível" não veem nada.
+- O locatário vê só o próprio link.
+- Hoje só a `gestao` lê `contratos_locacao`. Por isso o ADM busca o contrato por uma RPC `security definer`, que devolve só os campos mínimos dos contratos ativos.
+
+**Fora (por enquanto).**
+- Etapas depois do aviso: vistoria, revistoria (R$ 150), aprovação do proprietário, chaves e documentos.
+- Escrever no Imoview: o ADM lança o aviso e o motivo.
+- Upload das contas e da CND.
+- Painel de distratos no Dash ▸ Adm locação. Depois, o capítulo 4 ("Quem está saindo e por quê") pode ler a pesquisa.
+
+**RFs.**
+- RF29.1: Propostas ▸ Distratos (`/admin/distratos`, gestão e adm):
+  - lista e "Novo distrato" (busca de contrato ativo);
+  - link válido por 15 dias;
+  - ações: copiar, WhatsApp, enviar por e-mail, cancelar.
+- RF29.2: rota pública `/distrato/<token>`, com 3 passos (procedimento + ciência, aviso + motivo, pesquisa opcional), no visual do Hub e pensada para celular.
+- RF29.3: o envio grava o aviso com data e hora do servidor e só pode ser feito uma vez. Pelo Brevo, manda e-mail a `administrativo@` e o comprovante ao locatário.
+- RF29.4: na lista, detalhe e resumo (motivos, NPS, médias por área) e "Copiar motivo para o Imoview".
+
+**Critérios de pronto.**
+- Um distrato de teste percorre todo o caminho: criar → link → enviar → e-mails → lista.
+- Reaberto, o link mostra só o comprovante. Vencido, mostra "expirado".
+- Logado como corretor, Distratos não aparece e a RPC devolve zero linhas.
+- O anon só lê e grava pelo token (via Edge Function).
+- `npm run build` ok.
+
+**Respostas do Eduardo (14/10).**
+- D4. O e-mail do aviso vai **só para `administrativo@`**, por enquanto. O comprovante continua indo ao locatário.
+- D5. O proprietário **não recebe** o aviso nesta entrega.
+- D6. O texto do procedimento **pode ser adaptado** para o formato de link.
+- D8. **Só a Gestão** vê e trata os distratos por enquanto (14/10): `ACESSO.distratos`, RLS e RPC com `is_gestao()`, função exige `gestao`. Para abrir ao ADM, migration `20261014130000` explica o caminho.
+- D7. Os distratos já recebidos (2 planilhas do Google Forms) **entram no Hub**, com `origem = planilha`, a linha original guardada e os campos mapeados quando der.
+
+### 5.17 Central de Cadastros (pedido do Eduardo, 14/10) — **APROVADO, pode construir**
+Trazer os demais Google Forms de cadastro para o Hub sem replicar o custo do Locador PF (que hoje = 1 rota + 1 tabela + 1 função + 1 item de menu por formulário). Os 6 cadastros (Locador, Locatário, Fiador × PF, PJ) compartilham ~80% dos campos; a solução é **1 motor genérico** com a mesma cara do Hub.
+
+- RF30.1: página pública `/cadastros` com seletor em cards (papel × PF/PJ) + links diretos `/cadastro/<tipo>` (ex. `/cadastro/locador-pj`) para o corretor mandar o link exato. O `/cadastro-locador` atual redireciona para `/cadastro/locador-pf` (não quebra o link que já circula).
+- RF30.2: blocos reutilizáveis (PessoaPF, PessoaPJ, Endereço, Banco, Imóvel, Profissional/Referências); cada tipo monta seus blocos com as mesmas obrigatoriedades do Google Form. Destino de e-mail **por tipo** (decisão do Eduardo, 14/10): locador → `administrativo3@`, fiador PF → `administrativo@`, fiadora PJ → `pamela@` (locatários: confirmar destino ao aprovar cada tipo).
+- RF30.3: 1 tabela `cadastros` (Schema §2.14) + 1 Edge Function `cadastro-locador` estendida (parâmetro `tipo`, sem ele = locador-pf, compatível com o front já publicado). A `cadastros_locador` existente é migrada (linhas viram `tipo = 'locador-pf'`) e mantida como está, sem escrita nova.
+- RF30.4: 1 lista `/admin/cadastros` (só gestão/adm) com filtro por tipo e origem; substitui "Cadastros locador" no menu Propostas (o item passa a se chamar "Cadastros"; a rota antiga redireciona). **Nenhum item novo no menu.**
+- RF30.5: Ferramentas ▸ Cadastros (gestão/adm/corretor): os links copiáveis de cada tipo, no padrão de Materiais para clientes. O corretor não vê a lista de respostas.
+- RF30.6: histórico — as respostas já recebidas nos Google Forms (2 planilhas do Eduardo) entram na mesma lista com `origem = 'planilha'`, sem reenviar e-mail. Importe por script local com CSV exportado das planilhas.
+- Fatiamento (decisão do Eduardo, 14/10): **piloto = Locador PJ** (maior overlap com o PF pronto); depois Fiador PF → Fiadora PJ → Locatários, habilitando um `tipo` por vez na mesma estrutura, sem migração nova.
+- Pendente do Eduardo: link da pág. 2 do Locatário PF + link do Locatário PJ (se existir) e os e-mails de destino dos dois locatários.
+
+**Critérios de pronto:** um Locador PJ de teste aparece na tabela e na lista com o filtro, e os 2 e-mails chegam ao destino do tipo; `/cadastro-locador` antigo continua funcionando; `npm run build` ok; histórico visível na lista com origem "planilha".
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.
