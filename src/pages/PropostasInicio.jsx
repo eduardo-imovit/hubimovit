@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { usePerfil } from '../hooks/usePerfil'
 import { pode } from '../lib/acessos'
-import { AREAS_PROPOSTAS } from '../lib/propostasNav'
+import { AREAS_PROPOSTAS, paginasVisiveis } from '../lib/propostasNav'
 
 /** Porta de entrada do menu Propostas: escolher locação ou venda. */
 export default function PropostasInicio() {
@@ -26,7 +26,7 @@ export default function PropostasInicio() {
               <div className="page-sub" style={{ marginBottom: 'var(--space-3)' }}>{a.descricao}</div>
             </Link>
             <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-              {a.paginas.map((p) => (
+              {paginasVisiveis(a, perfil).map((p) => (
                 <Link key={p.to} to={p.to} className="btn btn-ghost btn-sm">{p.label}</Link>
               ))}
             </div>

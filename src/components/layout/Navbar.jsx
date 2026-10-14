@@ -5,7 +5,7 @@ import { useSession } from '../../hooks/useSession'
 import { usePerfil } from '../../hooks/usePerfil'
 import WeatherWidget from './WeatherWidget'
 import { PAPEL_LABEL, pode } from '../../lib/acessos'
-import { AREAS_PROPOSTAS } from '../../lib/propostasNav'
+import { AREAS_PROPOSTAS, paginasVisiveis } from '../../lib/propostasNav'
 
 /**
  * Dash: cada item aparece conforme o nível (acessos.js). Corretor: Meus números,
@@ -67,7 +67,7 @@ export default function Navbar() {
   // Propostas ▾ → Locação ▸ / Venda ▸ (processos separados, ver lib/propostasNav)
   const areasPropostas = AREAS_PROPOSTAS
     .filter((a) => pode(perfil, a.acesso))
-    .map((a) => ({ label: a.label, children: a.paginas }))
+    .map((a) => ({ label: a.label, children: paginasVisiveis(a, perfil) }))
   const email = session?.user?.email ?? ''
   const nomeExibido = perfil?.nome || email
   const iniciais = (perfil?.nome || email).split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase()

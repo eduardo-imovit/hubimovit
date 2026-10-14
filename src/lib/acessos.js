@@ -37,6 +37,7 @@ const soComPropostas = (papeis) => papeis
 
 export const ACESSO = {
   esteira: soComPropostas(['gestao', 'adm']), // Propostas / Esteira / Processos / Cadastros locador
+  distratos: ['gestao'], // Propostas › Locação › Distratos (PRD §5.16); só a Gestão por enquanto (14/10); RLS: is_gestao()
   esteiraDecidir: soComPropostas(['gestao', 'adm']), // aprovar, descartar, decidir documentos, solicitar ajustes, finalizar
   vendas: soComPropostas(['gestao', 'adm']), // Propostas de venda
   vendasDecidir: soComPropostas(['gestao', 'adm']), // descartar proposta de venda
