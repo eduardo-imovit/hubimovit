@@ -384,12 +384,17 @@ export default function Distratos() {
       )}
 
       {visiveis.length > 0 && (
-        <div className="card card-body" style={{ overflowX: 'auto' }}>
-          <table className="hub-table">
+        <div style={{ overflowX: 'auto' }}>
+          <table className="data-table">
             <thead>
               <tr>
-                <th>Locatário</th><th>Imóvel</th><th>Aviso em</th><th>Entrega prevista</th><th>Fim do aviso</th>
-                <th>Motivo</th><th>NPS</th><th>Situação</th>
+                <th>Locatário</th>
+                <th>Imóvel</th>
+                <th>Aviso</th>
+                <th>Entrega prevista</th>
+                <th>Motivo</th>
+                <th className="num">NPS</th>
+                <th>Situação</th>
               </tr>
             </thead>
             <tbody>
@@ -397,14 +402,31 @@ export default function Distratos() {
                 const s = situacao(d)
                 return (
                   <tr key={d.id} onClick={() => setAberto(d)} style={{ cursor: 'pointer' }}>
-                    <td>{d.locatario_nome ?? '—'}{d.contrato_codigo ? <div className="muted" style={{ fontSize: 'var(--text-xs)' }}>contrato {d.contrato_codigo}</div> : null}</td>
-                    <td>{d.imovel_endereco ?? '—'}</td>
-                    <td>{d.aviso_em ? new Date(d.aviso_em).toLocaleDateString('pt-BR') : '—'}</td>
-                    <td>{fmtData(d.data_prevista_saida)}{d.dentro_prazo === false && <span className="text-coral" title="Antes dos 30 dias"> •</span>}</td>
-                    <td>{fmtData(d.fim_aviso_previo)}</td>
-                    <td>{d.motivo ?? '—'}{d.motivo_com_quem === 'imovit' && <div><span className="badge badge-coral">Retido</span></div>}</td>
-                    <td>{d.nps ?? '—'}</td>
-                    <td><span className={`badge ${s.badge}`}>{s.label}</span>{d.origem === 'planilha' && <div className="muted" style={{ fontSize: 'var(--text-xs)' }}>planilha</div>}</td>
+                    <td style={{ minWidth: 180 }}>
+                      <div style={{ fontWeight: 500 }}>{d.locatario_nome ?? '—'}</div>
+                      {d.contrato_codigo && <div className="is-muted" style={{ fontSize: 'var(--text-xs)' }}>Contrato {d.contrato_codigo}</div>}
+                    </td>
+                    <td style={{ minWidth: 200, maxWidth: 280 }}>
+                      <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.imovel_endereco ?? ''}>{d.imovel_endereco ?? '—'}</div>
+                      {d.imovel_resumo && <div className="is-muted" style={{ fontSize: 'var(--text-xs)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.imovel_resumo}</div>}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {d.aviso_em ? new Date(d.aviso_em).toLocaleDateString('pt-BR') : '—'}
+                      {d.fim_aviso_previo && <div className="is-muted" style={{ fontSize: 'var(--text-xs)' }}>30 dias: {fmtData(d.fim_aviso_previo)}</div>}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {fmtData(d.data_prevista_saida)}
+                      {d.dentro_prazo === false && <div className="text-coral" style={{ fontSize: 'var(--text-xs)' }}>antes dos 30 dias</div>}
+                    </td>
+                    <td style={{ minWidth: 160 }}>
+                      {d.motivo ?? '—'}
+                      {d.motivo_com_quem === 'imovit' && <div style={{ marginTop: 4 }}><span className="badge badge-coral">Ficou com a Imovit</span></div>}
+                    </td>
+                    <td className="num">{d.nps ?? '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <span className={`badge ${s.badge}`}>{s.label}</span>
+                      {d.origem === 'planilha' && <div className="is-muted" style={{ fontSize: 'var(--text-xs)', marginTop: 4 }}>da planilha</div>}
+                    </td>
                   </tr>
                 )
               })}
