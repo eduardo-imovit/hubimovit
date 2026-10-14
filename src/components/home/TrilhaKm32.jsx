@@ -153,9 +153,12 @@ export function TrilhaKm32() {
           <div title={`Esperado até hoje: ${moeda(aba, esperado)}${noRitmo ? ' (no ritmo)' : ` · ${moeda(aba, Math.abs(diferenca))} ${diferenca > 0 ? 'acima' : 'abaixo'}`}`}>
             {alvo ? (
               <>
-                <span className={`km32-n ${!noRitmo && diferenca < 0 ? 'is-atras' : ''}`}>{moeda(aba, falta)}</span>
+                <span className="km32-n is-falta">{moeda(aba, falta)}</span>
                 <span className="km32-l">faltam para a parada de {dataCurta(alvo.data)} ({moeda(aba, alvoMeta)})</span>
-                <span className="km32-l">{diasAteAlvo} {diasAteAlvo === 1 ? 'dia' : 'dias'} · {moeda(aba, falta / diasAteAlvo)} por dia</span>
+                <span className="km32-l">
+                  {diasAteAlvo} {diasAteAlvo === 1 ? 'dia' : 'dias'} · {moeda(aba, falta / diasAteAlvo)} por dia
+                  {!noRitmo && diferenca < 0 && <strong className="is-atras"> · abaixo do esperado</strong>}
+                </span>
               </>
             ) : (
               <>

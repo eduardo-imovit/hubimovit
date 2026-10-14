@@ -1237,6 +1237,7 @@
 .km32-n { font-family: var(--font-serif); font-size: var(--text-2xl); line-height: 1.05; color: var(--creme); }
 .km32-n small { font-size: var(--text-lg); color: var(--grafite-fade); }
 .km32-n.is-atras { color: var(--coral-light); }
+.km32-n.is-falta { color: var(--coral); }
 .km32-l { font-size: 12px; color: var(--grafite-fade); }
 .km32-l strong { color: var(--creme); font-weight: var(--weight-medium); }
 .km32-l strong.is-atras { color: var(--coral-light); }

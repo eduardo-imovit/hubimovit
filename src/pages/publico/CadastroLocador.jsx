@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ESTADOS_CIVIS, TIPOS_CONTA, enviarCadastroLocador } from '../../lib/cadastroLocador'
+import { ESTADOS_CIVIS, TIPOS_CONTA, enviarCadastro } from '../../lib/cadastros'
 
 const inicial = {
   email: '', nome: '', cpf: '', rg: '', nascimento: '', estado_civil: '', nacionalidade: '', profissao: '',
@@ -95,7 +95,7 @@ export default function CadastroLocador() {
     setEnviando(true)
     try {
       const f = form
-      await enviarCadastroLocador({
+      await enviarCadastro('locador-pf', {
         site: f.site || undefined,
         email: f.email.trim(),
         locador: {
