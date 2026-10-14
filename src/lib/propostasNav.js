@@ -3,6 +3,8 @@
 // subnavegação dentro de cada área. As URLs antigas continuam as mesmas
 // porque os e-mails das Edge Functions apontam para elas.
 
+import { pode } from './acessos'
+
 export const AREAS_PROPOSTAS = [
   {
     chave: 'locacao',
@@ -14,6 +16,7 @@ export const AREAS_PROPOSTAS = [
       { to: '/admin/esteiras', label: 'Esteira' },
       { to: '/admin/processos', label: 'Processos' },
       { to: '/admin/cadastros-locador', label: 'Cadastros locador' },
+      { to: '/admin/distratos', label: 'Distratos', acesso: 'distratos' },
     ],
   },
   {
@@ -29,3 +32,6 @@ export const AREAS_PROPOSTAS = [
 ]
 
 export const areaPropostas = (chave) => AREAS_PROPOSTAS.find((a) => a.chave === chave)
+
+/** Páginas da área que o perfil pode ver (uma página pode ter `acesso` próprio, mais restrito que a área). */
+export const paginasVisiveis = (area, perfil) => area.paginas.filter((p) => !p.acesso || pode(perfil, p.acesso))
