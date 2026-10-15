@@ -78,6 +78,7 @@ Faltava um lugar único para:
 | RF28 | **Cadastro Locador PF no Hub** (§5.15): form público de link fixo com os 5 blocos do Google Form; grava no Supabase e avisa `administrativo3@`; lista em Propostas (só gestão/adm); Propostas em produção só gestão/adm | locador (público); gestao, adm | must | **aprovado (09/10)** |
 | RF29 | **Distratos** (§5.16): o ADM gera o link por contrato; o locatário lê o procedimento e envia o aviso oficial (data registrada), o motivo e a pesquisa de satisfação; e-mail a `administrativo@` + comprovante; lista com motivos e NPS | gestao (adm depois); locatário (link) | must | **no ar (14/10), só Gestão** |
 | RF30 | **Central de Cadastros** (§5.17): os 6 cadastros do Google (Locador/Locatário/Fiador × PF/PJ) num motor único — 1 página pública com seletor + links diretos, 1 tabela, 1 função, 1 lista admin com filtro; piloto Locador PJ; histórico das planilhas importado | locador/locatário/fiador (público); gestao, adm; corretor (só links) | must | **aprovado (14/10, pode construir)** |
+| RF31 | **Painel da Gestão v2** (§5.0c): foco no atendimento, com os ativos de Qualificado a Proposta na manchete, o funil inbound × outbound, a maior perda por corretor × equipe e as atividades contra a média da equipe; sai o ritmo de leads | gestao, marketing | must | **aprovado (15/10)** |
 | RF17 | Listas de ação da Operação (quem ligar, o que venceu), abertas a partir do capítulo "Pessoas" | gestao, adm | should | a fazer depois do RF16 |
 
 ### 5.0 Painel da Gestão — a história (decidido com o Eduardo, 24/09)
@@ -91,6 +92,49 @@ Faltava um lugar único para:
   5. **Pessoas: quem precisa agir?** Mapa de calor por corretor (carteira, sem contato, abertos 30+, atividades vencidas, contato em até 1 dia, negócios).
   - Rodapé: **saúde dos dados** (última atualização de cada fonte).
 - **Visual:** Venda = coral `#E8593C`, Locação = azul `#2F6DB5` (validados para daltonismo no script do skill de dataviz, 24/09); gráficos de uma série usam ênfase (coral + cinza). Status só com verde/amarelo/vermelho do design system, sempre com texto.
+
+### 5.0c Painel da Gestão v2 — foco no atendimento (pedido da Gestão, 15/10) — **aprovado (15/10, pode construir)**
+**Por quê:** a Gestão pediu, e o Eduardo confirmou, que o painel olhe o **atendimento**, não a entrada de leads. O ritmo de entrada é métrica do Marketing; na tela da Gestão vira cobrança para o lado errado. O capítulo 3 ("Quanto custa", com o simulador) não foi entendido.
+
+**Pedidos da Gestão (15/10):**
+1. clientes em cada etapa do funil, com conversão, inbound × outbound;
+2. maior perda no funil, comparando funis e corretores da equipe;
+3. atividades no período, comparadas com a média da equipe;
+4. imóveis ativos na carteira;
+5. imóveis atualizados (% sobre o total);
+6. propostas em andamento;
+7. vendas no período (R$).
+
+**Fora:** ritmo e projeção de entrada de leads (capítulo 1 atual), o índice "Leads no período" e o simulador.
+
+**Nova cascata:**
+0. **Manchete — "Em atendimento agora".** O número principal é a quantidade de leads **ativos entre Qualificado e Proposta** (fase 4 a 6 no CRM), aberta por venda × locação e por inbound × outbound. Índices ao lado:
+   - negócios fechados no período;
+   - propostas em andamento;
+   - atividades realizadas no período, contra a média da equipe.
+   As frases automáticas falam de atendimento, sem nenhuma frase sobre o ritmo de leads.
+1. **Como está o funil?** Clientes ativos em cada etapa (Lead, Qualificado, Visita, Proposta), com **inbound e outbound lado a lado**, e a taxa de passagem entre etapas pela safra madura, que já é usada hoje. Fonte: campo `funil` do CRM (`Inbound (passivo)` / `Outbound (ativo)`), que já vem em `vw_atendimentos_base`.
+2. **Onde perdemos mais?** A passagem mais fraca do funil, comparando:
+   - inbound × outbound;
+   - a passagem de cada corretor com a média da equipe dele.
+   Tabela curta: corretor, a sua taxa, a da equipe e a diferença. Os descartes por etapa ficam como apoio. Este capítulo substitui os antigos 2 e 3.
+3. **Quem está atendendo?** Atividades **realizadas** no período por corretor, contra a média da sua equipe (venda ou locação), com o selo **acima / na média / abaixo**. "Na média" vai de −10% a +10% (decidido 15/10). Não contam as "Anotações".
+4. **Carteira de imóveis.** Imóveis ativos e a % atualizada nos últimos 45 dias, lidos do estoque (§5.14), por captador quando houver. Os dados ainda não estão prontos, ver as lacunas abaixo.
+5. **Quem precisa agir agora?** O mapa de pessoas atual continua.
+- O capítulo "Canais e custo da mídia" sai da Gestão (decidido 15/10); já existe no Painel de Performance (§5.0b).
+
+**Equipe do corretor (decidido 15/10):** `colaboradores_raw.cargo` (`vendas` | `locação`) com `equipe = 'comercial'` e `ativo`; a ligação com o CRM é por `lower(trim(nome))`. Quem não está nessa lista (ex.: Gabriel Rosa, gestão comercial) fica fora da média e aparece sem selo.
+
+**Lacunas (o que ainda não dá para mostrar):**
+- **Vendas no período (R$):** o CRM não traz o valor da venda. As propostas de venda do Hub têm valor, mas são só 2 até agora. Por enquanto, a quantidade de negócios. O R$ entra quando as vendas passarem pelo Hub ou o valor vier do Imoview.
+- **Imóveis ativos / atualizados:** `imoveis_estoque` tem 4.250 linhas, mas `vw_estoque_imoveis` devolve 0 negociáveis e não há registro de carga (`estoque_cargas` vazio). Precisa de correção antes do capítulo 4.
+
+**Pronto quando:**
+- a manchete mostra os ativos de Qualificado a Proposta e o número bate com uma consulta direta no banco;
+- inbound e outbound aparecem no funil;
+- cada corretor tem o selo de atividades em relação à própria equipe;
+- o ritmo de leads sumiu da tela;
+- `npm run build` passa.
 
 ### 5.0b Painel de Performance — a história do dinheiro (pedido do Eduardo, 24/09)
 Mesma lógica do Painel da Gestão (capítulos com conclusão como título, gráficos, filtros na URL), contando **investimento → atenção → conversão → lead real → negócio**. Rota `/dashboard/performance`.

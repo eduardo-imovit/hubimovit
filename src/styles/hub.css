@@ -848,12 +848,34 @@
 .pg-saude-fonte { font-size: var(--text-sm); color: var(--grafite); }
 .pg-saude-texto { font-size: 11px; color: var(--grafite-soft); }
 
+/* Painel da Gestão v2 (PRD §5.0c) */
+.pg-legenda { display: flex; gap: var(--space-4); font-size: var(--text-xs); color: var(--grafite-mid); margin-bottom: var(--space-3); }
+.pg-legenda > span { display: inline-flex; align-items: center; gap: 6px; }
+.pg-etapa-ativa { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: var(--space-3); }
+.pg-etapa-barras { display: grid; gap: 3px; }
+.pg-etapa-barra-linha { display: grid; grid-template-columns: 1fr 48px; align-items: center; gap: var(--space-3); }
+.pg-funil-trilho--fino { height: 14px; }
+.pg-tabela-rolagem { overflow-x: auto; }
+.pg-tabela-compacta td, .pg-tabela-compacta th { white-space: nowrap; }
+.pg-tabela-compacta .pg-sub { font-size: 11px; }
+.pg-tabela-compacta tr.is-selecionado td:first-child { box-shadow: inset 3px 0 0 var(--coral); font-weight: 600; }
+.pg-duas--uma { grid-template-columns: 1fr; }
+.pg-atividade { display: grid; grid-template-columns: 150px 1fr 40px 118px; align-items: center; gap: var(--space-3); width: 100%; padding: 2px 4px; background: none; border: 0; border-radius: 4px; text-align: left; font: inherit; cursor: pointer; }
+.pg-atividade:hover { background: var(--pergaminho); }
+.pg-atividade.is-selecionado { box-shadow: inset 3px 0 0 var(--coral); }
+.pg-atividade .badge { justify-self: start; }
+.pg-atividade-trilho { position: relative; overflow: visible; }
+.pg-atividade-media { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--grafite); opacity: 0.6; }
+
 @media (max-width: 640px) {
   .pg-filtros { position: static; }
   .pg-filtros-acoes { margin-left: 0; width: 100%; }
   .pg-funil-linha { grid-template-columns: 80px 1fr 56px; }
   .pg-funil-passagem { padding-left: 0; }
   .pg-hbarra { grid-template-columns: 96px 1fr 80px; }
+  .pg-atividade { grid-template-columns: 96px 1fr 32px; }
+  .pg-atividade .badge { grid-column: 1 / -1; }
+  .pg-etapa-ativa { grid-template-columns: 80px 1fr; }
   .pg-capitulo, .pg-manchete { padding: var(--space-4); }
 }
 

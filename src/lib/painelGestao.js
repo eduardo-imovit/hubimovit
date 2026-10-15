@@ -319,6 +319,185 @@ export function capituloPessoas({ base, tempoResposta, aging, atividades }, hoje
 }
 
 // ---------------------------------------------------------------------------
+// v2 (PRD §5.0c, 15/10): foco no atendimento
+// ---------------------------------------------------------------------------
+
+/** Campo `funil` do CRM. Cores fora do par venda/locação (Sálvia e Gold do design system). */
+export const FUNIS = [
+  { chave: 'Inbound (passivo)', label: 'Inbound', cor: '#5C8A6B' },
+  { chave: 'Outbound (ativo)', label: 'Outbound', cor: '#C9A96E' },
+]
+/** "Na média" da equipe = ±10% (decisão do Eduardo, 15/10). */
+export const FAIXA_MEDIA = 0.1
+export const LABEL_EQUIPE = { vendas: 'Venda', 'locação': 'Locação' }
+const EQUIPE_DA_FINALIDADE = { Venda: 'vendas', Aluguel: 'locação' }
+
+const ETAPAS_ATIVAS = [
+  { label: 'Lead', de: 0, ate: 3 },
+  { label: 'Qualificado', de: 4, ate: 4 },
+  { label: 'Visita', de: 5, ate: 5 },
+  { label: 'Proposta', de: 6, ate: 6 },
+]
+
+const chaveNome = (n) => (n ?? '').trim().toLowerCase()
+
+/** Equipe de cada corretor: `colaboradores_raw.cargo` da equipe comercial ativa (15/10). Mapa nome normalizado → { nome, equipe }. */
+export function equipesComerciais(colaboradores) {
+  const mapa = new Map()
+  for (const c of colaboradores) {
+    if (c.equipe !== 'comercial' || !c.ativo || !LABEL_EQUIPE[c.cargo]) continue
+    mapa.set(chaveNome(c.nome_completo), { nome: c.nome_completo.trim(), equipe: c.cargo })
+  }
+  return mapa
+}
+
+/** Quem está em atendimento agora: ativos por etapa e por funil; o número da manchete é Qualificado → Proposta. */
+export function emAtendimento(base) {
+  const ativos = base.filter((a) => a.is_ativo)
+  const fase = (a) => a.fase_ordem ?? 0
+  const etapas = ETAPAS_ATIVAS.map((e) => {
+    const linhas = ativos.filter((a) => fase(a) >= e.de && fase(a) <= e.ate)
+    return { label: e.label, total: linhas.length, porFunil: Object.fromEntries(FUNIS.map((f) => [f.chave, linhas.filter((a) => a.funil === f.chave).length])) }
+  })
+  const qp = ativos.filter((a) => fase(a) >= 4 && fase(a) <= 6)
+  const conta = (campo, valor) => qp.filter((a) => a[campo] === valor).length
+  return {
+    total: qp.length,
+    Venda: conta('finalidade', 'Venda'),
+    Aluguel: conta('finalidade', 'Aluguel'),
+    porFunil: Object.fromEntries(FUNIS.map((f) => [f.chave, conta('funil', f.chave)])),
+    visita: qp.filter((a) => fase(a) === 5).length,
+    proposta: qp.filter((a) => fase(a) === 6).length,
+    etapas,
+  }
+}
+
+/** Funil da safra madura com inbound e outbound lado a lado (mesma regra de gargalo do capítulo de funil). */
+export function funilPorOrigem(base, hoje) {
+  const atual = safraMadura(base, hoje, { de: 242, ate: 60 })
+  const anterior = safraMadura(base, hoje, { de: 425, ate: 243 })
+  const grupos = FUNIS.map((f) => {
+    const etapas = funilDe(atual.linhas.filter((a) => a.funil === f.chave))
+    const etapasAnt = funilDe(anterior.linhas.filter((a) => a.funil === f.chave))
+    const comDelta = etapas.map((e, i) => ({
+      ...e,
+      delta: e.passagem != null && etapasAnt[i].passagem != null && etapasAnt[i - 1]?.n >= 10 ? e.passagem - etapasAnt[i].passagem : null,
+    }))
+    const candidatas = comDelta.filter((e, i) => e.passagem != null && e.ordem >= 5 && comDelta[i - 1].n >= 10)
+    const gargalo = candidatas.reduce((min, e) => (min == null || e.passagem < min.passagem ? e : min), null)
+    return { chave: f.chave, rotulo: f.label, cor: f.cor, etapas: comDelta, gargalo, conversao: pct(etapas[4].n, etapas[0].n) }
+  })
+  const pior = grupos.filter((g) => g.gargalo).reduce((min, g) => (min == null || g.gargalo.passagem < min.gargalo.passagem ? g : min), null)
+  return { grupos, pior, janela: { inicio: atual.inicio, fim: atual.fim }, anterior: { inicio: anterior.inicio, fim: anterior.fim } }
+}
+
+/**
+ * Maior perda por corretor: a passagem mais fraca do funil inteiro (safra
+ * madura, a partir de Qualificado) e a taxa de cada corretor nela, contra a
+ * da equipe dele. Abaixo de 5 leads na etapa anterior, só mostra o n.
+ */
+export function perdaPorCorretor(base, hoje, equipes) {
+  const { linhas } = safraMadura(base, hoje, { de: 242, ate: 60 })
+  const etapas = funilDe(linhas)
+  const candidatas = etapas.filter((e, i) => e.passagem != null && e.ordem >= 5 && etapas[i - 1].n >= 10)
+  const gargalo = candidatas.reduce((min, e) => (min == null || e.passagem < min.passagem ? e : min), null)
+  if (!gargalo) return null
+  const anterior = etapas[etapas.indexOf(gargalo) - 1]
+  const taxa = (l) => {
+    const n = l.filter((a) => chegou(a, anterior.ordem)).length
+    return { n, passaram: l.filter((a) => chegou(a, gargalo.ordem)).length, passagem: n > 0 ? pct(l.filter((a) => chegou(a, gargalo.ordem)).length, n) : null }
+  }
+  const daEquipe = (eq) => linhas.filter((a) => equipes.get(chaveNome(a.corretor))?.equipe === eq)
+  const porEquipe = Object.fromEntries(Object.keys(LABEL_EQUIPE).map((eq) => [eq, taxa(daEquipe(eq))]))
+  const corretores = [...new Set(linhas.map((a) => a.corretor))]
+    .map((nome) => ({ nome, info: equipes.get(chaveNome(nome)) }))
+    .filter((c) => c.info)
+    .map(({ nome, info }) => {
+      const t = taxa(linhas.filter((a) => a.corretor === nome))
+      const eq = porEquipe[info.equipe]
+      const comparavel = t.n >= 5 && eq.passagem != null
+      return { corretor: info.nome, equipe: info.equipe, ...t, equipeTaxa: eq.passagem, dif: comparavel ? t.passagem - eq.passagem : null }
+    })
+    .filter((c) => c.n > 0)
+    .sort((a, b) => (a.dif ?? 999) - (b.dif ?? 999))
+  return { de: anterior.label, para: gargalo.label, geral: gargalo.passagem, porEquipe, corretores }
+}
+
+/** Selo de comparação com a média da equipe (±10%). */
+export function seloMedia(valor, media) {
+  if (!media) return null
+  const r = valor / media
+  if (r > 1 + FAIXA_MEDIA) return { chave: 'acima', label: 'Acima da média', badge: 'badge-success' }
+  if (r < 1 - FAIXA_MEDIA) return { chave: 'abaixo', label: 'Abaixo da média', badge: 'badge-danger' }
+  return { chave: 'media', label: 'Na média', badge: 'badge-gray' }
+}
+
+/**
+ * Atividades realizadas no período por corretor (sem "Anotações"), contra a
+ * média da equipe (vendas ou locação). A média inclui quem fez zero.
+ */
+export function atividadesVsEquipe(feitas, equipes, periodo, finalidade = 'todas') {
+  const validas = feitas.filter((a) => a.nometipo !== 'Anotações')
+  const contar = (janela) => {
+    const m = new Map()
+    for (const a of validas) {
+      if (!dentro(a.datahorainicio, janela)) continue
+      const k = chaveNome(a.nomeusuario)
+      m.set(k, (m.get(k) ?? 0) + 1)
+    }
+    return m
+  }
+  const agora = contar(periodo)
+  const antes = contar(periodo.anterior)
+  const so = finalidade === 'todas' ? null : EQUIPE_DA_FINALIDADE[finalidade]
+  const grupos = Object.keys(LABEL_EQUIPE)
+    .filter((eq) => !so || eq === so)
+    .map((eq) => {
+      const membros = [...equipes.entries()].filter(([, v]) => v.equipe === eq)
+      const total = membros.reduce((s, [k]) => s + (agora.get(k) ?? 0), 0)
+      const media = membros.length ? total / membros.length : 0
+      const linhas = membros
+        .map(([k, v]) => {
+          const n = agora.get(k) ?? 0
+          return { corretor: v.nome, n, anterior: antes.get(k) ?? 0, selo: seloMedia(n, media) }
+        })
+        .sort((a, b) => b.n - a.n)
+      return { equipe: eq, label: LABEL_EQUIPE[eq], media, total, linhas }
+    })
+  const todos = grupos.flatMap((g) => g.linhas)
+  return {
+    grupos,
+    total: todos.reduce((s, l) => s + l.n, 0),
+    totalAnterior: todos.reduce((s, l) => s + l.anterior, 0),
+    abaixo: todos.filter((l) => l.selo?.chave === 'abaixo').map((l) => l.corretor),
+  }
+}
+
+/** Frases da manchete v2: só atendimento, sem ritmo de entrada de leads. */
+export function mancheteAtendimento({ atendimento, origem, perda, atividades, pessoasCap }) {
+  const frases = []
+  frases.push(
+    `${fmtNum(atendimento.total)} clientes em atendimento entre qualificado e proposta: ${fmtNum(atendimento.visita)} em visita e ${fmtNum(atendimento.proposta)} em proposta.`
+  )
+  if (origem.pior) {
+    const g = origem.pior
+    const i = g.etapas.findIndex((e) => e.ordem === g.gargalo.ordem)
+    frases.push(`A maior perda está no ${g.rotulo.toLowerCase()}, entre ${g.etapas[i - 1].label.toLowerCase()} e ${g.gargalo.label.toLowerCase()}: só ${fmtPct(g.gargalo.passagem, 0)} avançam.`)
+  } else if (perda) {
+    frases.push(`A maior perda está entre ${perda.de.toLowerCase()} e ${perda.para.toLowerCase()}: só ${fmtPct(perda.geral, 0)} avançam.`)
+  }
+  if (atividades.abaixo.length) {
+    const n = atividades.abaixo.length
+    frases.push(`${n} ${n === 1 ? 'corretor está' : 'corretores estão'} abaixo da média de atividades da equipe: ${atividades.abaixo.join(', ')}.`)
+  }
+  if (pessoasCap.totais.semContato > 0) {
+    const top = [...pessoasCap.linhas].sort((a, b) => b.semContato - a.semContato)[0]
+    frases.push(`${pessoasCap.totais.semContato} leads ativos estão sem nenhum contato registrado; ${top.corretor} concentra ${top.semContato}.`)
+  }
+  return frases
+}
+
+// ---------------------------------------------------------------------------
 // Manchete: 3 frases geradas pelos números
 // ---------------------------------------------------------------------------
 

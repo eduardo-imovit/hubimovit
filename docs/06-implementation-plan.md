@@ -319,6 +319,34 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 - **Pronto quando:** os critérios do PRD §5.17 forem atendidos.
 - **Depois:** habilitar fiador-pf → fiadora-pj → locatários na mesma estrutura (S2/S3 por tipo, sem migração nova); upload de documentos (RF28.5).
 
+## Fase 22 — Painel da Gestão v2: foco no atendimento (RF31, PRD §5.0c) — aprovada (15/10)
+- **S0 Aprovação:** "pode construir" em 15/10; equipe = `colaboradores_raw.cargo`; na média = ±10%; Canais sai.
+- **S1 Dados (sem migration):**
+  - incluir `funil` em `COLUNAS_BASE` (`usePaineis.js`);
+  - carregar as atividades realizadas do período, com `nomeusuario` e `nometipo`, sem as "Anotações";
+  - carregar as propostas de venda e locação em andamento.
+- **S2 Cálculo (`painelGestao.js`):**
+  - `emAtendimento` (fase 4–6, ativos, por finalidade × funil);
+  - `funilPorOrigem` (ativos por etapa + passagem da safra madura, inbound × outbound);
+  - `perdaPorCorretor` (a passagem mais fraca, corretor × equipe);
+  - `atividadesVsEquipe` (com o selo);
+  - `equipeDoCorretor` (de `colaboradores_raw.cargo`);
+  - sai `ritmo`/`serieMensal`/`simularGanho` da página.
+- **S3 Tela (`PainelGestao.jsx` + componentes):**
+  - manchete nova;
+  - capítulos 1 a 3 novos;
+  - o mapa de pessoas fica como capítulo 5;
+  - sai Canais;
+  - componentes só com tokens/hub.css.
+- **S4 Carteira de imóveis (capítulo 4):** primeiro corrigir o estoque (`vw_estoque_imoveis` = 0 e `estoque_cargas` vazio), depois o capítulo. Pode ir num segundo deploy.
+- **S5 Publicar:**
+  - conferir os números contra SQL direto;
+  - `npm run build`;
+  - push `main` + `main:teste`;
+  - olhar como gestão e no celular.
+- **Pronto quando:** os critérios do PRD §5.0c forem atendidos.
+- **Depois:** vendas em R$, quando houver fonte de valor.
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).

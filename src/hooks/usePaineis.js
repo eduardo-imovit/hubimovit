@@ -4,7 +4,7 @@ import { isoLocal } from '../lib/paineis'
 import { PROPOSTAS_ATIVAS } from '../lib/acessos'
 
 const COLUNAS_BASE =
-  'codigo, corretor, data_entrada, data_encerramento, finalidade, situacao, fase_ordem, canal, is_ruido, is_interno, is_negocio, is_ativo, is_descartado, dias_ate_ganho'
+  'codigo, corretor, data_entrada, data_encerramento, finalidade, situacao, fase_ordem, canal, funil, is_ruido, is_interno, is_negocio, is_ativo, is_descartado, dias_ate_ganho'
 
 const COLUNAS_PROPOSTA = 'id, status, valor, valor_oferta, updated_at, link_expira_em, nome_cliente, imovel_titulo, codigo_imovel'
 
@@ -66,17 +66,20 @@ function carregarOperacional() {
 
 function carregarGestao() {
   const op = carregarOperacional()
+  // atividades feitas: cobre 90 dias + a janela anterior equivalente (PRD §5.0c)
+  const desde = `${isoLocal(new Date(Date.now() - 200 * 86400000))}T00:00:00`
   return {
     base: op.base,
     tempoResposta: op.tempoResposta,
     aging: op.aging,
     atividades: op.atividades,
     propostas: op.propostas,
-    meta: fetchTodasLinhas(() => supabase.from('dashboard_meta_ads').select('data, investimento, leads_conversoes')),
-    google: fetchTodasLinhas(() => supabase.from('dashboard_google_ads').select('data, investimento, leads_conversoes')),
+    feitas: fetchTodasLinhas(() =>
+      supabase.from('atividades').select('datahorainicio, nomeusuario, nometipo').eq('realizada', true).gte('datahorainicio', desde)
+    ),
+    // equipe do corretor = cargo (vendas | locação) da equipe comercial ativa (15/10)
+    colaboradores: fetchTodasLinhas(() => supabase.from('colaboradores_raw').select('nome_completo, equipe, cargo, ativo')),
     ultimaCrm: op.ultimaCrm,
-    ultimaMeta: op.ultimaMeta,
-    ultimaGoogle: op.ultimaGoogle,
     ultimaAtividades: op.ultimaAtividades,
   }
 }
