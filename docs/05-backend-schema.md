@@ -318,6 +318,15 @@ Generaliza a §2.12: em vez de 1 tabela por formulário, **1 tabela `cadastros`*
 - **Importe do histórico:** script local (`scripts/importar_cadastros_planilha.mjs`) lê os CSVs exportados das planilhas e insere com `origem = 'planilha'` e `email_ok = true` (e-mail já foi pelo Google; não reenvia). O mapa de colunas fica no topo do script, ajustável por planilha. Roda com a service_role local do Eduardo; nada de chave no repo.
 - **Edge Function `cadastro-locador`** (evento `enviar` + `tipo`): valida por tipo (zod discriminated union; sem `tipo` = locador-pf, compatível com o front já publicado), insere em `cadastros`, chama `notificar([destino_do_tipo, email_de_quem_preencheu])` com o resumo e o link de `/admin/cadastros`, marca `email_ok`. Destinos: locador-pf/pj → `administrativo3@`; fiador-pf → `administrativo@`; fiadora-pj → `pamela@`; locatários → a confirmar.
 
+### 2.15 `vw_atendimentos_base` lê o estado da jornada — migration `20261015120000_vw_base_estado_jornada`, **APLICADA em 15/10**
+- **Problema:** `dashboard_atendimentos_crm` não recebe mais as mudanças de fase e situação dos atendimentos já existentes. Em 15/10 eram 57 divergentes, e os painéis mostravam a fase antiga. Exemplos: 3 propostas do Gabriel Betti apareciam como Visita/Seleção; 2 negócios e 3 reaberturas não apareciam.
+- **Correção (só a view):** `fase`, `situacao` e `data_encerramento` vêm da última linha de `crm_atendimento_jornada` de cada código (`order by codigo, id desc`, índice `crm_jornada_codigo_id`). Detalhes:
+  - sem linha na jornada, vale a tabela (o mesmo vale para quem não lê a jornada, porque a view é `security_invoker`);
+  - `data_encerramento` = `data_fechamento` da tabela ou `data_evento` da jornada; fica nula quando o atendimento está "Em atendimento";
+  - mesmas colunas e ordem, então as `vw_*` dependentes seguem iguais.
+- **Efeito em 15/10:** em atendimento de Qualificado a Proposta passou de 118 para 136.
+- **Ainda lendo a tabela direto:** Kanban e TV continuam com a fase antiga. A correção definitiva é a RPC `registrar_atendimentos_crm` atualizar `dashboard_atendimentos_crm` (a "virada" do §2.6c), que ainda não foi feita.
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 
