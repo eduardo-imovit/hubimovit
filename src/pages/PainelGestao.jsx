@@ -4,7 +4,7 @@ import { usePerfil } from '../hooks/usePerfil'
 import { useFiltrosUrl } from '../hooks/useFiltrosUrl'
 import { BarraFiltros, Capitulo, Indice } from '../components/painel/Estrutura'
 import { AtividadesPainel, Descartes, FunilLinhas, MapaPessoas, PerdaComparada, SaudeDados } from '../components/painel/Graficos'
-import { fmtMoeda, fmtNum, fmtPct, isoLocal, saudeDados, somarDias } from '../lib/paineis'
+import { fmtMoeda, fmtNum, fmtPct, isoLocal, saudeDados } from '../lib/paineis'
 import {
   atividadesPainel,
   capituloPessoas,
@@ -44,9 +44,10 @@ export default function PainelGestao() {
   const opcoes = useMemo(() => {
     if (!baseNorm) return { canais: [], corretores: [] }
     const validos = baseNorm.filter((a) => !a.is_ruido && !a.is_interno)
-    const ativosOuRecentes = validos.filter((a) => a.is_ativo || a.data_entrada >= somarDias(hoje, -365))
-    return { canais: listaDistinta(validos, 'canal'), corretores: listaDistinta(ativosOuRecentes, 'corretor') }
-  }, [baseNorm, hoje])
+    // só corretores ativos (equipe comercial, cargo vendas ou locação), pedido de 15/10
+    const corretores = [...equipes.values()].map((v) => v.nome).sort((a, b) => a.localeCompare(b, 'pt-BR'))
+    return { canais: listaDistinta(validos, 'canal'), corretores }
+  }, [baseNorm, equipes])
 
   const h = useMemo(() => {
     if (!dados || !baseNorm) return null
