@@ -45,6 +45,9 @@
 | Processos | `/admin/processos` | gestao, adm, corretor | Histórico e concluídos | Ver detalhe |
 | Portal · entrar | `/portal/entrar` | locatário | Receber magic link | Enviar link |
 | Portal · status | `/portal` | locatário | Jornada da proposta | Confirmar dados, completar cadastro, enviar documentos, definir senha |
+| Central de cadastros | `/cadastros` (seletor) + `/cadastro/:tipo` (form) | público (quem preenche, sem login) | Cadastros Locador/Locatário/Fiador × PF/PJ no visual do Hub (PRD §5.17); `/cadastro-locador` redireciona para `/cadastro/locador-pf` | Preencher blocos por tipo; enviar (grava + e-mails) |
+| Cadastros (lista) | `/admin/cadastros` (`/admin/cadastros-locador` redireciona) | gestao, adm | Respostas dos cadastros com filtro por tipo e origem | Filtrar; copiar link do cadastro |
+| Cadastros (links) | Ferramentas ▸ Cadastros | gestao, adm, corretor | Links copiáveis de cada tipo para mandar ao cliente | Copiar link; abrir |
 
 Corretor: em Propostas/Esteiras/Processos a RLS só devolve as propostas que ele criou, e os botões de decisão ficam escondidos (`ACESSO.esteiraDecidir`).
 
@@ -152,6 +155,27 @@ Outros níveis não veem o item, e a rota redireciona para a Home.
 - sem resultado exato (mostra "quase lá" e o critério que mais restringe);
 - nenhum resultado nem com margem (sugere tirar o filtro mais restritivo);
 - estoque desatualizado há mais de 1 dia (aviso + "Atualizar agora" para a Gestão).
+
+### Distratos (RF29, PRD §5.16) — proposta, 14/10
+**ADM:**
+1. Propostas ▸ Distratos ▸ "Novo distrato".
+2. Busca o contrato ativo e confirma.
+3. Recebe o link e escolhe: copiar, abrir no WhatsApp com mensagem pronta ou enviar por e-mail.
+4. Acompanha o status na lista. O detalhe traz a pesquisa e o botão "Copiar motivo para o Imoview".
+
+**Locatário (`/distrato/<token>`, pensado primeiro para celular):**
+1. Procedimento: os itens do PDF e "Li e estou ciente".
+2. Aviso:
+   - imóvel e nome aparecem só para leitura;
+   - informa data prevista, motivo, detalhe e contato. Se o motivo for "Alugou outro imóvel" ou "Comprou outro imóvel", responde "Com quem?" (Imovit · outra imobiliária · direto com o proprietário);
+   - se faltarem menos de 30 dias, aparece o alerta de multa e ele confirma.
+3. Pesquisa (opcional): NPS, notas por área, "alugaria de novo" e comentário. Pode "Pular e enviar".
+4. Comprovante: data do aviso, fim dos 30 dias, próximos passos (agendar vistoria, documentos) e contato do administrativo.
+
+**Estados:**
+- Link vencido ou cancelado: "Este link expirou. Fale com o administrativo".
+- Link já enviado: só o comprovante.
+- Erro de envio: mantém o que foi preenchido e mostra "Tentar de novo".
 
 ## 4. Estados de tela
 | Tela | Vazio | Carregando | Erro | Sem permissão |

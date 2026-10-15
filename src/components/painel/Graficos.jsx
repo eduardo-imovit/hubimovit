@@ -14,7 +14,7 @@ import {
   YAxis,
   ZAxis,
 } from 'recharts'
-import { CORES, LABEL_FINALIDADE, simularGanho } from '../../lib/painelGestao'
+import { CORES, FUNIS, LABEL_FINALIDADE, LABEL_EQUIPE, simularGanho } from '../../lib/painelGestao'
 import { fmtMoeda, fmtNum, fmtPct } from '../../lib/paineis'
 
 const EIXO = { fontSize: 11, fill: 'var(--grafite-soft)' }
@@ -107,10 +107,10 @@ export function FunilCascata({ grupos }) {
       {grupos.map((g) => {
         const max = g.etapas[0].n || 1
         return (
-          <div key={g.finalidade} className="pg-funil">
+          <div key={g.chave ?? g.finalidade} className="pg-funil">
             <div className="pg-funil-titulo">
-              <span className={`pg-ponto pg-ponto--${g.finalidade}`} aria-hidden="true" />
-              {LABEL_FINALIDADE[g.finalidade]}
+              <span className={`pg-ponto pg-ponto--${g.finalidade}`} style={g.cor ? { background: g.cor } : undefined} aria-hidden="true" />
+              {g.rotulo ?? LABEL_FINALIDADE[g.finalidade]}
               <span className="pg-funil-conv">{fmtPct(g.conversao, 1)} viram negócio</span>
             </div>
             {g.etapas.map((e) => {
@@ -133,7 +133,7 @@ export function FunilCascata({ grupos }) {
                     <div className="pg-funil-trilho">
                       <div
                         className="pg-funil-barra"
-                        style={{ width: `${Math.max(2, (e.n / max) * 100)}%`, background: CORES[g.finalidade], opacity: gargalo ? 1 : 0.78 }}
+                        style={{ width: `${Math.max(2, (e.n / max) * 100)}%`, background: g.cor ?? CORES[g.finalidade], opacity: gargalo ? 1 : 0.78 }}
                       />
                     </div>
                     <span className="pg-funil-n">{fmtNum(e.n)}</span>
@@ -141,6 +141,129 @@ export function FunilCascata({ grupos }) {
                 </div>
               )
             })}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// v2 (PRD §5.0c): clientes ativos por etapa, perda por corretor, atividades × equipe
+// ---------------------------------------------------------------------------
+
+/** Clientes ativos hoje em cada etapa, inbound e outbound lado a lado. */
+export function EtapasAtivas({ etapas }) {
+  const max = Math.max(...etapas.flatMap((e) => FUNIS.map((f) => e.porFunil[f.chave])), 1)
+  return (
+    <div className="pg-grafico">
+      <div className="pg-grafico-titulo">Clientes em atendimento agora, por etapa</div>
+      <div className="pg-legenda">
+        {FUNIS.map((f) => (
+          <span key={f.chave}>
+            <span className="pg-ponto" style={{ background: f.cor }} aria-hidden="true" /> {f.label}
+          </span>
+        ))}
+      </div>
+      <div className="pg-hbarras">
+        {etapas.map((e) => (
+          <div key={e.label} className="pg-etapa-ativa">
+            <span className="pg-hbarra-rotulo">{e.label}</span>
+            <div className="pg-etapa-barras">
+              {FUNIS.map((f) => (
+                <div key={f.chave} className="pg-etapa-barra-linha" title={f.label}>
+                  <div className="pg-funil-trilho pg-funil-trilho--fino">
+                    <div className="pg-funil-barra" style={{ width: `${Math.max(1, (e.porFunil[f.chave] / max) * 100)}%`, background: f.cor }} />
+                  </div>
+                  <span className="pg-funil-n">
+                    {fmtNum(e.porFunil[f.chave])}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Taxa de cada corretor na passagem mais fraca, contra a da equipe. */
+export function PerdaCorretores({ perda, selecionado }) {
+  return (
+    <div className="pg-grafico">
+      <div className="pg-grafico-titulo">
+        {perda.de} → {perda.para}: quanto cada corretor faz avançar
+      </div>
+      <div className="pg-tabela-rolagem">
+        <table className="data-table pg-tabela-compacta">
+          <thead>
+            <tr>
+              <th>Corretor</th>
+              <th className="num">Avançaram</th>
+              <th className="num">Taxa</th>
+              <th className="num">Equipe</th>
+              <th className="num">Diferença</th>
+            </tr>
+          </thead>
+          <tbody>
+            {perda.corretores.map((c) => (
+              <tr key={c.corretor} className={selecionado === c.corretor ? 'is-selecionado' : undefined}>
+                <td>
+                  {c.corretor}
+                  <div className="is-muted pg-sub">{LABEL_EQUIPE[c.equipe]}</div>
+                </td>
+                <td className="num">{fmtNum(c.passaram)} de {fmtNum(c.n)}</td>
+                <td className="num">{c.passagem == null ? '—' : fmtPct(c.passagem, 0)}</td>
+                <td className="num">{c.equipeTaxa == null ? '—' : fmtPct(c.equipeTaxa, 0)}</td>
+                <td className="num">
+                  {c.dif == null ? (
+                    <span className="is-muted">amostra pequena</span>
+                  ) : (
+                    <span className={c.dif <= -5 ? 'pg-delta-ruim' : c.dif >= 5 ? 'pg-delta-bom' : undefined}>
+                      {c.dif > 0 ? '+' : ''}{fmtNum(c.dif, 0)} p.p.
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+/** Atividades realizadas por corretor, com a média da equipe como referência e o selo. */
+export function AtividadesEquipe({ grupos, selecionado, onSelecionar }) {
+  return (
+    <div className={`pg-duas ${grupos.length === 1 ? 'pg-duas--uma' : ''}`}>
+      {grupos.map((g) => {
+        const max = Math.max(...g.linhas.map((l) => l.n), g.media, 1)
+        return (
+          <div key={g.equipe} className="pg-grafico">
+            <div className="pg-grafico-titulo">
+              Equipe de {g.label.toLowerCase()} <span className="pg-grafico-ref">· média {fmtNum(g.media, 0)} por corretor</span>
+            </div>
+            <div className="pg-hbarras">
+              {g.linhas.map((l) => (
+                <button
+                  key={l.corretor}
+                  type="button"
+                  className={`pg-atividade ${selecionado === l.corretor ? 'is-selecionado' : ''}`}
+                  onClick={() => onSelecionar(l.corretor)}
+                  title={`Período anterior: ${l.anterior}`}
+                >
+                  <span className="pg-hbarra-rotulo">{l.corretor}</span>
+                  <div className="pg-funil-trilho pg-atividade-trilho">
+                    <div className="pg-funil-barra" style={{ width: `${Math.max(1, (l.n / max) * 100)}%`, background: l.selo?.chave === 'abaixo' ? 'var(--danger)' : CORES.contexto }} />
+                    <div className="pg-atividade-media" style={{ left: `${(g.media / max) * 100}%` }} aria-hidden="true" />
+                  </div>
+                  <span className="pg-funil-n">{fmtNum(l.n)}</span>
+                  {l.selo && <span className={`badge ${l.selo.badge}`}>{l.selo.label}</span>}
+                </button>
+              ))}
+            </div>
           </div>
         )
       })}

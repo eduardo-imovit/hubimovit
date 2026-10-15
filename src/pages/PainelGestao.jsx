@@ -2,33 +2,32 @@ import { useMemo } from 'react'
 import { usePainelGestao } from '../hooks/usePaineis'
 import { useFiltrosUrl } from '../hooks/useFiltrosUrl'
 import { BarraFiltros, Capitulo, Indice } from '../components/painel/Estrutura'
-import { Descartes, FunilCascata, GraficoCustoMidia, GraficoMensal, MapaPessoas, SaudeDados, Simulador, MatrizCanais } from '../components/painel/Graficos'
+import { AtividadesEquipe, Descartes, EtapasAtivas, FunilCascata, MapaPessoas, PerdaCorretores, SaudeDados } from '../components/painel/Graficos'
 import { fmtMoeda, fmtNum, fmtPct, isoLocal, saudeDados, somarDias } from '../lib/paineis'
 import {
-  capituloCanais,
-  capituloFunil,
+  atividadesVsEquipe,
   capituloPessoas,
   cicloMediano,
   conversaoSafra,
-  custoMidia,
   descartesPorEtapa,
+  emAtendimento,
+  equipesComerciais,
   filtrarBase,
   FILTROS_PADRAO,
-  fmtDecimal,
+  FUNIS,
+  funilPorOrigem,
   LABEL_FINALIDADE,
   listaDistinta,
-  manchete,
+  mancheteAtendimento,
   nomeCanal,
+  perdaPorCorretor,
   resolverPeriodo,
   resultadoPeriodo,
-  ritmo,
-  serieMensal,
-  sparkLeads,
-  sparkNegocios,
 } from '../lib/painelGestao'
 
 const fmtData = (iso) => iso.split('-').reverse().join('/')
 
+// Painel da Gestão v2 (PRD §5.0c, 15/10): foco no atendimento, não na entrada de leads.
 export default function PainelGestao() {
   const hoje = isoLocal()
   const { filtros, setFiltro, limpar, alterados } = useFiltrosUrl(FILTROS_PADRAO)
@@ -36,6 +35,7 @@ export default function PainelGestao() {
 
   // canais com o nome de exibição (a view grava alguns sem acento)
   const baseNorm = useMemo(() => (dados ? dados.base.map((a) => ({ ...a, canal: nomeCanal(a.canal) })) : null), [dados])
+  const equipes = useMemo(() => (dados ? equipesComerciais(dados.colaboradores) : new Map()), [dados])
 
   const opcoes = useMemo(() => {
     if (!baseNorm) return { canais: [], corretores: [] }
@@ -50,54 +50,44 @@ export default function PainelGestao() {
     const finalidades = filtros.finalidade === 'todas' ? ['Venda', 'Aluguel'] : [filtros.finalidade]
     const periodo = resolverPeriodo(filtros.periodo, hoje)
     const propostas = filtros.finalidade === 'Venda' ? [] : dados.propostas
-    const rit = ritmo(base, hoje)
-    const resultado = resultadoPeriodo(base, propostas, periodo)
-    const serie = serieMensal(base, hoje, rit)
-    const conversao = conversaoSafra(base, hoje)
-    const funilCap = capituloFunil(base, hoje, finalidades)
-    const canaisCap = capituloCanais(filtrarBase(baseNorm, { ...filtros, canal: 'todos' }), hoje)
     const soCorretor = (linhas, campo) => (filtros.corretor === 'todos' ? linhas : linhas.filter((l) => l[campo] === filtros.corretor))
+    const atendimento = emAtendimento(base)
+    const origem = funilPorOrigem(base, hoje)
+    // a comparação com a equipe precisa de todos os corretores: ignora o filtro de corretor
+    const semCorretor = filtrarBase(baseNorm, { ...filtros, corretor: 'todos' })
+    const perda = perdaPorCorretor(semCorretor, hoje, equipes)
+    const atividades = atividadesVsEquipe(dados.feitas, equipes, periodo, filtros.finalidade)
     const pessoasCap = capituloPessoas(
       {
-        base: filtrarBase(baseNorm, filtros),
+        base,
         tempoResposta: soCorretor(dados.tempoResposta, 'corretor'),
         aging: soCorretor(dados.aging, 'corretor'),
         atividades: soCorretor(dados.atividades, 'nomeusuario'),
       },
       hoje
     )
-    const leadsPorMes = { Venda: 0, Aluguel: 0 }
-    for (const p of serie.slice(-4, -1)) {
-      leadsPorMes.Venda += p.leadsVenda / 3
-      leadsPorMes.Aluguel += p.leadsAluguel / 3
-    }
     return {
-      base,
       finalidades,
       periodo,
-      rit,
-      resultado,
-      serie,
-      conversao,
+      resultado: resultadoPeriodo(base, propostas, periodo),
+      conversao: conversaoSafra(base, hoje),
       ciclo: cicloMediano(base, hoje),
-      funilCap,
+      atendimento,
+      origem,
+      perda,
       descartes: descartesPorEtapa(base, hoje),
-      canaisCap,
-      midia: custoMidia(baseNorm.filter((a) => !a.is_ruido), dados.meta, dados.google, hoje),
+      atividades,
       pessoasCap,
-      leadsPorMes,
       saude: saudeDados(
         [
           { fonte: 'CRM · atendimentos', ultima: dados.ultimaCrm, toleranciaDias: 1 },
           { fonte: 'CRM · atividades', ultima: dados.ultimaAtividades, toleranciaDias: 1 },
-          { fonte: 'Meta Ads', ultima: dados.ultimaMeta, toleranciaDias: 1 },
-          { fonte: 'Google Ads', ultima: dados.ultimaGoogle, toleranciaDias: 1 },
         ],
         hoje
       ),
-      frases: manchete({ rit, resultado, funilCap, pessoasCap, periodo, conversao }),
+      frases: mancheteAtendimento({ atendimento, origem, perda, atividades, pessoasCap }),
     }
-  }, [dados, baseNorm, filtros, hoje])
+  }, [dados, baseNorm, equipes, filtros, hoje])
 
   const recorte = [
     filtros.finalidade !== 'todas' && LABEL_FINALIDADE[filtros.finalidade],
@@ -105,13 +95,16 @@ export default function PainelGestao() {
     filtros.corretor !== 'todos' && filtros.corretor,
   ].filter(Boolean)
 
+  const selecionar = (c) => setFiltro('corretor', filtros.corretor === c ? 'todos' : c)
+  const [inbound, outbound] = FUNIS
+
   return (
     <div className="pg">
       <header className="page-header">
         <div>
           <div className="page-eyebrow">Dashboard</div>
           <div className="page-title">Painel da Gestão</div>
-          <div className="page-sub">Do resultado à causa e a quem precisa agir. {recorte.length > 0 && <strong>Recorte: {recorte.join(' · ')}</strong>}</div>
+          <div className="page-sub">Quem está em atendimento, onde perdemos e quem está trabalhando. {recorte.length > 0 && <strong>Recorte: {recorte.join(' · ')}</strong>}</div>
         </div>
       </header>
 
@@ -133,7 +126,7 @@ export default function PainelGestao() {
 
       {h && (
         <>
-          {/* 0 — Manchete */}
+          {/* 0 — Manchete: em atendimento agora */}
           <section className="pg-manchete" aria-label="Manchete">
             <div className="pg-manchete-texto">
               {h.frases.map((f) => (
@@ -142,131 +135,113 @@ export default function PainelGestao() {
             </div>
             <div className="pg-indices">
               <Indice
-                rotulo={`Leads ${h.periodo.label}`}
-                valor={fmtNum(h.resultado.leads)}
-                variacao={h.resultado.leadsVar}
-                contexto="vs período anterior"
-                serie={sparkLeads(h.serie)}
-                formula="Atendimentos válidos (sem ruído e sem captação interna) pela data de entrada."
+                rotulo="Em atendimento (qualificado → proposta)"
+                valor={fmtNum(h.atendimento.total)}
+                contexto={h.finalidades.map((f) => `${LABEL_FINALIDADE[f]} ${fmtNum(h.atendimento[f])}`).join(' · ')}
+                detalhe={`${inbound.label} ${fmtNum(h.atendimento.porFunil[inbound.chave])} · ${outbound.label} ${fmtNum(h.atendimento.porFunil[outbound.chave])}`}
+                formula="Atendimentos ativos hoje nas fases Lead qualificado, Visita e Proposta do CRM (sem ruído e sem captação interna)."
               />
               <Indice
-                rotulo="Ritmo (média 30 dias)"
-                valor={`${fmtDecimal(h.rit.porDia)}/dia`}
-                variacao={h.rit.variacao}
-                contexto="vs 30 dias anteriores"
-                formula="Leads dos últimos 30 dias ÷ 30. Projeção do mês = realizado + dias restantes × ritmo."
+                rotulo="Propostas em andamento"
+                valor={fmtNum(h.atendimento.proposta)}
+                contexto={`${fmtNum(h.atendimento.visita)} em visita`}
+                formula="Atendimentos ativos hoje na fase Proposta do CRM."
+              />
+              <Indice
+                rotulo={`Atividades ${h.periodo.label}`}
+                valor={fmtNum(h.atividades.total)}
+                variacao={h.atividades.totalAnterior >= 10 ? ((h.atividades.total - h.atividades.totalAnterior) / h.atividades.totalAnterior) * 100 : null}
+                contexto={h.atividades.totalAnterior >= 10 ? 'vs período anterior' : `período anterior: ${h.atividades.totalAnterior}`}
+                detalhe={h.atividades.abaixo.length ? `${h.atividades.abaixo.length} abaixo da média da equipe` : 'ninguém abaixo da média'}
+                formula="Atividades marcadas como realizadas no CRM, pela data da atividade, dos corretores da equipe comercial ativa. Não contam as Anotações."
               />
               <Indice
                 rotulo={`Negócios ${h.periodo.label}`}
                 valor={fmtNum(h.resultado.negocios)}
                 variacao={h.resultado.negociosAnterior >= 3 ? ((h.resultado.negocios - h.resultado.negociosAnterior) / h.resultado.negociosAnterior) * 100 : null}
                 contexto={h.resultado.negociosAnterior >= 3 ? 'vs período anterior' : `período anterior: ${h.resultado.negociosAnterior}`}
-                serie={sparkNegocios(h.serie)}
-                formula="Negócios realizados pela data de fechamento."
-              />
-              <Indice
-                rotulo="Conversão lead → negócio"
-                valor={fmtPct(h.conversao.atual)}
-                variacao={h.conversao.anterior ? ((h.conversao.atual - h.conversao.anterior) / h.conversao.anterior) * 100 : null}
-                contexto={`${h.conversao.negocios} de ${fmtNum(h.conversao.n)} · vs semestre anterior`}
-                formula="Safra madura: leads que entraram entre 60 e 242 dias atrás, comparados com os 6 meses anteriores (a partir de out/2025)."
+                formula="Negócios realizados pela data de fechamento. O valor de venda ainda não vem do CRM."
               />
               {h.finalidades.includes('Aluguel') && (
                 <Indice
                   rotulo={`Locado pela esteira ${h.periodo.label}`}
                   valor={fmtMoeda(h.resultado.valorLocado)}
-                  contexto={`${h.resultado.contratos} ${h.resultado.contratos === 1 ? 'contrato' : 'contratos'} · venda ainda sem valor no CRM`}
+                  contexto={`${h.resultado.contratos} ${h.resultado.contratos === 1 ? 'contrato' : 'contratos'}`}
                   formula="Soma do valor das propostas de locação concluídas na esteira no período."
                 />
               )}
             </div>
           </section>
 
-          {/* 1 — Ritmo */}
+          {/* 1 — Funil: clientes por etapa, inbound × outbound */}
           <Capitulo
             numero="1"
-            pergunta="Estamos no ritmo?"
-            conclusao={
-              h.rit.media3m > 0
-                ? `Pelo ritmo de ${fmtDecimal(h.rit.porDia)} leads/dia, o mês fecha em ~${fmtNum(h.rit.projecaoMes)} leads (média dos 3 meses anteriores: ${fmtNum(h.rit.media3m)}).`
-                : 'Sem histórico suficiente para projetar o mês.'
-            }
-            rodape="A barra clara do mês atual é o que ainda deve entrar se o ritmo dos últimos 30 dias se mantiver. Negócios contam pelo mês de fechamento."
+            pergunta="Como está o funil?"
+            conclusao={(() => {
+              const i = h.atendimento.porFunil[inbound.chave]
+              const o = h.atendimento.porFunil[outbound.chave]
+              const total = i + o
+              if (!total) return 'Nenhum cliente entre qualificado e proposta neste recorte.'
+              return `${fmtPct((o / total) * 100, 0)} dos clientes entre qualificado e proposta vieram do outbound (${fmtNum(o)} de ${fmtNum(total)}).`
+            })()}
+            rodape={`À esquerda, quem está ativo hoje em cada etapa. À direita, a conversão: leads que entraram de ${fmtData(h.origem.janela.inicio)} a ${fmtData(h.origem.janela.fim)} (já tiveram tempo de fechar), pela fase atual de cada atendimento; o CRM não guarda o histórico de fases. Inbound e outbound vêm do campo "funil" do CRM.`}
           >
             <div className="pg-duas">
-              <GraficoMensal serie={h.serie} finalidades={h.finalidades} tipo="leads" referencia={h.rit.media3m} />
-              <GraficoMensal serie={h.serie} finalidades={h.finalidades} tipo="negocios" />
+              <EtapasAtivas etapas={h.atendimento.etapas} />
+              <FunilCascata grupos={h.origem.grupos} />
             </div>
           </Capitulo>
 
-          {/* 2 — Funil */}
+          {/* 2 — Onde perdemos: passagem mais fraca, corretor × equipe */}
           <Capitulo
             numero="2"
-            pergunta="Onde o lead se perde?"
+            pergunta="Onde perdemos mais?"
             conclusao={
-              h.funilCap.pior
+              h.perda
                 ? (() => {
-                    const g = h.funilCap.pior
-                    const i = g.etapas.findIndex((e) => e.ordem === g.gargalo.ordem)
-                    return `A maior perda está entre ${g.etapas[i - 1].label.toLowerCase()} e ${g.gargalo.label.toLowerCase()} na ${LABEL_FINALIDADE[g.finalidade].toLowerCase()}: só ${fmtPct(g.gargalo.passagem, 0)} avançam.`
+                    const pior = h.perda.corretores.find((c) => c.dif != null && c.dif < 0)
+                    const base = `A maior perda está entre ${h.perda.de.toLowerCase()} e ${h.perda.para.toLowerCase()}: só ${fmtPct(h.perda.geral, 0)} avançam.`
+                    return pior ? `${base} ${pior.corretor} está ${fmtNum(Math.abs(pior.dif), 0)} p.p. abaixo da equipe.` : base
                   })()
-                : 'Amostra pequena demais para apontar um gargalo neste recorte.'
+                : 'Amostra pequena demais para apontar onde perdemos neste recorte.'
             }
-            rodape={`Leads que entraram de ${fmtData(h.funilCap.janela.inicio)} a ${fmtData(h.funilCap.janela.fim)} (já tiveram tempo de fechar), comparados com ${fmtData(h.funilCap.anterior.inicio)}–${fmtData(h.funilCap.anterior.fim)}. Conta pela fase atual de cada atendimento: o CRM não guarda o histórico de fases.`}
+            rodape="Safra madura (mesma janela do funil). A taxa de cada corretor é comparada com a da equipe dele (venda ou locação, pelo cadastro de colaboradores). Com menos de 5 leads na etapa anterior, só mostramos o número. O filtro de corretor não se aplica à tabela, para manter a comparação."
           >
-            <FunilCascata grupos={h.funilCap.grupos} />
+            <div className="pg-duas">
+              {h.perda ? <PerdaCorretores perda={h.perda} selecionado={filtros.corretor} /> : <div />}
+              <Descartes dados={h.descartes} />
+            </div>
           </Capitulo>
 
-          {/* 3 — Quanto custa */}
+          {/* 3 — Atividades × média da equipe */}
           <Capitulo
             numero="3"
-            pergunta="Quanto essa perda custa?"
-            conclusao={(() => {
-              const maior = h.descartes.porEtapa.reduce((m, e) => (e.n > m.n ? e : m), h.descartes.porEtapa[0])
-              return `${fmtPct((maior.n / (h.descartes.total || 1)) * 100, 0)} dos descartes acontecem ${maior.etapa.toLowerCase()}: ${fmtNum(maior.n)} de ${fmtNum(h.descartes.total)} leads.`
-            })()}
-            rodape="Descartes da safra madura (desde out/2025), pela etapa em que o atendimento estava quando foi descartado. A simulação multiplica as passagens do funil acima pelo volume médio de leads dos últimos 3 meses."
+            pergunta="Quem está atendendo?"
+            conclusao={
+              h.atividades.abaixo.length
+                ? `${h.atividades.abaixo.length} ${h.atividades.abaixo.length === 1 ? 'corretor fez' : 'corretores fizeram'} menos atividades que a média da equipe ${h.periodo.label}.`
+                : `Todos os corretores estão na média da equipe ou acima ${h.periodo.label}.`
+            }
+            rodape="Atividades realizadas no CRM (ligações, WhatsApp, visitas, reuniões etc., sem as Anotações). A linha escura é a média da equipe; na média = até 10% acima ou abaixo dela. Passe o mouse para ver o período anterior; clique para filtrar o painel pelo corretor."
           >
-            <div className="pg-duas">
-              <Descartes dados={h.descartes} />
-              {h.funilCap.pior && <Simulador grupo={h.funilCap.pior} leadsPorMes={Math.round(h.leadsPorMes[h.funilCap.pior.finalidade])} />}
-            </div>
+            <AtividadesEquipe grupos={h.atividades.grupos} selecionado={filtros.corretor} onSelecionar={selecionar} />
           </Capitulo>
 
-          {/* 4 — Canais */}
+          {/* 4 — Pessoas */}
           <Capitulo
             numero="4"
-            pergunta="Quais canais valem a pena?"
-            conclusao={
-              h.canaisCap.melhor && h.canaisCap.maiorVolume
-                ? h.canaisCap.melhor.canal === h.canaisCap.maiorVolume.canal
-                  ? `${h.canaisCap.melhor.canal} traz o maior volume e a melhor conversão (${fmtPct(h.canaisCap.melhor.conversao)}).`
-                  : `${h.canaisCap.melhor.canal} converte melhor (${fmtPct(h.canaisCap.melhor.conversao)}); ${h.canaisCap.maiorVolume.canal} traz mais volume, mas converte ${fmtPct(h.canaisCap.maiorVolume.conversao)}.`
-                : 'Amostra pequena demais para comparar canais neste recorte.'
-            }
-            rodape="Canais com 30 leads ou mais na safra madura. Leads de anúncio que entram pelo bot do WhatsApp ainda chegam ao CRM como “WhatsApp”, então o custo real da mídia paga está superestimado até a atribuição ficar pronta. O filtro de canal não se aplica a este capítulo."
-          >
-            <div className="pg-duas">
-              <MatrizCanais canais={h.canaisCap.canais} destaque={filtros.canal !== 'todos' ? filtros.canal : h.canaisCap.melhor?.canal} />
-              <GraficoCustoMidia dados={h.midia} />
-            </div>
-          </Capitulo>
-
-          {/* 5 — Pessoas */}
-          <Capitulo
-            numero="5"
             pergunta="Quem precisa agir agora?"
             conclusao={`${fmtNum(h.pessoasCap.totais.semContato)} leads ativos sem nenhum contato, ${fmtNum(h.pessoasCap.totais.abertos30)} abertos há mais de 30 dias e ${fmtNum(h.pessoasCap.totais.vencidas30)} atividades vencidas no último mês.`}
             rodape={`Quanto mais escura a célula, pior em relação aos colegas. Clique num corretor para ver o painel inteiro só com a carteira dele. Há ainda ${fmtNum(h.pessoasCap.totais.esquecidas)} atividades vencidas há mais de 30 dias (provável limpeza no CRM). "Abertos" conta dias desde a entrada do lead; o CRM não exporta a data da última interação.`}
           >
-            <MapaPessoas linhas={h.pessoasCap.linhas} selecionado={filtros.corretor} onSelecionar={(c) => setFiltro('corretor', filtros.corretor === c ? 'todos' : c)} />
+            <MapaPessoas linhas={h.pessoasCap.linhas} selecionado={filtros.corretor} onSelecionar={selecionar} />
           </Capitulo>
 
           <section className="pg-rodape" aria-label="Saúde dos dados">
             <div className="pg-capitulo-pergunta">Dá para confiar nestes números?</div>
             <SaudeDados fontes={h.saude} />
             <p className="pg-nota">
-              Ciclo mediano até o fechamento: {h.ciclo == null ? '—' : `${fmtNum(h.ciclo)} dias`}. Conversões contam só leads a partir de out/2025, quando o CRM passou a trazer os negócios.
+              Conversão lead → negócio na safra madura: {fmtPct(h.conversao.atual)} ({h.conversao.negocios} de {fmtNum(h.conversao.n)}). Ciclo mediano até o fechamento: {h.ciclo == null ? '—' : `${fmtNum(h.ciclo)} dias`}. Conversões contam só leads a partir de out/2025, quando o CRM passou a trazer os negócios.
             </p>
           </section>
         </>
