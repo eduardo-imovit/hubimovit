@@ -202,11 +202,10 @@ export default function PainelGestao() {
             numero="1"
             pergunta="Como está o funil?"
             conclusao={(() => {
-              const i = h.atendimento.porFunil[inbound.chave]
-              const o = h.atendimento.porFunil[outbound.chave]
-              const total = i + o
-              if (!total) return 'Nenhum cliente entre qualificado e proposta neste recorte.'
-              return `${fmtPct((o / total) * 100, 0)} dos clientes entre qualificado e proposta vieram do outbound (${fmtNum(o)} de ${fmtNum(total)}).`
+              const prop = (f) => h.atendimento.etapas.find((e) => e.label === 'Proposta')?.porFunil[f.chave] ?? 0
+              const parte = (f) => `${f.label}: ${fmtNum(h.atendimento.porFunil[f.chave])} entre qualificado e proposta (${fmtNum(prop(f))} em proposta)`
+              if (!h.atendimento.total) return 'Nenhum cliente entre qualificado e proposta neste recorte.'
+              return `${parte(inbound)}. ${parte(outbound)}.`
             })()}
             rodape={`Cada linha é um funil, com quem está ativo hoje em cada etapa; os valores estão na legenda ao lado. Abaixo da linha, a conversão de cada passagem (em vermelho, a mais fraca): leads que entraram de ${fmtData(h.origem.janela.inicio)} a ${fmtData(h.origem.janela.fim)} (já tiveram tempo de fechar), pela fase atual de cada atendimento; o CRM não guarda o histórico de fases. Inbound e outbound vêm do campo "funil" do CRM.`}
           >
@@ -230,7 +229,7 @@ export default function PainelGestao() {
                 : 'A referência é o semestre anterior.'
             } Com menos de ${h.perda.minimo} leads na etapa de origem, a diferença não é calculada.${ehGestao ? ' "Comparar com" aparece só para a Gestão.' : ''}`}
           >
-            <div className="pg-duas">
+            <div className="pg-empilhado">
               <PerdaComparada
                 perda={h.perda}
                 rotuloSel={filtros.corretor !== 'todos' ? filtros.corretor : 'Recorte atual'}

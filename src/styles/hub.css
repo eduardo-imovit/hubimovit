@@ -850,7 +850,11 @@
 
 /* Painel da Gestão v2 (PRD §5.0c) */
 .pg-tabela-rolagem { overflow-x: auto; }
-.pg-tabela-compacta td, .pg-tabela-compacta th { white-space: nowrap; }
+.pg-tabela-compacta th, .pg-tabela-compacta td { padding: var(--space-2) var(--space-3); }
+.pg-tabela-compacta th { white-space: normal; }
+.pg-tabela-compacta td.num { white-space: nowrap; }
+.pg-empilhado { display: grid; gap: var(--space-6); }
+.pg-empilhado > .pg-grafico:last-child { max-width: 640px; }
 .pg-tabela-compacta .pg-sub { font-size: 11px; }
 .pg-tabela-compacta tr.is-pior td { background: var(--danger-soft); }
 .pg-duas--uma { grid-template-columns: 1fr; }
@@ -874,8 +878,12 @@
 /* atividades */
 .pg-ativ-resumo { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
 .pg-ativ-resumo .badge { margin-top: var(--space-2); }
-.pg-tipo-ativ { display: grid; grid-template-columns: 150px 1fr 150px; align-items: center; gap: var(--space-3); }
-.pg-atividade { display: grid; grid-template-columns: 150px 1fr 40px 118px; align-items: center; gap: var(--space-3); width: 100%; padding: 2px 4px; background: none; border: 0; border-radius: 4px; text-align: left; font: inherit; cursor: pointer; }
+.pg-ativ-numero { font-size: var(--text-xl); font-weight: 600; color: var(--grafite); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.pg-ativ-contexto { font-size: var(--text-xs); color: var(--grafite-soft); margin-top: 2px; }
+.pg-tipo-ativ { display: grid; grid-template-columns: 150px 1fr 150px; align-items: center; gap: var(--space-3); margin-bottom: var(--space-2); }
+.pg-tipo-ativ .pg-hbarra-rotulo, .pg-atividade .pg-hbarra-rotulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pg-tipo-ativ .pg-funil-n, .pg-atividade .pg-funil-n { color: var(--grafite); }
+.pg-atividade { display: grid; grid-template-columns: 150px 1fr 40px 118px; align-items: center; gap: var(--space-3); width: 100%; padding: 4px; margin-bottom: var(--space-1, 4px); color: var(--grafite); background: none; border: 0; border-radius: 4px; text-align: left; font: inherit; cursor: pointer; }
 .pg-atividade:hover { background: var(--pergaminho); }
 .pg-atividade.is-selecionado { box-shadow: inset 3px 0 0 var(--coral); }
 .pg-atividade .badge { justify-self: start; }

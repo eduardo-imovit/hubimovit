@@ -307,19 +307,19 @@ export function AtividadesPainel({ dados, selecionado, onSelecionar }) {
           <div className="pg-grafico-titulo">Total de atividades</div>
           <div className="pg-ativ-resumo">
             <div>
-              <div className="pg-indice-valor">{fmtNum(dados.total)}</div>
-              <div className="pg-indice-contexto">
+              <div className="pg-ativ-numero">{fmtNum(dados.total)}</div>
+              <div className="pg-ativ-contexto">
                 {dados.media == null ? 'sem equipe no cadastro de colaboradores' : `média da equipe de ${dados.equipe.toLowerCase()}: ${fmtNum(dados.media, 0)}`}
               </div>
               {dados.selo && <span className={`badge ${dados.selo.badge}`}>{dados.selo.label}</span>}
             </div>
             <div>
-              <div className="pg-indice-valor">{fmtNum(dados.variedade)}</div>
-              <div className="pg-indice-contexto">tipos de atividade (a equipe usou {fmtNum(dados.variedadeEquipe)})</div>
+              <div className="pg-ativ-numero">{fmtNum(dados.variedade)}</div>
+              <div className="pg-ativ-contexto">tipos de atividade (a equipe usou {fmtNum(dados.variedadeEquipe)})</div>
             </div>
             <div>
-              <div className="pg-indice-valor">{fmtNum(dados.anterior)}</div>
-              <div className="pg-indice-contexto">no período anterior</div>
+              <div className="pg-ativ-numero">{fmtNum(dados.anterior)}</div>
+              <div className="pg-ativ-contexto">no período anterior</div>
             </div>
           </div>
         </div>
