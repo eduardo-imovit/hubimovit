@@ -26,26 +26,33 @@ function LinkCopiavel({ url }) {
  * corretor mandar ao cliente. Abrem no celular, sem login. A lista de
  * respostas continua só com gestão/adm.
  */
+/** Os links de cada tipo habilitado (também usado em Locação ▸ Cadastros). */
+export function ListaLinksCadastro() {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      {Object.entries(TIPOS_CADASTRO).filter(([, c]) => c.habilitado).map(([tipo, cfg]) => (
+        <div key={tipo} className="card card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+          <div className="page-title" style={{ fontSize: 'var(--text-lg)' }}>{cfg.titulo}</div>
+          <div className="page-sub" style={{ margin: 0 }}>{cfg.descricao}</div>
+          <LinkCopiavel url={linkCadastro(tipo)} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function CadastrosLinks() {
   return (
     <div>
       <header className="page-header">
         <div>
           <div className="page-eyebrow">Ferramentas</div>
-          <div className="page-title">Cadastros para clientes</div>
+          <div className="page-title">Links de cadastro</div>
           <div className="page-sub">Links dos formulários públicos. Mande o do perfil certo; sem o perfil, mande o seletor.</div>
         </div>
       </header>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-        {Object.entries(TIPOS_CADASTRO).filter(([, c]) => c.habilitado).map(([tipo, cfg]) => (
-          <div key={tipo} className="card card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-            <div className="page-title" style={{ fontSize: 'var(--text-lg)' }}>{cfg.titulo}</div>
-            <div className="page-sub" style={{ margin: 0 }}>{cfg.descricao}</div>
-            <LinkCopiavel url={linkCadastro(tipo)} />
-          </div>
-        ))}
-      </div>
+      <ListaLinksCadastro />
     </div>
   )
 }

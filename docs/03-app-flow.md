@@ -66,7 +66,16 @@ Estados: link de corretor inexistente/inativo → formulário sem corretor pré-
 **Feedback de visita (corretor):** Ferramentas → Feedback de visita → formulário → "Gerar PDF" (download) → salvo no histórico (`/feedbacks`, o corretor vê os dele).
 **Home:** bloco "Ferramentas" (forms do Hub + links externos restantes) no lugar de "Links úteis".
 
-### Menu Propostas (pedido do Eduardo, 28/09)
+### Navegação por trabalho (decisão do Eduardo, 15/10) — substitui Dash / Propostas / Ferramentas
+A Navbar ficou: **Home · Painéis ▾ · Atendimento ▾ · Locação ▾ · Venda ▾ · Ferramentas ▾ · Configurações**. Cada item aparece conforme o nível (`acessos.js`), e um menu sem nenhum item visível não aparece. A montagem está em `buildMenus` (`Navbar.jsx`).
+- **Painéis:** Comercial (para o corretor, "Meus números"), Painel da Gestão, Performance, Adm locação.
+- **Atendimento:** Kanban, Dados de atendimento, Relatório de atividades, Captações, Feedback de visita.
+- **Locação:** Propostas, Esteira, Processos, Cadastros e Distratos. **Venda:** Propostas e Processos. Os dois menus saem de `propostasNav.js`, e cada área virou um menu próprio, sem o nível "Propostas ▸".
+- **Ferramentas:** Materiais para clientes, Links de cadastro (só para quem não vê Locação ▸ Cadastros, ou seja, o corretor) e TV Display.
+- **Locação ▸ Cadastros** tem, numa página só, a lista de cadastros recebidos (PF e PJ, com filtro) e o bloco "Links para enviar ao cliente". Gestão e ADM.
+- O ADM passou a ver também **Painéis ▸ Adm locação** e **Locação ▸ Distratos** (15/10).
+
+### Menu Propostas (pedido do Eduardo, 28/09) — substituído em 15/10 (ver acima)
 Locação e venda são processos separados. Navbar **Propostas ▾** → Locação ▸ / Venda ▸; o clique em "Propostas" abre `/propostas`, com um cartão por área. Dentro de cada área, o topo da página tem o caminho "Propostas › Locação" e abas: Locação = Propostas (`/admin/propostas`) · Esteira (`/admin/esteiras`) · Processos (`/admin/processos`); Venda = Propostas (`/admin/vendas`, só as que aguardam assinatura, e o botão de criar) · Processos (`/admin/vendas/processos`, histórico completo com o PDF). As URLs antigas foram mantidas porque os e-mails apontam para elas. Definição única em `src/lib/propostasNav.js`.
 
 ### Esteira de locação v4 (gestor, locatário, ADM) — PRD §5.6, 28/09

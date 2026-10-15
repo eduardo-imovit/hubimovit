@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import SubnavPropostas from '../../components/layout/SubnavPropostas'
 import { supabase } from '../../lib/supabaseClient'
 import { TIPOS_CADASTRO, linkCadastros } from '../../lib/cadastros'
+import { ListaLinksCadastro } from '../CadastrosLinks'
 
 const fmtData = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 const quem = (c) => c.pessoa?.nome ?? c.pessoa?.razao_social ?? '—'
@@ -43,7 +44,7 @@ export default function Cadastros() {
       <SubnavPropostas area="locacao" />
       <header className="page-header">
         <div>
-          <div className="page-eyebrow">Propostas · Locação</div>
+          <div className="page-eyebrow">Locação</div>
           <div className="page-title">Cadastros</div>
           <div className="page-sub">Quem preencheu os cadastros públicos. Compartilhe o link com o cliente.</div>
         </div>
@@ -51,6 +52,13 @@ export default function Cadastros() {
           {copiado ? 'Link copiado!' : 'Copiar link dos cadastros'}
         </button>
       </header>
+
+      <details className="card card-body" style={{ marginBottom: 'var(--space-4)' }}>
+        <summary style={{ cursor: 'pointer', fontWeight: 500 }}>Links para enviar ao cliente (PF e PJ)</summary>
+        <div style={{ marginTop: 'var(--space-3)' }}>
+          <ListaLinksCadastro />
+        </div>
+      </details>
 
       {tiposComDados.length > 1 && (
         <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-3)' }} role="radiogroup" aria-label="Filtrar por tipo">
@@ -68,8 +76,8 @@ export default function Cadastros() {
         <div className="card card-body">Nenhum cadastro recebido ainda.</div>
       )}
       {visiveis.length > 0 && (
-        <div className="card card-body" style={{ overflowX: 'auto' }}>
-          <table className="hub-table">
+        <div style={{ overflowX: 'auto' }}>
+          <table className="data-table">
             <thead>
               <tr><th>Quem</th><th>Tipo</th><th>Contato</th><th>Imóvel</th><th>Recebido em</th><th>Origem</th><th>E-mail</th></tr>
             </thead>
