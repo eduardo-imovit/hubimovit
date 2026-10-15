@@ -1,5 +1,20 @@
 # Handoff — Hub Imovit
 
+## Sprint 2026-10-15 — Cadastros: detalhe em modal + busca (RF30.4)
+
+**Objetivo (Eduardo):** o teste do Locador PJ passou (e-mail chega, aparece na lista), mas não dava para abrir o cadastro completo; pediu também uma barra de pesquisa.
+
+### Feito
+- `src/components/cadastro/CadastroDetalheModal.jsx` (novo, padrão `ModalPortal` da esteira): a linha abre o cadastro inteiro em modal — pessoa/empresa, cônjuge/sócio, financeiro, imóvel + rodapé (quando, origem, e-mail). Sem edição, rótulos amigáveis, `extra_*` do importe com o nome da coluna.
+- `src/pages/admin/Cadastros.jsx`: busca (nome, e-mail, CPF/CNPJ, telefone, endereço/bairro/cidade) + clique na linha abre o modal (busca a linha completa por `id`, pois a lista não traz `acompanhante/financeiro`).
+- Docs: PRD RF30.4 ganhou a frase do modal + busca.
+
+### Estado atual
+- `npm run build` ok. **NÃO commitado nem publicado;** dev local (5173) com HMR deve já mostrar. Para a gestão ver: commit + push (`teste` ou `main`, como o Eduardo preferir) — push por este terminal segue 403, fazer no terminal dele.
+
+### Como retomar
+- `/admin/cadastros` → buscar → clicar na linha.
+
 ## Sprint 2026-10-14 (d) — Central de Cadastros + piloto Locador PJ (Fase 21)
 
 **Objetivo (Eduardo):** trazer os demais Google Forms de cadastro para o Hub sem lotar o menu (1 página + 1 tabela + 1 função + 1 lista), começando pelo Locador PJ; importar o histórico das 2 planilhas para a mesma lista. "Pode construir" em 14/10.

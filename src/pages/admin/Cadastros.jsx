@@ -3,11 +3,21 @@ import SubnavPropostas from '../../components/layout/SubnavPropostas'
 import { supabase } from '../../lib/supabaseClient'
 import { TIPOS_CADASTRO, linkCadastros } from '../../lib/cadastros'
 import { ListaLinksCadastro } from '../CadastrosLinks'
+import CadastroDetalheModal from '../../components/cadastro/CadastroDetalheModal'
 
 const fmtData = (iso) => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 const quem = (c) => c.pessoa?.nome ?? c.pessoa?.razao_social ?? '—'
 const contato = (c) => [c.email, c.pessoa?.celular ?? c.pessoa?.telefone ?? ''].filter(Boolean).join(' · ')
 const onde = (c) => (c.imovel ? `${c.imovel.endereco} · ${c.imovel.bairro}, ${c.imovel.cidade}/${c.imovel.estado}` : '—')
+// Busca em nome/razão, e-mail, documento, telefone e endereço do imóvel.
+const casa = (c, busca) => {
+  const b = busca.trim().toLowerCase()
+  if (!b) return true
+  const p = c.pessoa ?? {}
+  const i = c.imovel ?? {}
+  return [p.nome, p.razao_social, p.cpf, p.cnpj, p.celular, p.telefone, p.email, c.email,
+    i.endereco, i.bairro, i.cidade].some((v) => String(v ?? '').toLowerCase().includes(b))
+}
 
 /**
  * Central de cadastros (RF30, PRD §5.17): o que chegou pelos formulários
@@ -16,6 +26,8 @@ const onde = (c) => (c.imovel ? `${c.imovel.endereco} · ${c.imovel.bairro}, ${c
 export default function Cadastros() {
   const [itens, setItens] = useState([])
   const [filtro, setFiltro] = useState('todos')
+  const [busca, setBusca] = useState('')
+  const [detalhe, setDetalhe] = useState(null)
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
   const [copiado, setCopiado] = useState(false)
@@ -36,8 +48,13 @@ export default function Cadastros() {
     })
   }
 
+  async function abrir(id) {
+    const { data, error } = await supabase.from('cadastros').select('*').eq('id', id).single()
+    if (!error) setDetalhe(data)
+  }
+
   const tiposComDados = [...new Set(itens.map((c) => c.tipo))]
-  const visiveis = filtro === 'todos' ? itens : itens.filter((c) => c.tipo === filtro)
+  const visiveis = itens.filter((c) => (filtro === 'todos' || c.tipo === filtro) && casa(c, busca))
 
   return (
     <div>
@@ -59,6 +76,12 @@ export default function Cadastros() {
           <ListaLinksCadastro />
         </div>
       </details>
+
+      <div className="field" style={{ maxWidth: 360, marginBottom: 'var(--space-3)' }}>
+        <label htmlFor="cad-busca">Buscar</label>
+        <input id="cad-busca" type="search" value={busca} onChange={(ev) => setBusca(ev.target.value)}
+          placeholder="Nome, e-mail, CPF/CNPJ, telefone, endereço…" autoComplete="off" />
+      </div>
 
       {tiposComDados.length > 1 && (
         <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-3)' }} role="radiogroup" aria-label="Filtrar por tipo">
@@ -83,7 +106,7 @@ export default function Cadastros() {
             </thead>
             <tbody>
               {visiveis.map((c) => (
-                <tr key={c.id}>
+                <tr key={c.id} onClick={() => abrir(c.id)} style={{ cursor: 'pointer' }} title="Abrir cadastro completo">
                   <td>{quem(c)}</td>
                   <td>{TIPOS_CADASTRO[c.tipo]?.titulo ?? c.tipo}</td>
                   <td>{contato(c)}</td>
@@ -97,6 +120,7 @@ export default function Cadastros() {
           </table>
         </div>
       )}
+      <CadastroDetalheModal cadastro={detalhe} onClose={() => setDetalhe(null)} />
     </div>
   )
 }
