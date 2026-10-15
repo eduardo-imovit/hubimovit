@@ -69,7 +69,7 @@ Estados: link de corretor inexistente/inativo → formulário sem corretor pré-
 ### Navegação por trabalho (decisão do Eduardo, 15/10) — substitui Dash / Propostas / Ferramentas
 A Navbar ficou: **Home · Painéis ▾ · Atendimento ▾ · Locação ▾ · Venda ▾ · Ferramentas ▾ · Configurações**. Cada item aparece conforme o nível (`acessos.js`), e um menu sem nenhum item visível não aparece. A montagem está em `buildMenus` (`Navbar.jsx`).
 - **Painéis:** Comercial (para o corretor, "Meus números"), Painel da Gestão, Performance, Adm locação.
-- **Atendimento:** Kanban, Dados de atendimento, Relatório de atividades, Captações, Feedback de visita.
+- **Atendimento:** Kanban, Dados de atendimento (Gestão e corretor; o ADM não vê, 15/10), Relatório de atividades, Captações, Feedback de visita.
 - **Locação:** Propostas, Esteira, Processos, Cadastros e Distratos. **Venda:** Propostas e Processos. Os dois menus saem de `propostasNav.js`, e cada área virou um menu próprio, sem o nível "Propostas ▸".
 - **Ferramentas:** Materiais para clientes, Links de cadastro (só para quem não vê Locação ▸ Cadastros, ou seja, o corretor) e TV Display.
 - **Locação ▸ Cadastros** tem, numa página só, a lista de cadastros recebidos (PF e PJ, com filtro) e o bloco "Links para enviar ao cliente". Gestão e ADM.

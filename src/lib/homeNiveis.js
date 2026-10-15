@@ -55,7 +55,7 @@ const PAGINAS = [
   { titulo: 'Painel de Performance', to: '/dashboard/performance', acesso: 'dashPerformance', termos: 'midia meta google anuncios campanhas orcamento cpl investimento' },
   { titulo: 'Meus números (Comercial)', to: '/dashboard/comercial', acesso: 'dashComercial', termos: 'meus numeros comercial leads funil visitas resultado corretor' },
   { titulo: 'Kanban', to: '/kanban', acesso: 'kanban', termos: 'atendimentos fases crm leads quadro' },
-  { titulo: 'Dados de Atendimento', to: '/kanban/dados', acesso: 'kanban', termos: 'analise atendimentos origem bairros corretor' },
+  { titulo: 'Dados de Atendimento', to: '/kanban/dados', acesso: 'dadosAtendimento', termos: 'analise atendimentos origem bairros corretor' },
   { titulo: 'Relatório de Atividades', to: '/kanban/atividades', acesso: 'kanban', termos: 'atividades ligacoes visitas relatorio' },
   { titulo: 'Propostas (locação ou venda)', to: '/propostas', acesso: 'propostas', termos: 'propostas locacao venda escolher' },
   { titulo: 'Captações', to: '/captacoes', acesso: 'formularios', termos: 'captacao captar imovel proprietario autorizacao link formulario' },

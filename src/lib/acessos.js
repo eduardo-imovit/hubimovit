@@ -44,6 +44,7 @@ export const ACESSO = {
   propostas: soComPropostas(['gestao', 'adm']), // menu Propostas (locação ou venda)
   formularios: ['gestao', 'adm', 'corretor'], // Ferramentas: Captações e Feedback de visita (corretor: os dele)
   kanban: ['gestao', 'adm', 'corretor'], // corretor: só os atendimentos e atividades dele (RLS)
+  dadosAtendimento: ['gestao', 'corretor'], // Atendimento ▸ Dados de atendimento; o ADM não vê (15/10)
   dash: ['gestao', 'marketing'], // Painel da Gestão (pessoas da equipe) e Comercial com todos os corretores
   dashPerformance: ['gestao', 'marketing', 'corretor'], // mídia e leads pagos da imobiliária inteira (decisão de 06/10)
   dashComercial: ['gestao', 'marketing', 'corretor'],

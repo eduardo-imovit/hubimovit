@@ -25,11 +25,9 @@ function buildMenus(perfil) {
 
   const atendimento = []
   if (pode(perfil, 'kanban')) {
-    atendimento.push(
-      { to: '/kanban', label: 'Kanban' },
-      { to: '/kanban/dados', label: 'Dados de atendimento' },
-      { to: '/kanban/atividades', label: 'Relatório de atividades' },
-    )
+    atendimento.push({ to: '/kanban', label: 'Kanban' })
+    if (pode(perfil, 'dadosAtendimento')) atendimento.push({ to: '/kanban/dados', label: 'Dados de atendimento' })
+    atendimento.push({ to: '/kanban/atividades', label: 'Relatório de atividades' })
   }
   if (pode(perfil, 'formularios')) {
     atendimento.push({ to: '/captacoes', label: 'Captações' }, { to: '/feedback-visita', label: 'Feedback de visita' })

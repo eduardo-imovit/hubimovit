@@ -56,7 +56,7 @@ export default function App() {
         <Route path="/tv-display" element={<ProtectedRoute papeis={ACESSO.tv} navbar={<NavbarTV />} semPadding semScroll><TVDisplay /></ProtectedRoute>} />
         <Route path="/spotify-callback" element={<ProtectedRoute papeis={ACESSO.spotify}><SpotifyCallback /></ProtectedRoute>} />
         <Route path="/kanban" element={<ProtectedRoute papeis={ACESSO.kanban}><Kanban /></ProtectedRoute>} />
-        <Route path="/kanban/dados" element={<ProtectedRoute papeis={ACESSO.kanban}><DadosAtendimento /></ProtectedRoute>} />
+        <Route path="/kanban/dados" element={<ProtectedRoute papeis={ACESSO.dadosAtendimento}><DadosAtendimento /></ProtectedRoute>} />
         <Route path="/kanban/atividades" element={<ProtectedRoute papeis={ACESSO.kanban}><RelatorioAtividades /></ProtectedRoute>} />
         <Route path="/dashboard/comercial" element={<ProtectedRoute papeis={ACESSO.dashComercial}><PainelComercial /></ProtectedRoute>} />
         <Route path="/dashboard/gestao" element={<ProtectedRoute papeis={ACESSO.dash}><PainelGestao /></ProtectedRoute>} />

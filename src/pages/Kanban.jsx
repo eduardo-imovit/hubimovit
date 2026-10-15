@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAtendimentos } from '../hooks/useAtendimentos'
+import { usePerfil } from '../hooks/usePerfil'
+import { pode } from '../lib/acessos'
 import { filtrarAtendimentos, filtrosKanbanPadrao } from '../lib/atendimentos'
 import KanbanFiltros from '../components/kanban/KanbanFiltros'
 import KanbanBoard from '../components/kanban/KanbanBoard'
 
 export default function Kanban() {
   const { atendimentos, carregando, erro } = useAtendimentos()
+  const { perfil } = usePerfil()
   const [padrao] = useState(filtrosKanbanPadrao)
   const [filtros, setFiltros] = useState(padrao)
 
@@ -20,7 +23,7 @@ export default function Kanban() {
           <div className="page-title">Kanban de atendimentos</div>
           <div className="page-sub">Somente leitura — espelho do CRM, atualizado por sincronização.</div>
         </div>
-        <Link to="/kanban/dados" className="btn btn-ghost btn-sm">Dados de atendimento →</Link>
+        {pode(perfil, 'dadosAtendimento') && <Link to="/kanban/dados" className="btn btn-ghost btn-sm">Dados de atendimento →</Link>}
       </header>
 
       {carregando && <div className="hub-loading">Carregando atendimentos…</div>}
