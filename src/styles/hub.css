@@ -849,17 +849,32 @@
 .pg-saude-texto { font-size: 11px; color: var(--grafite-soft); }
 
 /* Painel da Gestão v2 (PRD §5.0c) */
-.pg-legenda { display: flex; gap: var(--space-4); font-size: var(--text-xs); color: var(--grafite-mid); margin-bottom: var(--space-3); }
-.pg-legenda > span { display: inline-flex; align-items: center; gap: 6px; }
-.pg-etapa-ativa { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: var(--space-3); }
-.pg-etapa-barras { display: grid; gap: 3px; }
-.pg-etapa-barra-linha { display: grid; grid-template-columns: 1fr 48px; align-items: center; gap: var(--space-3); }
-.pg-funil-trilho--fino { height: 14px; }
 .pg-tabela-rolagem { overflow-x: auto; }
 .pg-tabela-compacta td, .pg-tabela-compacta th { white-space: nowrap; }
 .pg-tabela-compacta .pg-sub { font-size: 11px; }
-.pg-tabela-compacta tr.is-selecionado td:first-child { box-shadow: inset 3px 0 0 var(--coral); font-weight: 600; }
+.pg-tabela-compacta tr.is-pior td { background: var(--danger-soft); }
 .pg-duas--uma { grid-template-columns: 1fr; }
+.pg-titulo-com-acao { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.pg-campo--inline { flex-direction: row; align-items: center; gap: var(--space-2); }
+.pg-subtitulo { font-size: var(--text-xs); color: var(--grafite-soft); text-transform: uppercase; letter-spacing: 0.04em; margin: var(--space-4) 0 var(--space-2); }
+
+/* funil em linha: nome | linha + conversão | legenda com valores */
+.pg-funil-linha2 { display: grid; grid-template-columns: 96px 1fr 168px; gap: var(--space-4); align-items: start; padding: var(--space-3) 0; border-top: 1px solid var(--champagne); }
+.pg-funil-linha2:first-of-type { border-top: 0; }
+.pg-funil-linha2-nome { display: flex; flex-direction: column; font-size: var(--text-sm); color: var(--grafite); }
+.pg-funil-linha2-nome span { font-size: var(--text-lg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.pg-funil-linha2-trilho { display: flex; height: 26px; border-radius: 4px; overflow: hidden; gap: 2px; margin-top: 4px; }
+.pg-funil-linha2-seg { min-width: 4px; }
+.pg-funil-linha2-conv { margin-top: var(--space-2); font-size: 11px; color: var(--grafite-soft); display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.pg-funil-linha2-conv .is-gargalo { color: var(--danger); font-weight: 600; }
+.pg-funil-linha2-legenda { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: var(--text-sm); color: var(--grafite-mid); }
+.pg-funil-linha2-legenda li { display: grid; grid-template-columns: 12px 1fr auto; align-items: center; gap: 6px; }
+.pg-funil-linha2-legenda strong { font-variant-numeric: tabular-nums; color: var(--grafite); }
+
+/* atividades */
+.pg-ativ-resumo { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+.pg-ativ-resumo .badge { margin-top: var(--space-2); }
+.pg-tipo-ativ { display: grid; grid-template-columns: 150px 1fr 150px; align-items: center; gap: var(--space-3); }
 .pg-atividade { display: grid; grid-template-columns: 150px 1fr 40px 118px; align-items: center; gap: var(--space-3); width: 100%; padding: 2px 4px; background: none; border: 0; border-radius: 4px; text-align: left; font: inherit; cursor: pointer; }
 .pg-atividade:hover { background: var(--pergaminho); }
 .pg-atividade.is-selecionado { box-shadow: inset 3px 0 0 var(--coral); }
@@ -875,7 +890,12 @@
   .pg-hbarra { grid-template-columns: 96px 1fr 80px; }
   .pg-atividade { grid-template-columns: 96px 1fr 32px; }
   .pg-atividade .badge { grid-column: 1 / -1; }
-  .pg-etapa-ativa { grid-template-columns: 80px 1fr; }
+  .pg-funil-linha2 { grid-template-columns: 1fr; gap: var(--space-2); }
+  .pg-funil-linha2-nome { flex-direction: row; justify-content: space-between; align-items: baseline; }
+  .pg-funil-linha2-legenda { grid-template-columns: 1fr 1fr; }
+  .pg-tipo-ativ { grid-template-columns: 96px 1fr; }
+  .pg-tipo-ativ .pg-funil-n { grid-column: 1 / -1; text-align: left; }
+  .pg-ativ-resumo { grid-template-columns: 1fr 1fr; }
   .pg-capitulo, .pg-manchete { padding: var(--space-4); }
 }
 

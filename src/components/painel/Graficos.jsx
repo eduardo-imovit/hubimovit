@@ -14,7 +14,7 @@ import {
   YAxis,
   ZAxis,
 } from 'recharts'
-import { CORES, FUNIS, LABEL_FINALIDADE, LABEL_EQUIPE, simularGanho } from '../../lib/painelGestao'
+import { CORES, CORES_ETAPA, FUNIS, LABEL_FINALIDADE, simularGanho } from '../../lib/painelGestao'
 import { fmtMoeda, fmtNum, fmtPct } from '../../lib/paineis'
 
 const EIXO = { fontSize: 11, fill: 'var(--grafite-soft)' }
@@ -149,79 +149,119 @@ export function FunilCascata({ grupos }) {
 }
 
 // ---------------------------------------------------------------------------
-// v2 (PRD §5.0c): clientes ativos por etapa, perda por corretor, atividades × equipe
+// v2 (PRD §5.0c): funil em linha, onde perdemos (comparado), atividades
 // ---------------------------------------------------------------------------
 
-/** Clientes ativos hoje em cada etapa, inbound e outbound lado a lado. */
-export function EtapasAtivas({ etapas }) {
-  const max = Math.max(...etapas.flatMap((e) => FUNIS.map((f) => e.porFunil[f.chave])), 1)
+/** Uma linha por funil (inbound, outbound) com as etapas em cores e a legenda com os valores ao lado. */
+export function FunilLinhas({ etapas, grupos }) {
+  const totais = FUNIS.map((f) => etapas.reduce((s, e) => s + e.porFunil[f.chave], 0))
+  const maior = Math.max(...totais, 1)
   return (
     <div className="pg-grafico">
       <div className="pg-grafico-titulo">Clientes em atendimento agora, por etapa</div>
-      <div className="pg-legenda">
-        {FUNIS.map((f) => (
-          <span key={f.chave}>
-            <span className="pg-ponto" style={{ background: f.cor }} aria-hidden="true" /> {f.label}
-          </span>
-        ))}
-      </div>
-      <div className="pg-hbarras">
-        {etapas.map((e) => (
-          <div key={e.label} className="pg-etapa-ativa">
-            <span className="pg-hbarra-rotulo">{e.label}</span>
-            <div className="pg-etapa-barras">
-              {FUNIS.map((f) => (
-                <div key={f.chave} className="pg-etapa-barra-linha" title={f.label}>
-                  <div className="pg-funil-trilho pg-funil-trilho--fino">
-                    <div className="pg-funil-barra" style={{ width: `${Math.max(1, (e.porFunil[f.chave] / max) * 100)}%`, background: f.cor }} />
-                  </div>
-                  <span className="pg-funil-n">
-                    {fmtNum(e.porFunil[f.chave])}
-                  </span>
-                </div>
-              ))}
+      {FUNIS.map((f, i) => {
+        const grupo = grupos.find((g) => g.chave === f.chave)
+        return (
+          <div key={f.chave} className="pg-funil-linha2">
+            <div className="pg-funil-linha2-nome">
+              <strong>{f.label}</strong>
+              <span>{fmtNum(totais[i])}</span>
             </div>
+            <div className="pg-funil-linha2-corpo">
+              <div className="pg-funil-linha2-trilho" style={{ width: `${Math.max(4, (totais[i] / maior) * 100)}%` }}>
+                {etapas.map((e) =>
+                  e.porFunil[f.chave] > 0 ? (
+                    <div
+                      key={e.label}
+                      className="pg-funil-linha2-seg"
+                      style={{ flexGrow: e.porFunil[f.chave], background: CORES_ETAPA[e.label] }}
+                      title={`${e.label}: ${e.porFunil[f.chave]}`}
+                    />
+                  ) : null
+                )}
+              </div>
+              {grupo && (
+                <div className="pg-funil-linha2-conv">
+                  Conversão:{' '}
+                  {grupo.etapas.slice(1).map((e, j) => (
+                    <span key={e.ordem} className={grupo.gargalo?.ordem === e.ordem ? 'is-gargalo' : undefined}>
+                      {grupo.etapas[j].label} → {e.label} {fmtPct(e.passagem, 0)}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <ul className="pg-funil-linha2-legenda">
+              {etapas.map((e) => (
+                <li key={e.label}>
+                  <span className="pg-ponto" style={{ background: CORES_ETAPA[e.label] }} aria-hidden="true" />
+                  {e.label}
+                  <strong>{fmtNum(e.porFunil[f.chave])}</strong>
+                </li>
+              ))}
+            </ul>
           </div>
-        ))}
-      </div>
+        )
+      })}
     </div>
   )
 }
 
-/** Taxa de cada corretor na passagem mais fraca, contra a da equipe. */
-export function PerdaCorretores({ perda, selecionado }) {
+const fmtTaxa = (p) => (p == null || p.taxa == null ? '—' : fmtPct(p.taxa, 0))
+
+/** Passagens do funil do recorte contra a referência (equipe ou semestre anterior) e, para a Gestão, outro corretor. */
+export function PerdaComparada({ perda, rotuloSel, comparar, opcoesComparar, onComparar }) {
   return (
     <div className="pg-grafico">
-      <div className="pg-grafico-titulo">
-        {perda.de} → {perda.para}: quanto cada corretor faz avançar
+      <div className="pg-grafico-titulo pg-titulo-com-acao">
+        <span>Quanto avança em cada passagem</span>
+        {onComparar && (
+          <label className="pg-campo pg-campo--inline">
+            <span>Comparar com</span>
+            <select value={comparar} onChange={(e) => onComparar(e.target.value)}>
+              <option value="nenhum">Ninguém</option>
+              {opcoesComparar.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
       <div className="pg-tabela-rolagem">
         <table className="data-table pg-tabela-compacta">
           <thead>
             <tr>
-              <th>Corretor</th>
-              <th className="num">Avançaram</th>
-              <th className="num">Taxa</th>
-              <th className="num">Equipe</th>
+              <th>Passagem</th>
+              <th className="num">{rotuloSel}</th>
+              <th className="num">{perda.rotuloRef}</th>
+              {comparar !== 'nenhum' && <th className="num">{comparar}</th>}
               <th className="num">Diferença</th>
             </tr>
           </thead>
           <tbody>
-            {perda.corretores.map((c) => (
-              <tr key={c.corretor} className={selecionado === c.corretor ? 'is-selecionado' : undefined}>
+            {perda.linhas.map((p) => (
+              <tr key={p.ordem} className={perda.pior?.ordem === p.ordem ? 'is-pior' : undefined}>
                 <td>
-                  {c.corretor}
-                  <div className="is-muted pg-sub">{LABEL_EQUIPE[c.equipe]}</div>
+                  {p.de} → {p.para}
+                  {perda.pior?.ordem === p.ordem && <span className="badge badge-danger pg-funil-badge">maior perda</span>}
                 </td>
-                <td className="num">{fmtNum(c.passaram)} de {fmtNum(c.n)}</td>
-                <td className="num">{c.passagem == null ? '—' : fmtPct(c.passagem, 0)}</td>
-                <td className="num">{c.equipeTaxa == null ? '—' : fmtPct(c.equipeTaxa, 0)}</td>
                 <td className="num">
-                  {c.dif == null ? (
+                  {fmtTaxa(p)}
+                  <div className="is-muted pg-sub">{fmtNum(p.passaram)} de {fmtNum(p.n)}</div>
+                </td>
+                <td className="num">{p.ref == null ? '—' : fmtPct(p.ref, 0)}</td>
+                {comparar !== 'nenhum' && (
+                  <td className="num">
+                    {fmtTaxa(p.comp)}
+                    {p.comp && <div className="is-muted pg-sub">{fmtNum(p.comp.passaram)} de {fmtNum(p.comp.n)}</div>}
+                  </td>
+                )}
+                <td className="num">
+                  {p.dif == null ? (
                     <span className="is-muted">amostra pequena</span>
                   ) : (
-                    <span className={c.dif <= -5 ? 'pg-delta-ruim' : c.dif >= 5 ? 'pg-delta-bom' : undefined}>
-                      {c.dif > 0 ? '+' : ''}{fmtNum(c.dif, 0)} p.p.
+                    <span className={p.dif <= -5 ? 'pg-delta-ruim' : p.dif >= 5 ? 'pg-delta-bom' : undefined}>
+                      {p.dif > 0 ? '+' : ''}{fmtNum(p.dif, 0)} p.p.
                     </span>
                   )}
                 </td>
@@ -234,17 +274,76 @@ export function PerdaCorretores({ perda, selecionado }) {
   )
 }
 
-/** Atividades realizadas por corretor, com a média da equipe como referência e o selo. */
-export function AtividadesEquipe({ grupos, selecionado, onSelecionar }) {
+/** Barras por tipo de atividade, com a média da equipe marcada. */
+function TiposAtividade({ tipos, rotuloN, rotuloMedia }) {
+  const max = Math.max(...tipos.map((t) => Math.max(t.n, t.media)), 1)
+  if (!tipos.length) return <p className="pg-nota">Nenhuma atividade realizada no período.</p>
   return (
-    <div className={`pg-duas ${grupos.length === 1 ? 'pg-duas--uma' : ''}`}>
-      {grupos.map((g) => {
+    <div className="pg-hbarras">
+      {tipos.map((t) => (
+        <div key={t.tipo} className="pg-tipo-ativ">
+          <span className="pg-hbarra-rotulo">{t.tipo}</span>
+          <div className="pg-funil-trilho pg-atividade-trilho">
+            <div className="pg-funil-barra" style={{ width: `${Math.max(1, (t.n / max) * 100)}%`, background: CORES.contexto }} />
+            {rotuloMedia && <div className="pg-atividade-media" style={{ left: `${(t.media / max) * 100}%` }} aria-hidden="true" />}
+          </div>
+          <span className="pg-funil-n">
+            {fmtNum(t.n)}
+            {rotuloMedia && <span className="is-muted"> · {rotuloMedia} {fmtNum(t.media, t.media < 10 ? 1 : 0)}</span>}
+          </span>
+        </div>
+      ))}
+      <div className="pg-nota">{rotuloN}</div>
+    </div>
+  )
+}
+
+/** Atividades: volume e variedade contra a média da equipe. Com corretor filtrado, só ele (sem colegas nomeados). */
+export function AtividadesPainel({ dados, selecionado, onSelecionar }) {
+  if (dados.modo === 'corretor') {
+    return (
+      <div className="pg-duas">
+        <div className="pg-grafico">
+          <div className="pg-grafico-titulo">Total de atividades</div>
+          <div className="pg-ativ-resumo">
+            <div>
+              <div className="pg-indice-valor">{fmtNum(dados.total)}</div>
+              <div className="pg-indice-contexto">
+                {dados.media == null ? 'sem equipe no cadastro de colaboradores' : `média da equipe de ${dados.equipe.toLowerCase()}: ${fmtNum(dados.media, 0)}`}
+              </div>
+              {dados.selo && <span className={`badge ${dados.selo.badge}`}>{dados.selo.label}</span>}
+            </div>
+            <div>
+              <div className="pg-indice-valor">{fmtNum(dados.variedade)}</div>
+              <div className="pg-indice-contexto">tipos de atividade (a equipe usou {fmtNum(dados.variedadeEquipe)})</div>
+            </div>
+            <div>
+              <div className="pg-indice-valor">{fmtNum(dados.anterior)}</div>
+              <div className="pg-indice-contexto">no período anterior</div>
+            </div>
+          </div>
+        </div>
+        <div className="pg-grafico">
+          <div className="pg-grafico-titulo">Por tipo de atividade</div>
+          <TiposAtividade tipos={dados.tipos} rotuloMedia="média da equipe" rotuloN="A linha escura é a média de um corretor da equipe naquele tipo." />
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className={`pg-duas ${dados.grupos.length === 1 ? 'pg-duas--uma' : ''}`}>
+      {dados.grupos.map((g) => {
         const max = Math.max(...g.linhas.map((l) => l.n), g.media, 1)
         return (
           <div key={g.equipe} className="pg-grafico">
             <div className="pg-grafico-titulo">
-              Equipe de {g.label.toLowerCase()} <span className="pg-grafico-ref">· média {fmtNum(g.media, 0)} por corretor</span>
+              Equipe de {g.label.toLowerCase()}{' '}
+              <span className="pg-grafico-ref">
+                · {fmtNum(g.total)} atividades · média {fmtNum(g.media, 0)} por corretor · {fmtNum(g.tipos.length)} tipos
+              </span>
             </div>
+            <TiposAtividade tipos={g.tipos} rotuloMedia="por corretor" rotuloN="Total da equipe por tipo; a linha escura é a média por corretor." />
+            <div className="pg-subtitulo">Por corretor</div>
             <div className="pg-hbarras">
               {g.linhas.map((l) => (
                 <button
@@ -252,7 +351,7 @@ export function AtividadesEquipe({ grupos, selecionado, onSelecionar }) {
                   type="button"
                   className={`pg-atividade ${selecionado === l.corretor ? 'is-selecionado' : ''}`}
                   onClick={() => onSelecionar(l.corretor)}
-                  title={`Período anterior: ${l.anterior}`}
+                  title={`${l.variedade} tipos · período anterior: ${l.anterior}`}
                 >
                   <span className="pg-hbarra-rotulo">{l.corretor}</span>
                   <div className="pg-funil-trilho pg-atividade-trilho">

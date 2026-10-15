@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { usePainelGestao } from '../hooks/usePaineis'
+import { usePerfil } from '../hooks/usePerfil'
 import { useFiltrosUrl } from '../hooks/useFiltrosUrl'
 import { BarraFiltros, Capitulo, Indice } from '../components/painel/Estrutura'
-import { AtividadesEquipe, Descartes, EtapasAtivas, FunilCascata, MapaPessoas, PerdaCorretores, SaudeDados } from '../components/painel/Graficos'
+import { AtividadesPainel, Descartes, FunilLinhas, MapaPessoas, PerdaComparada, SaudeDados } from '../components/painel/Graficos'
 import { fmtMoeda, fmtNum, fmtPct, isoLocal, saudeDados, somarDias } from '../lib/paineis'
 import {
-  atividadesVsEquipe,
+  atividadesPainel,
   capituloPessoas,
   cicloMediano,
   conversaoSafra,
@@ -13,14 +14,14 @@ import {
   emAtendimento,
   equipesComerciais,
   filtrarBase,
-  FILTROS_PADRAO,
+  FILTROS_PADRAO_GESTAO,
   FUNIS,
   funilPorOrigem,
   LABEL_FINALIDADE,
   listaDistinta,
   mancheteAtendimento,
   nomeCanal,
-  perdaPorCorretor,
+  perdaComparada,
   resolverPeriodo,
   resultadoPeriodo,
 } from '../lib/painelGestao'
@@ -30,7 +31,10 @@ const fmtData = (iso) => iso.split('-').reverse().join('/')
 // Painel da Gestão v2 (PRD §5.0c, 15/10): foco no atendimento, não na entrada de leads.
 export default function PainelGestao() {
   const hoje = isoLocal()
-  const { filtros, setFiltro, limpar, alterados } = useFiltrosUrl(FILTROS_PADRAO)
+  const { filtros, setFiltro, limpar, alterados } = useFiltrosUrl(FILTROS_PADRAO_GESTAO)
+  const { perfil } = usePerfil()
+  // comparar corretor × corretor: só a Gestão (pedido de 15/10)
+  const ehGestao = perfil?.role === 'gestao'
   const { dados, carregando, erro } = usePainelGestao()
 
   // canais com o nome de exibição (a view grava alguns sem acento)
@@ -53,10 +57,21 @@ export default function PainelGestao() {
     const soCorretor = (linhas, campo) => (filtros.corretor === 'todos' ? linhas : linhas.filter((l) => l[campo] === filtros.corretor))
     const atendimento = emAtendimento(base)
     const origem = funilPorOrigem(base, hoje)
-    // a comparação com a equipe precisa de todos os corretores: ignora o filtro de corretor
-    const semCorretor = filtrarBase(baseNorm, { ...filtros, corretor: 'todos' })
-    const perda = perdaPorCorretor(semCorretor, hoje, equipes)
-    const atividades = atividadesVsEquipe(dados.feitas, equipes, periodo, filtros.finalidade)
+    // onde perdemos: respeita o filtro; com corretor, a referência é a equipe dele (sem nomes)
+    const comCorretor = filtros.corretor !== 'todos'
+    const equipeSel = comCorretor ? equipes.get(filtros.corretor.trim().toLowerCase())?.equipe : null
+    const baseEquipe = comCorretor
+      ? filtrarBase(baseNorm, { ...filtros, corretor: 'todos' }).filter((a) => equipeSel && equipes.get((a.corretor ?? '').trim().toLowerCase())?.equipe === equipeSel)
+      : null
+    const comparar = ehGestao && filtros.comparar !== 'nenhum' && filtros.comparar !== filtros.corretor ? filtros.comparar : 'nenhum'
+    const perda = perdaComparada({
+      base,
+      baseEquipe,
+      baseComparar: comparar !== 'nenhum' ? filtrarBase(baseNorm, { ...filtros, corretor: comparar }) : null,
+      hoje,
+      corretor: comCorretor ? filtros.corretor : null,
+    })
+    const atividades = atividadesPainel(dados.feitas, equipes, periodo, filtros)
     const pessoasCap = capituloPessoas(
       {
         base,
@@ -85,9 +100,10 @@ export default function PainelGestao() {
         ],
         hoje
       ),
-      frases: mancheteAtendimento({ atendimento, origem, perda, atividades, pessoasCap }),
+      comparar,
+      frases: mancheteAtendimento({ atendimento, perda, atividades, pessoasCap, corretor: comCorretor ? filtros.corretor : null }),
     }
-  }, [dados, baseNorm, equipes, filtros, hoje])
+  }, [dados, baseNorm, equipes, filtros, hoje, ehGestao])
 
   const recorte = [
     filtros.finalidade !== 'todas' && LABEL_FINALIDADE[filtros.finalidade],
@@ -150,10 +166,18 @@ export default function PainelGestao() {
               <Indice
                 rotulo={`Atividades ${h.periodo.label}`}
                 valor={fmtNum(h.atividades.total)}
-                variacao={h.atividades.totalAnterior >= 10 ? ((h.atividades.total - h.atividades.totalAnterior) / h.atividades.totalAnterior) * 100 : null}
-                contexto={h.atividades.totalAnterior >= 10 ? 'vs período anterior' : `período anterior: ${h.atividades.totalAnterior}`}
-                detalhe={h.atividades.abaixo.length ? `${h.atividades.abaixo.length} abaixo da média da equipe` : 'ninguém abaixo da média'}
-                formula="Atividades marcadas como realizadas no CRM, pela data da atividade, dos corretores da equipe comercial ativa. Não contam as Anotações."
+                variacao={h.atividades.anterior >= 10 ? ((h.atividades.total - h.atividades.anterior) / h.atividades.anterior) * 100 : null}
+                contexto={h.atividades.anterior >= 10 ? 'vs período anterior' : `período anterior: ${h.atividades.anterior}`}
+                detalhe={
+                  h.atividades.modo === 'corretor'
+                    ? h.atividades.media == null
+                      ? 'sem equipe no cadastro'
+                      : `${h.atividades.selo?.label ?? 'Na média'} (equipe: ${fmtNum(h.atividades.media, 0)})`
+                    : h.atividades.abaixo.length
+                      ? `${h.atividades.abaixo.length} abaixo da média da equipe`
+                      : 'ninguém abaixo da média'
+                }
+                formula="Atividades marcadas como realizadas no CRM, pela data da atividade. Não contam as Anotações. Média da equipe = total da equipe ÷ corretores da equipe comercial ativa (inclui quem fez zero)."
               />
               <Indice
                 rotulo={`Negócios ${h.periodo.label}`}
@@ -184,47 +208,56 @@ export default function PainelGestao() {
               if (!total) return 'Nenhum cliente entre qualificado e proposta neste recorte.'
               return `${fmtPct((o / total) * 100, 0)} dos clientes entre qualificado e proposta vieram do outbound (${fmtNum(o)} de ${fmtNum(total)}).`
             })()}
-            rodape={`À esquerda, quem está ativo hoje em cada etapa. À direita, a conversão: leads que entraram de ${fmtData(h.origem.janela.inicio)} a ${fmtData(h.origem.janela.fim)} (já tiveram tempo de fechar), pela fase atual de cada atendimento; o CRM não guarda o histórico de fases. Inbound e outbound vêm do campo "funil" do CRM.`}
+            rodape={`Cada linha é um funil, com quem está ativo hoje em cada etapa; os valores estão na legenda ao lado. Abaixo da linha, a conversão de cada passagem (em vermelho, a mais fraca): leads que entraram de ${fmtData(h.origem.janela.inicio)} a ${fmtData(h.origem.janela.fim)} (já tiveram tempo de fechar), pela fase atual de cada atendimento; o CRM não guarda o histórico de fases. Inbound e outbound vêm do campo "funil" do CRM.`}
           >
-            <div className="pg-duas">
-              <EtapasAtivas etapas={h.atendimento.etapas} />
-              <FunilCascata grupos={h.origem.grupos} />
-            </div>
+            <FunilLinhas etapas={h.atendimento.etapas} grupos={h.origem.grupos} />
           </Capitulo>
 
-          {/* 2 — Onde perdemos: passagem mais fraca, corretor × equipe */}
+          {/* 2 — Onde perdemos: respeita os filtros; Gestão compara com outro corretor */}
           <Capitulo
             numero="2"
             pergunta="Onde perdemos mais?"
             conclusao={
-              h.perda
-                ? (() => {
-                    const pior = h.perda.corretores.find((c) => c.dif != null && c.dif < 0)
-                    const base = `A maior perda está entre ${h.perda.de.toLowerCase()} e ${h.perda.para.toLowerCase()}: só ${fmtPct(h.perda.geral, 0)} avançam.`
-                    return pior ? `${base} ${pior.corretor} está ${fmtNum(Math.abs(pior.dif), 0)} p.p. abaixo da equipe.` : base
-                  })()
+              h.perda.pior
+                ? `A maior perda está entre ${h.perda.pior.de.toLowerCase()} e ${h.perda.pior.para.toLowerCase()}: só ${fmtPct(h.perda.pior.taxa, 0)} avançam${
+                    h.perda.pior.dif != null ? ` (${h.perda.rotuloRef.toLowerCase()}: ${fmtPct(h.perda.pior.ref, 0)})` : ''
+                  }.`
                 : 'Amostra pequena demais para apontar onde perdemos neste recorte.'
             }
-            rodape="Safra madura (mesma janela do funil). A taxa de cada corretor é comparada com a da equipe dele (venda ou locação, pelo cadastro de colaboradores). Com menos de 5 leads na etapa anterior, só mostramos o número. O filtro de corretor não se aplica à tabela, para manter a comparação."
+            rodape={`Safra madura (mesma janela do funil). ${
+              filtros.corretor !== 'todos'
+                ? 'A referência é a média da equipe do corretor (venda ou locação, pelo cadastro de colaboradores).'
+                : 'A referência é o semestre anterior.'
+            } Com menos de ${h.perda.minimo} leads na etapa de origem, a diferença não é calculada.${ehGestao ? ' "Comparar com" aparece só para a Gestão.' : ''}`}
           >
             <div className="pg-duas">
-              {h.perda ? <PerdaCorretores perda={h.perda} selecionado={filtros.corretor} /> : <div />}
+              <PerdaComparada
+                perda={h.perda}
+                rotuloSel={filtros.corretor !== 'todos' ? filtros.corretor : 'Recorte atual'}
+                comparar={h.comparar}
+                opcoesComparar={opcoes.corretores.filter((c) => c !== filtros.corretor)}
+                onComparar={ehGestao ? (v) => setFiltro('comparar', v) : null}
+              />
               <Descartes dados={h.descartes} />
             </div>
           </Capitulo>
 
-          {/* 3 — Atividades × média da equipe */}
+          {/* 3 — Atividades: volume e variedade × média da equipe */}
           <Capitulo
             numero="3"
             pergunta="Quem está atendendo?"
             conclusao={
-              h.atividades.abaixo.length
-                ? `${h.atividades.abaixo.length} ${h.atividades.abaixo.length === 1 ? 'corretor fez' : 'corretores fizeram'} menos atividades que a média da equipe ${h.periodo.label}.`
-                : `Todos os corretores estão na média da equipe ou acima ${h.periodo.label}.`
+              h.atividades.modo === 'corretor'
+                ? h.atividades.media == null
+                  ? `${fmtNum(h.atividades.total)} atividades realizadas ${h.periodo.label}.`
+                  : `${fmtNum(h.atividades.total)} atividades em ${fmtNum(h.atividades.variedade)} tipos ${h.periodo.label}; a média da equipe é ${fmtNum(h.atividades.media, 0)}.`
+                : h.atividades.abaixo.length
+                  ? `${h.atividades.abaixo.length} ${h.atividades.abaixo.length === 1 ? 'corretor fez' : 'corretores fizeram'} menos atividades que a média da equipe ${h.periodo.label}.`
+                  : `Todos os corretores estão na média da equipe ou acima ${h.periodo.label}.`
             }
-            rodape="Atividades realizadas no CRM (ligações, WhatsApp, visitas, reuniões etc., sem as Anotações). A linha escura é a média da equipe; na média = até 10% acima ou abaixo dela. Passe o mouse para ver o período anterior; clique para filtrar o painel pelo corretor."
+            rodape="Atividades realizadas no CRM, sem as Anotações. Na média = até 10% acima ou abaixo da média da equipe. Clique num corretor para filtrar o painel por ele."
           >
-            <AtividadesEquipe grupos={h.atividades.grupos} selecionado={filtros.corretor} onSelecionar={selecionar} />
+            <AtividadesPainel dados={h.atividades} selecionado={filtros.corretor} onSelecionar={selecionar} />
           </Capitulo>
 
           {/* 4 — Pessoas */}

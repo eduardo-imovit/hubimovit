@@ -136,6 +136,18 @@ Faltava um lugar único para:
 - o ritmo de leads sumiu da tela;
 - `npm run build` passa.
 
+**Ajustes depois da 1ª revisão (Eduardo, 15/10):**
+- **Filtro de corretor:** nenhum outro corretor aparece nomeado. A comparação é sempre com a média da equipe dele, sem nomes. Vale para a manchete e para os capítulos 2 e 3.
+- **Funil (cap. 1):** uma linha por funil (inbound, outbound), com as etapas em cores; a legenda com os valores fica ao lado. A conversão de cada passagem aparece abaixo da linha, com a mais fraca em vermelho. Substitui as barras e a cascata.
+- **Onde perdemos (cap. 2):** respeita todos os filtros e mostra as passagens do recorte contra uma referência:
+  - com corretor filtrado: a média da equipe dele;
+  - sem corretor: o semestre anterior.
+  Só a **Gestão** tem o "Comparar com", para pôr outro corretor na mesma tabela (parâmetro `comparar` na URL).
+- **Atividades (cap. 3):** volume e **variedade** (por tipo de atividade), total contra a média da equipe:
+  - com corretor filtrado: o total dele, quantos tipos usou (contra os da equipe), o período anterior e as barras por tipo com a média da equipe marcada;
+  - sem corretor: por equipe, o total, a média por corretor, os tipos e a lista de corretores com o selo.
+- O capítulo 4 (Pessoas) ficou como estava.
+
 ### 5.0b Painel de Performance — a história do dinheiro (pedido do Eduardo, 24/09)
 Mesma lógica do Painel da Gestão (capítulos com conclusão como título, gráficos, filtros na URL), contando **investimento → atenção → conversão → lead real → negócio**. Rota `/dashboard/performance`.
 - **Filtros:** período (mês atual, 30d, 90d, mês passado), plataforma (Meta/Google), etapa do funil da campanha (topo/MQL/lead, de `metas_campanhas`), finalidade inferida pelo nome da campanha (venda/locação/institucional), campanha.

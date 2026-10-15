@@ -34,6 +34,8 @@ export const LABEL_FINALIDADE = { Venda: 'Venda', Aluguel: 'Locação' }
 // ---------------------------------------------------------------------------
 
 export const FILTROS_PADRAO = { periodo: 'mes', finalidade: 'todas', canal: 'todos', corretor: 'todos' }
+/** Painel da Gestão: + um corretor para comparar (o seletor só aparece para a Gestão). */
+export const FILTROS_PADRAO_GESTAO = { ...FILTROS_PADRAO, comparar: 'nenhum' }
 
 export const OPCOES_PERIODO = [
   { valor: 'mes', label: 'Mês atual' },
@@ -391,36 +393,38 @@ export function funilPorOrigem(base, hoje) {
   return { grupos, pior, janela: { inicio: atual.inicio, fim: atual.fim }, anterior: { inicio: anterior.inicio, fim: anterior.fim } }
 }
 
-/**
- * Maior perda por corretor: a passagem mais fraca do funil inteiro (safra
- * madura, a partir de Qualificado) e a taxa de cada corretor nela, contra a
- * da equipe dele. Abaixo de 5 leads na etapa anterior, só mostra o n.
- */
-export function perdaPorCorretor(base, hoje, equipes) {
-  const { linhas } = safraMadura(base, hoje, { de: 242, ate: 60 })
+/** Cores das etapas na linha do funil (tokens do design system), da entrada ao fim. */
+export const CORES_ETAPA = { Lead: '#B8B5B0', Qualificado: '#C9A96E', Visita: '#D4755A', Proposta: '#5C8A6B' }
+
+/** Passagens do funil (safra madura) de um recorte: [{ de, para, ordem, n, passaram, taxa }]. */
+function passagensDe(linhas) {
   const etapas = funilDe(linhas)
-  const candidatas = etapas.filter((e, i) => e.passagem != null && e.ordem >= 5 && etapas[i - 1].n >= 10)
-  const gargalo = candidatas.reduce((min, e) => (min == null || e.passagem < min.passagem ? e : min), null)
-  if (!gargalo) return null
-  const anterior = etapas[etapas.indexOf(gargalo) - 1]
-  const taxa = (l) => {
-    const n = l.filter((a) => chegou(a, anterior.ordem)).length
-    return { n, passaram: l.filter((a) => chegou(a, gargalo.ordem)).length, passagem: n > 0 ? pct(l.filter((a) => chegou(a, gargalo.ordem)).length, n) : null }
-  }
-  const daEquipe = (eq) => linhas.filter((a) => equipes.get(chaveNome(a.corretor))?.equipe === eq)
-  const porEquipe = Object.fromEntries(Object.keys(LABEL_EQUIPE).map((eq) => [eq, taxa(daEquipe(eq))]))
-  const corretores = [...new Set(linhas.map((a) => a.corretor))]
-    .map((nome) => ({ nome, info: equipes.get(chaveNome(nome)) }))
-    .filter((c) => c.info)
-    .map(({ nome, info }) => {
-      const t = taxa(linhas.filter((a) => a.corretor === nome))
-      const eq = porEquipe[info.equipe]
-      const comparavel = t.n >= 5 && eq.passagem != null
-      return { corretor: info.nome, equipe: info.equipe, ...t, equipeTaxa: eq.passagem, dif: comparavel ? t.passagem - eq.passagem : null }
-    })
-    .filter((c) => c.n > 0)
-    .sort((a, b) => (a.dif ?? 999) - (b.dif ?? 999))
-  return { de: anterior.label, para: gargalo.label, geral: gargalo.passagem, porEquipe, corretores }
+  return etapas.slice(1).map((e, i) => ({ de: etapas[i].label, para: e.label, ordem: e.ordem, n: etapas[i].n, passaram: e.n, taxa: e.passagem }))
+}
+
+/**
+ * Onde perdemos mais (respeita todos os filtros). Compara a seleção com uma
+ * referência: com corretor filtrado, a média da equipe dele (sem nomes);
+ * sem corretor, o semestre anterior. `baseComparar` (só Gestão) é outro corretor.
+ * A maior perda é a passagem mais fraca a partir de Qualificado, com amostra mínima.
+ */
+export function perdaComparada({ base, baseEquipe, baseComparar, hoje, corretor }) {
+  const janela = { de: 242, ate: 60 }
+  const sel = passagensDe(safraMadura(base, hoje, janela).linhas)
+  const ref = corretor
+    ? passagensDe(safraMadura(baseEquipe, hoje, janela).linhas)
+    : passagensDe(safraMadura(base, hoje, { de: 425, ate: 243 }).linhas)
+  const comp = baseComparar ? passagensDe(safraMadura(baseComparar, hoje, janela).linhas) : null
+  const minimo = corretor ? 5 : 10
+  const linhas = sel.map((p, i) => ({
+    ...p,
+    ref: ref[i].n >= minimo ? ref[i].taxa : null,
+    comp: comp ? comp[i] : null,
+    dif: p.n >= minimo && ref[i].n >= minimo ? p.taxa - ref[i].taxa : null,
+  }))
+  const candidatas = linhas.filter((p) => p.ordem >= 5 && p.n >= minimo)
+  const pior = candidatas.reduce((m, p) => (m == null || p.taxa < m.taxa ? p : m), null)
+  return { linhas, pior, minimo, rotuloRef: corretor ? 'Média da equipe' : 'Semestre anterior' }
 }
 
 /** Selo de comparação com a média da equipe (±10%). */
@@ -433,66 +437,107 @@ export function seloMedia(valor, media) {
 }
 
 /**
- * Atividades realizadas no período por corretor (sem "Anotações"), contra a
- * média da equipe (vendas ou locação). A média inclui quem fez zero.
+ * Atividades realizadas no período (sem "Anotações"): volume e variedade
+ * (por tipo), contra a média da equipe (vendas ou locação; a média inclui
+ * quem fez zero). Com corretor filtrado, devolve só ele contra a equipe, sem
+ * citar colegas.
  */
-export function atividadesVsEquipe(feitas, equipes, periodo, finalidade = 'todas') {
-  const validas = feitas.filter((a) => a.nometipo !== 'Anotações')
-  const contar = (janela) => {
+export function atividadesPainel(feitas, equipes, periodo, filtros) {
+  const validas = feitas.filter((a) => a.nometipo !== 'Anotações' && dentro(a.datahorainicio, periodo))
+  const anteriores = feitas.filter((a) => a.nometipo !== 'Anotações' && dentro(a.datahorainicio, periodo.anterior))
+  const porPessoa = new Map()
+  for (const a of validas) {
+    const k = chaveNome(a.nomeusuario)
+    if (!porPessoa.has(k)) porPessoa.set(k, new Map())
+    const m = porPessoa.get(k)
+    m.set(a.nometipo, (m.get(a.nometipo) ?? 0) + 1)
+  }
+  const totalDe = (k) => [...(porPessoa.get(k)?.values() ?? [])].reduce((s, n) => s + n, 0)
+  const antesDe = (k) => anteriores.filter((a) => chaveNome(a.nomeusuario) === k).length
+  const tiposDe = (chaves) => {
     const m = new Map()
-    for (const a of validas) {
-      if (!dentro(a.datahorainicio, janela)) continue
-      const k = chaveNome(a.nomeusuario)
-      m.set(k, (m.get(k) ?? 0) + 1)
-    }
+    for (const k of chaves) for (const [t, n] of porPessoa.get(k) ?? []) m.set(t, (m.get(t) ?? 0) + n)
     return m
   }
-  const agora = contar(periodo)
-  const antes = contar(periodo.anterior)
-  const so = finalidade === 'todas' ? null : EQUIPE_DA_FINALIDADE[finalidade]
-  const grupos = Object.keys(LABEL_EQUIPE)
-    .filter((eq) => !so || eq === so)
-    .map((eq) => {
-      const membros = [...equipes.entries()].filter(([, v]) => v.equipe === eq)
-      const total = membros.reduce((s, [k]) => s + (agora.get(k) ?? 0), 0)
-      const media = membros.length ? total / membros.length : 0
-      const linhas = membros
-        .map(([k, v]) => {
-          const n = agora.get(k) ?? 0
-          return { corretor: v.nome, n, anterior: antes.get(k) ?? 0, selo: seloMedia(n, media) }
-        })
-        .sort((a, b) => b.n - a.n)
-      return { equipe: eq, label: LABEL_EQUIPE[eq], media, total, linhas }
-    })
+  const resumoEquipe = (eq) => {
+    const membros = [...equipes.entries()].filter(([, v]) => v.equipe === eq)
+    const chaves = membros.map(([k]) => k)
+    const total = chaves.reduce((s, k) => s + totalDe(k), 0)
+    const media = chaves.length ? total / chaves.length : 0
+    const tipos = [...tiposDe(chaves).entries()].map(([tipo, n]) => ({ tipo, n, media: n / (chaves.length || 1) })).sort((a, b) => b.n - a.n)
+    const linhas = membros
+      .map(([k, v]) => {
+        const n = totalDe(k)
+        return { corretor: v.nome, n, anterior: antesDe(k), variedade: porPessoa.get(k)?.size ?? 0, selo: seloMedia(n, media) }
+      })
+      .sort((a, b) => b.n - a.n)
+    return { equipe: eq, label: LABEL_EQUIPE[eq], membros: chaves.length, total, media, tipos, linhas, anterior: chaves.reduce((s, k) => s + antesDe(k), 0) }
+  }
+
+  if (filtros.corretor !== 'todos') {
+    const k = chaveNome(filtros.corretor)
+    const info = equipes.get(k)
+    const eq = info ? resumoEquipe(info.equipe) : null
+    const meus = porPessoa.get(k) ?? new Map()
+    const total = totalDe(k)
+    const tiposNomes = new Set([...meus.keys(), ...(eq?.tipos.map((t) => t.tipo) ?? [])])
+    const tipos = [...tiposNomes]
+      .map((tipo) => ({ tipo, n: meus.get(tipo) ?? 0, media: eq?.tipos.find((t) => t.tipo === tipo)?.media ?? 0 }))
+      .sort((a, b) => b.n - a.n || b.media - a.media)
+    const selo = eq ? seloMedia(total, eq.media) : null
+    return {
+      modo: 'corretor',
+      corretor: filtros.corretor,
+      equipe: eq?.label ?? null,
+      total,
+      anterior: antesDe(k),
+      media: eq?.media ?? null,
+      variedade: meus.size,
+      variedadeEquipe: eq?.tipos.length ?? 0,
+      selo,
+      tipos,
+      abaixo: selo?.chave === 'abaixo' ? [filtros.corretor] : [],
+    }
+  }
+
+  const so = filtros.finalidade === 'todas' ? null : EQUIPE_DA_FINALIDADE[filtros.finalidade]
+  const grupos = Object.keys(LABEL_EQUIPE).filter((eq) => !so || eq === so).map(resumoEquipe)
   const todos = grupos.flatMap((g) => g.linhas)
   return {
+    modo: 'equipes',
     grupos,
-    total: todos.reduce((s, l) => s + l.n, 0),
-    totalAnterior: todos.reduce((s, l) => s + l.anterior, 0),
+    total: grupos.reduce((s, g) => s + g.total, 0),
+    anterior: grupos.reduce((s, g) => s + g.anterior, 0),
     abaixo: todos.filter((l) => l.selo?.chave === 'abaixo').map((l) => l.corretor),
   }
 }
 
-/** Frases da manchete v2: só atendimento, sem ritmo de entrada de leads. */
-export function mancheteAtendimento({ atendimento, origem, perda, atividades, pessoasCap }) {
+/** Frases da manchete v2: só atendimento, sem ritmo de entrada de leads; com corretor filtrado, não cita colegas. */
+export function mancheteAtendimento({ atendimento, perda, atividades, pessoasCap, corretor }) {
   const frases = []
   frases.push(
-    `${fmtNum(atendimento.total)} clientes em atendimento entre qualificado e proposta: ${fmtNum(atendimento.visita)} em visita e ${fmtNum(atendimento.proposta)} em proposta.`
+    `${corretor ? `${corretor} tem` : 'Temos'} ${fmtNum(atendimento.total)} clientes em atendimento entre qualificado e proposta: ${fmtNum(atendimento.visita)} em visita e ${fmtNum(atendimento.proposta)} em proposta.`
   )
-  if (origem.pior) {
-    const g = origem.pior
-    const i = g.etapas.findIndex((e) => e.ordem === g.gargalo.ordem)
-    frases.push(`A maior perda está no ${g.rotulo.toLowerCase()}, entre ${g.etapas[i - 1].label.toLowerCase()} e ${g.gargalo.label.toLowerCase()}: só ${fmtPct(g.gargalo.passagem, 0)} avançam.`)
-  } else if (perda) {
-    frases.push(`A maior perda está entre ${perda.de.toLowerCase()} e ${perda.para.toLowerCase()}: só ${fmtPct(perda.geral, 0)} avançam.`)
+  if (perda.pior) {
+    const ref = perda.pior.ref != null ? ` (${perda.rotuloRef.toLowerCase()}: ${fmtPct(perda.pior.ref, 0)})` : ''
+    frases.push(`A maior perda está entre ${perda.pior.de.toLowerCase()} e ${perda.pior.para.toLowerCase()}: só ${fmtPct(perda.pior.taxa, 0)} avançam${ref}.`)
   }
-  if (atividades.abaixo.length) {
+  if (atividades.modo === 'corretor') {
+    if (atividades.media) {
+      const dif = ((atividades.total - atividades.media) / atividades.media) * 100
+      const lado = Math.abs(dif) <= FAIXA_MEDIA * 100 ? 'na média da equipe' : `${fmtPct(Math.abs(dif), 0)} ${dif > 0 ? 'acima' : 'abaixo'} da média da equipe (${fmtNum(atividades.media, 0)})`
+      frases.push(`${fmtNum(atividades.total)} atividades realizadas no período, ${lado}.`)
+    }
+  } else if (atividades.abaixo.length) {
     const n = atividades.abaixo.length
     frases.push(`${n} ${n === 1 ? 'corretor está' : 'corretores estão'} abaixo da média de atividades da equipe: ${atividades.abaixo.join(', ')}.`)
   }
   if (pessoasCap.totais.semContato > 0) {
-    const top = [...pessoasCap.linhas].sort((a, b) => b.semContato - a.semContato)[0]
-    frases.push(`${pessoasCap.totais.semContato} leads ativos estão sem nenhum contato registrado; ${top.corretor} concentra ${top.semContato}.`)
+    if (corretor) frases.push(`${pessoasCap.totais.semContato} leads ativos sem nenhum contato registrado.`)
+    else {
+      const top = [...pessoasCap.linhas].sort((a, b) => b.semContato - a.semContato)[0]
+      frases.push(`${pessoasCap.totais.semContato} leads ativos estão sem nenhum contato registrado; ${top.corretor} concentra ${top.semContato}.`)
+    }
   }
   return frases
 }
