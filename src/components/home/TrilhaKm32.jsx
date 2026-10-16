@@ -12,6 +12,7 @@ const ABAS = [
   { chave: 'Aluguel', rotulo: 'Locação' },
 ]
 const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 
 const DIA_MS = 24 * 60 * 60 * 1000
 const dataLocal = (iso) => {
@@ -32,6 +33,23 @@ function fracaoAte(inicio, fim, data) {
   const total = (dataLocal(fim) - dataLocal(inicio)) / DIA_MS + 1
   const passados = (data - dataLocal(inicio)) / DIA_MS + 1
   return Math.min(1, Math.max(0, passados / total))
+}
+
+/** Dias de calendário entre duas datas, contando as duas pontas. */
+const diasEntre = (a, b) => Math.round((b - a) / DIA_MS) + 1
+
+/**
+ * Meta do mês corrente pela mesma régua diária (16/10): meta da campanha ÷ dias
+ * da campanha × dias do mês dentro dela. Dá a sensação de possível sem trocar
+ * a conta: a soma das metas dos meses é a meta da campanha.
+ */
+function metaDoMes(inicio, fim, hoje, meta) {
+  const a = dataLocal(inicio)
+  const b = dataLocal(fim)
+  const h = dataLocal(hoje)
+  const de = new Date(Math.max(a, new Date(h.getFullYear(), h.getMonth(), 1)))
+  const ate = new Date(Math.min(b, new Date(h.getFullYear(), h.getMonth() + 1, 0)))
+  return { valor: (meta / diasEntre(a, b)) * diasEntre(de, ate), mes: MESES_LONGOS[h.getMonth()] }
 }
 
 /**
@@ -92,13 +110,12 @@ export function TrilhaKm32() {
   const esperado = f ? f.meta_valor * tempo : 0
   const diferenca = f ? f.valor - esperado : 0
   const noRitmo = f ? Math.abs(diferenca) < f.meta_valor * 0.01 : true
-  // Urgência: a próxima parada que o realizado ainda não alcançou, quanto falta e quanto por dia
-  const hojeData = dados ? dataLocal(dados.hoje) : null
-  const alvo = f ? paradas.find((p) => p.data >= hojeData && f.meta_valor * p.fracao > f.valor) : null
-  const alvoMeta = alvo ? f.meta_valor * alvo.fracao : 0
-  const falta = alvo ? alvoMeta - f.valor : 0
-  const diasAteAlvo = alvo ? Math.round((alvo.data - hojeData) / DIA_MS) + 1 : 0
-  const dataCurta = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  const diasCampanha = dados ? diasEntre(dataLocal(dados.inicio), dataLocal(dados.fim)) : 0
+  const diasPassados = dados ? diasEntre(dataLocal(dados.inicio), dataLocal(dados.hoje)) : 0
+  const porDia = f ? f.meta_valor / diasCampanha : 0
+  const metaMes = f ? metaDoMes(dados.inicio, dados.fim, dados.hoje, f.meta_valor) : null
+  const valorMes = f ? (f.valor_mes ?? f.valor) : 0
+  const batida = f ? f.valor >= f.meta_valor : false
 
   const leitura = dados?.ultima_leitura ? new Date(dados.ultima_leitura) : null
   const atrasado = leitura && (dataLocal(dados.hoje) - new Date(leitura.getFullYear(), leitura.getMonth(), leitura.getDate())) / DIA_MS > 1
@@ -142,28 +159,37 @@ export function TrilhaKm32() {
 
       {f && (
         <div className="km32-numeros">
-          <div>
-            <span className="km32-n">{moeda(aba, f.valor)}</span>
-            <span className="km32-l">de {moeda(aba, f.meta_valor)} · {pctTexto(progresso)}</span>
+          <div title={`Na campanha: ${moeda(aba, f.valor)} de ${moeda(aba, f.meta_valor)} (${pctTexto(progresso)})`}>
+            <span className="km32-n">{moeda(aba, valorMes)}</span>
+            <span className="km32-l">
+              de {moeda(aba, metaMes.valor)} · meta de {metaMes.mes} · {pctTexto(Math.min(1, valorMes / metaMes.valor))}
+            </span>
           </div>
           <div>
             <span className="km32-n">{moeda(aba, f.ticket)}</span>
             <span className="km32-l">ticket médio</span>
           </div>
-          <div title={`Esperado até hoje: ${moeda(aba, esperado)}${noRitmo ? ' (no ritmo)' : ` · ${moeda(aba, Math.abs(diferenca))} ${diferenca > 0 ? 'acima' : 'abaixo'}`}`}>
-            {alvo ? (
-              <>
-                <span className="km32-n is-falta">{moeda(aba, falta)}</span>
-                <span className="km32-l">faltam para a parada de {dataCurta(alvo.data)} ({moeda(aba, alvoMeta)})</span>
-                <span className="km32-l">
-                  {diasAteAlvo} {diasAteAlvo === 1 ? 'dia' : 'dias'} · {moeda(aba, falta / diasAteAlvo)} por dia
-                  {!noRitmo && diferenca < 0 && <strong className="is-atras"> · abaixo do esperado</strong>}
-                </span>
-              </>
-            ) : (
+          <div title={`Meta da campanha ÷ ${diasCampanha} dias = ${moeda(aba, porDia)} por dia, somados até hoje`}>
+            {batida ? (
               <>
                 <span className="km32-n">Meta batida</span>
                 <span className="km32-l">{moeda(aba, f.valor)} de {moeda(aba, f.meta_valor)}</span>
+              </>
+            ) : (
+              <>
+                <span className={`km32-n${!noRitmo && diferenca < 0 ? ' is-falta' : ''}`}>{moeda(aba, esperado)}</span>
+                <span className="km32-l">
+                  esperado até hoje · {diasPassados} de {diasCampanha} dias × {moeda(aba, porDia)}
+                </span>
+                <span className="km32-l">
+                  {noRitmo ? (
+                    <strong>no ritmo esperado</strong>
+                  ) : diferenca > 0 ? (
+                    <strong>{moeda(aba, diferenca)} acima do esperado</strong>
+                  ) : (
+                    <strong className="is-atras">{moeda(aba, -diferenca)} abaixo do esperado</strong>
+                  )}
+                </span>
               </>
             )}
           </div>

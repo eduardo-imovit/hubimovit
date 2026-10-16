@@ -301,7 +301,7 @@ Também mostra as paradas no último dia de cada mês (meta acumulada proporcion
 **Requisitos.**
 - RF25.1: a trilha lê os negócios da campanha do banco; nenhum número fica no código.
 - RF25.2: metas, período e data de corte vêm da tabela da campanha.
-- RF25.3: valor realizado, volume e ticket médio por finalidade, com a mesma regra de contagem em todos. Na tela: valor e % da meta, ticket, próxima parada e em proposta (13/10).
+- RF25.3: valor realizado, volume e ticket médio por finalidade, com a mesma regra de contagem em todos. Na tela: realizado no mês × meta do mês, ticket, esperado até hoje (acima/abaixo) e em proposta (16/10).
 - RF25.4: cada número mostra de onde veio (subtexto) e a data da última informação do CRM. Se a fonte estiver atrasada mais de 1 dia, aparece um aviso.
 - RF25.5: se um negócio não tiver valor no CRM, ele fica fora do valor e do ticket, e a tela informa quantos estão nessa situação ("2 negócios sem valor no CRM").
 - RF25.6: acessível: o avanço é dito em texto (não só pela posição do ponto), e a animação respeita `prefers-reduced-motion`.
