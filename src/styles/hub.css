@@ -890,6 +890,15 @@
 .pg-atividade-trilho { position: relative; overflow: visible; }
 .pg-atividade-media { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--grafite); opacity: 0.6; }
 
+/* carteira por captador: barra empilhada atualizados | desatualizados */
+.pg-carteira-barra { display: flex; gap: 2px; height: 100%; border-radius: 4px; overflow: hidden; transition: width 0.2s ease-out; }
+.pg-carteira-barra > div { min-width: 2px; }
+.pg-atividade.pg-carteira { grid-template-columns: 150px 1fr 40px 76px 118px; }
+.pg-carteira-valor { font-size: var(--text-xs); color: var(--grafite-soft); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pg-carteira-resumo { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.pg-carteira-linha { cursor: default; }
+.pg-carteira-linha:hover { background: none; }
+
 @media (max-width: 640px) {
   .pg-filtros { position: static; }
   .pg-filtros-acoes { margin-left: 0; width: 100%; }
@@ -898,6 +907,7 @@
   .pg-hbarra { grid-template-columns: 96px 1fr 80px; }
   .pg-atividade { grid-template-columns: 96px 1fr 32px; }
   .pg-atividade .badge { grid-column: 1 / -1; }
+  .pg-atividade.pg-carteira { grid-template-columns: 96px 1fr 32px 64px; }
   .pg-funil-linha2 { grid-template-columns: 1fr; gap: var(--space-2); }
   .pg-funil-linha2-nome { flex-direction: row; justify-content: space-between; align-items: baseline; }
   .pg-funil-linha2-legenda { grid-template-columns: 1fr 1fr; }

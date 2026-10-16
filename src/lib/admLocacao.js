@@ -7,10 +7,11 @@ import { diasEntre, mediana, pct, somarDias } from './paineis'
 
 export const FILTROS_ADM_LOCACAO = { destinacao: 'todas', tipo: 'todos', garantia: 'todas', indice: 'todos' }
 
-/** R$ 1,30 mi · R$ 65,1 mil · R$ 850 */
+/** R$ 1,77 bi · R$ 1,30 mi · R$ 65,1 mil · R$ 850 */
 export function fmtMoedaCurta(v) {
   if (v == null) return '—'
   const a = Math.abs(v)
+  if (a >= 1_000_000_000) return `R$ ${(v / 1_000_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} bi`
   if (a >= 1_000_000) return `R$ ${(v / 1_000_000).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} mi`
   if (a >= 10_000) return `R$ ${(v / 1000).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} mil`
   return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })

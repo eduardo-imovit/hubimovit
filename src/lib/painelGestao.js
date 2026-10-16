@@ -612,4 +612,58 @@ export function cicloMediano(base, hoje) {
   return mediana(base.filter((a) => a.is_negocio && a.data_encerramento >= desde && a.dias_ate_ganho >= 0).map((a) => a.dias_ate_ganho))
 }
 
+/** Corte de "desatualizado" da carteira, igual ao `vw_estoque_imoveis` (PRD §5.0c cap. 4). */
+export const DIAS_DESATUALIZADO = 45
+
+/**
+ * Carteira de imóveis em estoque por captador (PRD §5.0c cap. 4, 16/10).
+ * `imoveis`: linhas de `vw_estoque_imoveis` (só situações negociáveis).
+ * Imóvel com mais de um captador conta para cada um (decidido 16/10), então a soma por pessoa pode passar do total.
+ */
+export function carteiraPorCaptador(imoveis, finalidade) {
+  const lista = finalidade === 'todas' ? imoveis : imoveis.filter((i) => i.finalidade === finalidade)
+  // valores separados por finalidade: preço de venda e aluguel mensal não se somam
+  const novaConta = (extra) => ({ ...extra, n: 0, desatualizados: 0, valor: { Venda: 0, Aluguel: 0 }, valorDesat: { Venda: 0, Aluguel: 0 } })
+  const somar = (l, i) => {
+    const desat = i.desatualizado !== false
+    const v = Number(i.valor) || 0
+    l.n++
+    if (desat) l.desatualizados++
+    if (i.finalidade in l.valor) {
+      l.valor[i.finalidade] += v
+      if (desat) l.valorDesat[i.finalidade] += v
+    }
+  }
+  const porCaptador = new Map()
+  const geral = novaConta()
+  let semCaptador = novaConta()
+  for (const i of lista) {
+    somar(geral, i)
+    const caps = (i.captadores ?? []).filter(Boolean)
+    if (!caps.length) {
+      somar(semCaptador, i)
+      continue
+    }
+    for (const c of new Set(caps)) {
+      if (!porCaptador.has(c)) porCaptador.set(c, novaConta({ captador: c }))
+      somar(porCaptador.get(c), i)
+    }
+  }
+  const linhas = [...porCaptador.values()]
+    .map((l) => ({ ...l, atualizados: l.n - l.desatualizados, pctAtualizado: pct(l.n - l.desatualizados, l.n) }))
+    .sort((a, b) => b.desatualizados - a.desatualizados || b.n - a.n || a.captador.localeCompare(b.captador, 'pt-BR'))
+  semCaptador = { ...semCaptador, atualizados: semCaptador.n - semCaptador.desatualizados, pctAtualizado: pct(semCaptador.n - semCaptador.desatualizados, semCaptador.n) }
+  return {
+    total: geral.n,
+    desatualizados: geral.desatualizados,
+    atualizados: geral.n - geral.desatualizados,
+    pctAtualizado: pct(geral.n - geral.desatualizados, geral.n),
+    valor: geral.valor,
+    valorDesat: geral.valorDesat,
+    linhas,
+    semCaptador,
+    pior: linhas.find((l) => l.desatualizados > 0) ?? null,
+  }
+}
+
 export { INICIO_HISTORICO_CONFIAVEL }

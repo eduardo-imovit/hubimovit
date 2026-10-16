@@ -246,7 +246,7 @@ Escrita só pela RPC `carregar_estoque_imoveis` (service role). Leitura direta d
   - `caracteristicas text[]` (os booleanos verdadeiros: piscina, varanda gourmet, mobiliado…);
   - título, descrição curta, `fotos_qtd`, `foto_principal_url`, `tem_video`;
   - `exclusivo`, `placa`, `destaque`, `tem_proposta`, `tem_reserva`, `no_site`;
-  - `captador` (null até E4);
+  - `captadores text[]` (nomes, principal primeiro) e `captadores_lido_em` (16/10): a lista não traz o captador; vem do detalhe (`App_RetornarDetalhesImovel`) e a carga diária não o apaga;
   - datas: `cadastrado_em`, `alterado_em`, `validado_em`, `situacao_em`, `vago_desde`;
   - `lido_em`.
   - **Endereço (revisto em 09/10, para achar duplicados):** `logradouro`, `numero`, `complemento`, `bloco`, `cep` e `endereco_chave`. A chave é gerada (rua sem acento, abreviação ou pontuação + número + complemento só com dígitos). Só a Gestão lê; a RPC `buscar_imoveis` continua sem devolver esses campos.
@@ -257,6 +257,10 @@ Escrita só pela RPC `carregar_estoque_imoveis` (service role). Leitura direta d
   - `vw_estoque_captacoes_mensal`: captações por mês, finalidade e bairro;
   - `vw_estoque_duplicados` (09/10): grupos de imóveis da mesma finalidade com o mesmo `endereco_chave`, com pelo menos 1 negociável. Traz o grau de certeza: **alta** quando tipo, área (±5%) e quartos batem; **revisar** quando só o endereço bate. Base da planilha para o time.
 - **RPC `carregar_estoque_imoveis(finalidade text, quantidade_api int, imoveis jsonb, publicados int[])`** (só service_role): recusa leitura incompleta (lidos ≠ `quantidade_api`), faz o upsert dos imóveis da finalidade (`'Aluguel'`/`'Venda'`, como vem da API), marca `no_site` pelos códigos publicados, guarda o `payload` (só campos simples, sem proprietários/anotações/descrição) e registra a carga em `estoque_cargas`. Auxiliares: `imoview_moeda`, `imoview_datahora`, `imoview_coordenada`, `endereco_tokens`, `endereco_chave`. Imóvel que sumiu da API fica com `lido_em` antigo e sai do estoque na view.
+- **RPCs do captador** (migration `20261016120000_estoque_captadores`, aplicada em 16/10; só service_role):
+  - `estoque_captadores_pendentes(limite)`: códigos em estoque com `captadores_lido_em` nulo ou anterior a `alterado_em`;
+  - `gravar_captadores_estoque(itens jsonb)`: `[{codigo, captadores[]}]`, até 500; grava nas duas finalidades do código e marca `captadores_lido_em`;
+  - `carregar_estoque_imoveis` passou a manter `captadores` quando a lista vem sem ele.
 - **RPC `buscar_imoveis(filtros jsonb, margens jsonb default null)`** (security definer):
   - confere `papel_atual()` (hoje `gestao`);
   - devolve `{exatos[], quase_la[], restricao}`:

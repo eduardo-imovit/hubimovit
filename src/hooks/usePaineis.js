@@ -79,6 +79,9 @@ function carregarGestao() {
     ),
     // equipe do corretor = cargo (vendas | locação) da equipe comercial ativa (15/10)
     colaboradores: fetchTodasLinhas(() => supabase.from('colaboradores_raw').select('nome_completo, equipe, cargo, ativo')),
+    // carteira de imóveis em estoque por captador (cap. 4, 16/10); RLS: só a Gestão lê, os outros recebem []
+    estoque: fetchTodasLinhas(() => supabase.from('vw_estoque_imoveis').select('codigo, finalidade, valor, captadores, desatualizado, dias_sem_atualizar').order('codigo').order('finalidade')),
+    ultimaEstoque: ultimaData('estoque_cargas', 'feita_em'),
     ultimaCrm: op.ultimaCrm,
     ultimaAtividades: op.ultimaAtividades,
   }

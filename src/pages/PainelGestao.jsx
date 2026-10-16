@@ -3,13 +3,16 @@ import { usePainelGestao } from '../hooks/usePaineis'
 import { usePerfil } from '../hooks/usePerfil'
 import { useFiltrosUrl } from '../hooks/useFiltrosUrl'
 import { BarraFiltros, Capitulo, Indice } from '../components/painel/Estrutura'
-import { AtividadesPainel, Descartes, FunilLinhas, MapaPessoas, PerdaComparada, SaudeDados } from '../components/painel/Graficos'
+import { AtividadesPainel, CarteiraCaptadores, Descartes, FunilLinhas, MapaPessoas, PerdaComparada, SaudeDados } from '../components/painel/Graficos'
 import { fmtMoeda, fmtNum, fmtPct, isoLocal, saudeDados } from '../lib/paineis'
+import { fmtMoedaCurta } from '../lib/admLocacao'
 import {
   atividadesPainel,
   capituloPessoas,
+  carteiraPorCaptador,
   cicloMediano,
   conversaoSafra,
+  DIAS_DESATUALIZADO,
   descartesPorEtapa,
   emAtendimento,
   equipesComerciais,
@@ -94,10 +97,13 @@ export default function PainelGestao() {
       descartes: descartesPorEtapa(base, hoje),
       atividades,
       pessoasCap,
+      // carteira por captador: o estoque só é lido pela Gestão (RLS)
+      carteira: ehGestao ? carteiraPorCaptador(dados.estoque, filtros.finalidade) : null,
       saude: saudeDados(
         [
           { fonte: 'CRM · atendimentos', ultima: dados.ultimaCrm, toleranciaDias: 1 },
           { fonte: 'CRM · atividades', ultima: dados.ultimaAtividades, toleranciaDias: 1 },
+          ...(ehGestao ? [{ fonte: 'Imoview · estoque de imóveis', ultima: dados.ultimaEstoque, toleranciaDias: 1 }] : []),
         ],
         hoje
       ),
@@ -113,6 +119,8 @@ export default function PainelGestao() {
   ].filter(Boolean)
 
   const selecionar = (c) => setFiltro('corretor', filtros.corretor === c ? 'todos' : c)
+  // o captador vem do Imoview; só vira filtro quando é um corretor da lista (mesmo nome, sem diferenciar maiúsculas)
+  const corretorDoCaptador = (nome) => opcoes.corretores.find((c) => c.trim().toLowerCase() === nome.trim().toLowerCase()) ?? null
   const [inbound, outbound] = FUNIS
 
   return (
@@ -262,9 +270,48 @@ export default function PainelGestao() {
             <AtividadesPainel dados={h.atividades} selecionado={filtros.corretor} onSelecionar={selecionar} />
           </Capitulo>
 
-          {/* 4 — Pessoas */}
+          {/* 4 — Carteira de imóveis por captador (só Gestão) */}
+          {h.carteira && (
+            <Capitulo
+              numero="4"
+              pergunta="A carteira está atualizada?"
+              conclusao={(() => {
+                const c = h.carteira
+                // venda em R$ e locação em R$/mês, nunca somados
+                const valorDesat = (l) =>
+                  [
+                    l.valorDesat.Venda ? `${fmtMoedaCurta(l.valorDesat.Venda)} em venda` : null,
+                    l.valorDesat.Aluguel ? `${fmtMoedaCurta(l.valorDesat.Aluguel)}/mês em locação` : null,
+                  ].filter(Boolean).join(' e ')
+                if (!c.total) return 'Ainda não há imóveis em estoque carregados do Imoview.'
+                const geral = `${fmtPct(c.pctAtualizado, 0)} dos ${fmtNum(c.total)} imóveis em estoque foram atualizados nos últimos ${DIAS_DESATUALIZADO} dias.`
+                const sel = filtros.corretor !== 'todos' ? c.linhas.find((l) => l.captador.trim().toLowerCase() === filtros.corretor.trim().toLowerCase()) : null
+                if (filtros.corretor !== 'todos') {
+                  return sel
+                    ? `${geral} ${filtros.corretor} capta ${fmtNum(sel.n)}: ${fmtNum(sel.atualizados)} atualizados e ${fmtNum(sel.desatualizados)} desatualizados${valorDesat(sel) ? `, somando ${valorDesat(sel)}` : ''}.`
+                    : `${geral} ${filtros.corretor} não aparece como captador de nenhum imóvel em estoque.`
+                }
+                return c.pior
+                  ? `${geral}${valorDesat(c) ? ` Os desatualizados somam ${valorDesat(c)}.` : ''} ${c.pior.captador} tem mais imóveis desatualizados: ${fmtNum(c.pior.desatualizados)} de ${fmtNum(c.pior.n)}.`
+                  : `${geral} Nenhum captador tem imóvel desatualizado.`
+              })()}
+              rodape={`Imóveis em estoque no Imoview (Vago/Disponível, Em moderação, Em reforma e Em desocupação), lidos todo dia. Atualizado = alterado ou validado nos últimos ${DIAS_DESATUALIZADO} dias. Imóvel com mais de um captador conta para cada um, então a soma por captador pode passar do total. Valor desatualizado soma o preço pedido dos imóveis desatualizados; venda e locação (R$/mês) ficam separadas. Selo: 80% ou mais em verde, de 50% a 79% em amarelo, abaixo de 50% em vermelho.${
+                h.carteira.semCaptador.n ? ` ${fmtNum(h.carteira.semCaptador.n)} imóveis ainda sem captador lido (a leitura do detalhe vem no dia seguinte).` : ''
+              } Clique num captador (quando ele é um corretor da equipe) para filtrar o painel por ele.`}
+            >
+              <CarteiraCaptadores
+                dados={h.carteira}
+                finalidade={filtros.finalidade}
+                selecionado={filtros.corretor === 'todos' ? null : h.carteira.linhas.find((l) => corretorDoCaptador(l.captador) === filtros.corretor)?.captador ?? null}
+                podeSelecionar={(nome) => corretorDoCaptador(nome) != null}
+                onSelecionar={(nome) => selecionar(corretorDoCaptador(nome))}
+              />
+            </Capitulo>
+          )}
+
+          {/* 5 — Pessoas */}
           <Capitulo
-            numero="4"
+            numero={h.carteira ? '5' : '4'}
             pergunta="Quem precisa agir agora?"
             conclusao={`${fmtNum(h.pessoasCap.totais.semContato)} leads ativos sem nenhum contato, ${fmtNum(h.pessoasCap.totais.abertos30)} abertos há mais de 30 dias e ${fmtNum(h.pessoasCap.totais.vencidas30)} atividades vencidas no último mês.`}
             rodape={`Quanto mais escura a célula, pior em relação aos colegas. Clique num corretor para ver o painel inteiro só com a carteira dele. Há ainda ${fmtNum(h.pessoasCap.totais.esquecidas)} atividades vencidas há mais de 30 dias (provável limpeza no CRM). "Abertos" conta dias desde a entrada do lead; o CRM não exporta a data da última interação.`}

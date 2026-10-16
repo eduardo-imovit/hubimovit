@@ -16,6 +16,7 @@ import {
 } from 'recharts'
 import { CORES, CORES_ETAPA, FUNIS, LABEL_FINALIDADE, simularGanho } from '../../lib/painelGestao'
 import { fmtMoeda, fmtNum, fmtPct } from '../../lib/paineis'
+import { fmtMoedaCurta } from '../../lib/admLocacao'
 
 const EIXO = { fontSize: 11, fill: 'var(--grafite-soft)' }
 const GRADE = 'var(--champagne)'
@@ -580,6 +581,107 @@ export function SaudeDados({ fontes }) {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// 4. Carteira de imóveis por captador (atualizados × desatualizados)
+// ---------------------------------------------------------------------------
+
+const seloCarteira = (p) => (p == null ? null : p >= 80 ? 'badge-success' : p >= 50 ? 'badge-warning' : 'badge-danger')
+
+/** Valor desatualizado da linha: venda em R$, locação em R$/mês (nunca somados). Em "todas", a venda manda. */
+function valorDesatLinha(l, finalidade) {
+  if (finalidade === 'Aluguel' || (finalidade === 'todas' && !l.valorDesat.Venda && l.valorDesat.Aluguel)) {
+    return l.valorDesat.Aluguel ? `${fmtMoedaCurta(l.valorDesat.Aluguel)}/mês` : '—'
+  }
+  return l.valorDesat.Venda ? fmtMoedaCurta(l.valorDesat.Venda) : '—'
+}
+
+function tituloValores(l) {
+  const partes = []
+  if (l.valor.Venda) partes.push(`venda: ${fmtMoedaCurta(l.valorDesat.Venda)} desatualizados de ${fmtMoedaCurta(l.valor.Venda)}`)
+  if (l.valor.Aluguel) partes.push(`locação: ${fmtMoedaCurta(l.valorDesat.Aluguel)}/mês desatualizados de ${fmtMoedaCurta(l.valor.Aluguel)}/mês`)
+  return partes.length ? ` · ${partes.join(' · ')}` : ''
+}
+
+function LinhaCarteira({ l, max, finalidade, selecionado, onSelecionar, rotulo }) {
+  const conteudo = (
+    <>
+      <span className="pg-hbarra-rotulo">{rotulo ?? l.captador}</span>
+      <div className="pg-funil-trilho">
+        <div className="pg-carteira-barra" style={{ width: `${Math.max(1, (l.n / max) * 100)}%` }}>
+          {l.atualizados > 0 && <div style={{ flex: l.atualizados, background: 'var(--success)' }} />}
+          {l.desatualizados > 0 && <div style={{ flex: l.desatualizados, background: 'var(--danger)' }} />}
+        </div>
+      </div>
+      <span className="pg-funil-n">{fmtNum(l.n)}</span>
+      <span className="pg-carteira-valor">{valorDesatLinha(l, finalidade)}</span>
+      <span className={`badge ${seloCarteira(l.pctAtualizado) ?? ''}`}>{l.pctAtualizado == null ? '—' : `${fmtPct(l.pctAtualizado, 0)} atualizados`}</span>
+    </>
+  )
+  const titulo = `${fmtNum(l.atualizados)} atualizados · ${fmtNum(l.desatualizados)} desatualizados${tituloValores(l)}`
+  if (!onSelecionar) return <div className="pg-atividade pg-carteira pg-carteira-linha" title={titulo}>{conteudo}</div>
+  return (
+    <button type="button" className={`pg-atividade pg-carteira ${selecionado ? 'is-selecionado' : ''}`} onClick={onSelecionar} title={titulo}>
+      {conteudo}
+    </button>
+  )
+}
+
+export function CarteiraCaptadores({ dados, finalidade, selecionado, podeSelecionar, onSelecionar }) {
+  const max = Math.max(...dados.linhas.map((l) => l.n), dados.semCaptador.n, 1)
+  const mostraVenda = finalidade !== 'Aluguel' && dados.valor.Venda > 0
+  const mostraAluguel = finalidade !== 'Venda' && dados.valor.Aluguel > 0
+  return (
+    <div className="pg-grafico">
+      <div className="pg-ativ-resumo pg-carteira-resumo">
+        <div>
+          <div className="pg-ativ-numero">{fmtNum(dados.total)}</div>
+          <div className="pg-ativ-contexto">imóveis em estoque</div>
+        </div>
+        <div>
+          <div className="pg-ativ-numero">{fmtNum(dados.atualizados)}</div>
+          <div className="pg-ativ-contexto">atualizados ({fmtPct(dados.pctAtualizado, 0)})</div>
+        </div>
+        <div>
+          <div className="pg-ativ-numero">{fmtNum(dados.desatualizados)}</div>
+          <div className="pg-ativ-contexto">desatualizados há mais de 45 dias</div>
+        </div>
+        {mostraVenda && (
+          <div>
+            <div className="pg-ativ-numero">{fmtMoedaCurta(dados.valorDesat.Venda)}</div>
+            <div className="pg-ativ-contexto">em venda desatualizados, de {fmtMoedaCurta(dados.valor.Venda)}</div>
+          </div>
+        )}
+        {mostraAluguel && (
+          <div>
+            <div className="pg-ativ-numero">{fmtMoedaCurta(dados.valorDesat.Aluguel)}/mês</div>
+            <div className="pg-ativ-contexto">em locação desatualizados, de {fmtMoedaCurta(dados.valor.Aluguel)}/mês</div>
+          </div>
+        )}
+      </div>
+      <div className="pg-subtitulo">
+        Por captador{' '}
+        <span className="pg-grafico-ref">
+          · <span className="pg-ponto" style={{ background: 'var(--success)' }} aria-hidden="true" /> atualizados{' '}
+          <span className="pg-ponto" style={{ background: 'var(--danger)' }} aria-hidden="true" /> desatualizados · R$ = valor desatualizado{finalidade === 'todas' ? ' (venda; locação em R$/mês)' : ''}
+        </span>
+      </div>
+      <div className="pg-hbarras">
+        {dados.linhas.map((l) => (
+          <LinhaCarteira
+            key={l.captador}
+            l={l}
+            max={max}
+            finalidade={finalidade}
+            selecionado={selecionado === l.captador}
+            onSelecionar={podeSelecionar(l.captador) ? () => onSelecionar(l.captador) : null}
+          />
+        ))}
+        {dados.semCaptador.n > 0 && <LinhaCarteira l={dados.semCaptador} max={max} finalidade={finalidade} rotulo="Sem captador no Imoview" />}
+      </div>
     </div>
   )
 }

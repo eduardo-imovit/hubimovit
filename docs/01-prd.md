@@ -119,7 +119,7 @@ Faltava um lugar único para:
    - a passagem de cada corretor com a média da equipe dele.
    Tabela curta: corretor, a sua taxa, a da equipe e a diferença. Os descartes por etapa ficam como apoio. Este capítulo substitui os antigos 2 e 3.
 3. **Quem está atendendo?** Atividades **realizadas** no período por corretor, contra a média da sua equipe (venda ou locação), com o selo **acima / na média / abaixo**. "Na média" vai de −10% a +10% (decidido 15/10). Não contam as "Anotações".
-4. **Carteira de imóveis.** Imóveis ativos e a % atualizada nos últimos 45 dias, lidos do estoque (§5.14), por captador quando houver. Os dados ainda não estão prontos, ver as lacunas abaixo.
+4. **A carteira está atualizada?** (feito em 16/10, só a Gestão vê) Imóveis em estoque (Vago/Disponível, Em moderação, Em reforma, Em desocupação) e quantos foram atualizados (alterados ou validados) nos últimos 45 dias, lidos do estoque (§5.14), **por captador**: barra empilhada atualizados × desatualizados, total e selo de % atualizado (80% ou mais verde, 50–79% amarelo, abaixo de 50% vermelho). Decisões do Eduardo em 16/10: entram **só os imóveis em estoque**, e um imóvel com mais de um captador **conta para cada um**. Também mostra o **valor desatualizado** (soma do preço pedido dos imóveis desatualizados), no geral e por captador, com venda (R$) e locação (R$/mês) sempre separadas, sem somar uma com a outra (pedido de 16/10). O captador vem do detalhe do Imoview (E4 resolvido). Clicar num captador que também é corretor da equipe filtra o painel.
 5. **Quem precisa agir agora?** O mapa de pessoas atual continua.
 - O capítulo "Canais e custo da mídia" sai da Gestão (decidido 15/10); já existe no Painel de Performance (§5.0b).
 
@@ -127,7 +127,7 @@ Faltava um lugar único para:
 
 **Lacunas (o que ainda não dá para mostrar):**
 - **Vendas no período (R$):** o CRM não traz o valor da venda. As propostas de venda do Hub têm valor, mas são só 2 até agora. Por enquanto, a quantidade de negócios. O R$ entra quando as vendas passarem pelo Hub ou o valor vier do Imoview.
-- **Imóveis ativos / atualizados:** `imoveis_estoque` tem 4.250 linhas, mas `vw_estoque_imoveis` devolve 0 negociáveis e não há registro de carga (`estoque_cargas` vazio). Precisa de correção antes do capítulo 4.
+- ~~**Imóveis ativos / atualizados:**~~ resolvido em 15/10 (1ª carga completa: 11.220 imóveis, 1.308 em estoque).
 
 **Pronto quando:**
 - a manchete mostra os ativos de Qualificado a Proposta e o número bate com uma consulta direta no banco;
@@ -581,7 +581,7 @@ Cada número abre a lista dos imóveis. O código leva ao imóvel no Imoview.
 - **Corretor (futuro):** vê o imóvel, o código, o **captador** e o condomínio (nome e valor); **não vê** proprietário nem endereço completo (rua, número, complemento, CEP). Bairro e cidade aparecem. As coordenadas ficam só no servidor (cálculo da distância), nunca na resposta.
 
 **Perguntas.**
-- **E4 Captador:** a consulta pública por imóvel (`Imovel/RetornarDetalhesImovelDisponivel`) dá 403 em 4 de 5 imóveis e não traz o captador (teste de 08/10). Resta a consulta com login de usuário (`Imovel/App_RetornarDetalhesImovel`, com `codigoacesso` do `App_ValidarAcesso`), que os fluxos do n8n já usam com o login do Eduardo. **Autorizar o teste em 10 imóveis com esse login?**
+- **E4 Captador (resolvido em 16/10):** a consulta pública por imóvel dá 403 e não traz o captador (08/10). A consulta com login (`Imovel/App_RetornarDetalhesImovel`) traz `captadores[]` (nome, principal, percentual): testada em 10 imóveis, 10 de 10 OK. O n8n lê o detalhe só dos imóveis em estoque sem captador ou alterados depois da última leitura.
 - **E6 Condomínio para o corretor:** nome do condomínio e valor da taxa entram; o endereço do condomínio não. Confirmar.
 
 ### 5.15 Cadastro Locador PF no Hub (pedido do Eduardo, 09/10) - **APROVADO**
