@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Bar,
   BarChart,
@@ -17,6 +18,9 @@ import {
 import { CORES, CORES_ETAPA, FUNIS, LABEL_FINALIDADE, simularGanho } from '../../lib/painelGestao'
 import { fmtMoeda, fmtNum, fmtPct } from '../../lib/paineis'
 import { fmtMoedaCurta } from '../../lib/admLocacao'
+
+// o mapa (Leaflet) só baixa quando o capítulo do estoque aparece
+const MapaCalor = lazy(() => import('./MapaCalor'))
 
 const EIXO = { fontSize: 11, fill: 'var(--grafite-soft)' }
 const GRADE = 'var(--champagne)'
@@ -682,6 +686,85 @@ export function CarteiraCaptadores({ dados, finalidade, selecionado, podeSelecio
         ))}
         {dados.semCaptador.n > 0 && <LinhaCarteira l={dados.semCaptador} max={max} finalidade={finalidade} rotulo="Sem captador no Imoview" />}
       </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// 4. Quanto temos disponível? (Vago/Disponível por tipo + mapa de calor do estoque)
+// ---------------------------------------------------------------------------
+
+// abre a busca do Estoque (/dashboard/estoque) já filtrada pelo tipo e pela finalidade
+function linkBusca(tipo, finalidade) {
+  const p = new URLSearchParams({ tipos: tipo })
+  if (finalidade !== 'todas') p.set('finalidade', finalidade)
+  return `/dashboard/estoque?${p}`
+}
+
+export function EstoqueDisponivel({ dados, finalidade }) {
+  const mostra = ['Venda', 'Aluguel'].filter((f) => finalidade === 'todas' || finalidade === f)
+  const max = Math.max(...dados.tipos.map((t) => t.n), 1)
+  const { mapa } = dados
+  return (
+    <div className="pg-grafico">
+      <div className="pg-ativ-resumo pg-carteira-resumo">
+        <div>
+          <div className="pg-ativ-numero">{fmtNum(dados.total)}</div>
+          <div className="pg-ativ-contexto">imóveis vagos/disponíveis</div>
+        </div>
+        {mostra.map((f) => {
+          const d = dados.porFinalidade[f]
+          const mes = f === 'Aluguel' ? '/mês' : ''
+          return (
+            <div key={f}>
+              <div className="pg-ativ-numero">{fmtNum(d.n)}</div>
+              <div className="pg-ativ-contexto">
+                em {LABEL_FINALIDADE[f].toLowerCase()} · {fmtMoedaCurta(d.valor)}{mes} no total · mediana {d.ticket == null ? '—' : `${fmtMoedaCurta(d.ticket)}${mes}`}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="pg-subtitulo">
+        Por tipo{' '}
+        {mostra.length > 1 && (
+          <span className="pg-grafico-ref">
+            · <span className="pg-ponto" style={{ background: CORES.Venda }} aria-hidden="true" /> venda{' '}
+            <span className="pg-ponto" style={{ background: CORES.Aluguel }} aria-hidden="true" /> locação
+          </span>
+        )}
+      </div>
+      <div className="pg-hbarras">
+        {dados.tipos.map((t) => (
+          <div key={t.tipo} className="pg-tipo-ativ" title={mostra.map((f) => `${LABEL_FINALIDADE[f]}: ${fmtNum(t[f])}`).join(' · ')}>
+            <Link className="pg-hbarra-rotulo" to={linkBusca(t.tipo, finalidade)} title={`Buscar ${t.tipo} disponíveis no Estoque`}>
+              {t.tipo}
+            </Link>
+            <div className="pg-funil-trilho">
+              <div className="pg-carteira-barra" style={{ width: `${Math.max(1, (t.n / max) * 100)}%` }}>
+                {mostra.map((f) => t[f] > 0 && <div key={f} style={{ flex: t[f], background: CORES[f] }} />)}
+              </div>
+            </div>
+            <span className="pg-funil-n">
+              {fmtNum(t.n)}
+              {mostra.length > 1 && <span className="is-muted"> ({fmtNum(t.Venda)} venda · {fmtNum(t.Aluguel)} loc.)</span>}
+            </span>
+          </div>
+        ))}
+        {!dados.tipos.length && <p className="pg-nota">Nenhum imóvel vago/disponível neste recorte.</p>}
+      </div>
+
+      <div className="pg-subtitulo">
+        Onde está o estoque{' '}
+        <span className="pg-grafico-ref">
+          · {fmtNum(mapa.pontos.length)} de {fmtNum(mapa.total)} imóveis em estoque no mapa
+          {mapa.semCoordenada > 0 && ` (${fmtNum(mapa.semCoordenada)} sem localização no Imoview)`}
+        </span>
+      </div>
+      <Suspense fallback={<div className="pg-mapa-caixa hub-loading">Carregando o mapa…</div>}>
+        <MapaCalor pontos={mapa.pontos} />
+      </Suspense>
     </div>
   )
 }

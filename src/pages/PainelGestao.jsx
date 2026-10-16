@@ -3,13 +3,14 @@ import { usePainelGestao } from '../hooks/usePaineis'
 import { usePerfil } from '../hooks/usePerfil'
 import { useFiltrosUrl } from '../hooks/useFiltrosUrl'
 import { BarraFiltros, Capitulo, Indice } from '../components/painel/Estrutura'
-import { AtividadesPainel, CarteiraCaptadores, Descartes, FunilLinhas, MapaPessoas, PerdaComparada, SaudeDados } from '../components/painel/Graficos'
+import { AtividadesPainel, CarteiraCaptadores, Descartes, EstoqueDisponivel, FunilLinhas, MapaPessoas, PerdaComparada, SaudeDados } from '../components/painel/Graficos'
 import { fmtMoeda, fmtNum, fmtPct, isoLocal, saudeDados } from '../lib/paineis'
 import { fmtMoedaCurta } from '../lib/admLocacao'
 import {
   atividadesPainel,
   capituloPessoas,
   carteiraPorCaptador,
+  estoqueDisponivel,
   cicloMediano,
   conversaoSafra,
   DIAS_DESATUALIZADO,
@@ -99,6 +100,7 @@ export default function PainelGestao() {
       pessoasCap,
       // carteira por captador: o estoque só é lido pela Gestão (RLS)
       carteira: ehGestao ? carteiraPorCaptador(dados.estoque, filtros.finalidade) : null,
+      disponivel: ehGestao ? estoqueDisponivel(dados.estoque, filtros.finalidade) : null,
       saude: saudeDados(
         [
           { fonte: 'CRM · atendimentos', ultima: dados.ultimaCrm, toleranciaDias: 1 },
@@ -270,10 +272,31 @@ export default function PainelGestao() {
             <AtividadesPainel dados={h.atividades} selecionado={filtros.corretor} onSelecionar={selecionar} />
           </Capitulo>
 
-          {/* 4 — Carteira de imóveis por captador (só Gestão) */}
-          {h.carteira && (
+          {/* 4 — Estoque disponível + mapa de calor (só Gestão) */}
+          {h.disponivel && (
             <Capitulo
               numero="4"
+              pergunta="Quanto temos disponível?"
+              conclusao={(() => {
+                const d = h.disponivel
+                if (!d.total) return 'Nenhum imóvel vago/disponível neste recorte.'
+                const partes = ['Venda', 'Aluguel']
+                  .filter((f) => d.porFinalidade[f].n > 0)
+                  .map((f) => `${fmtNum(d.porFinalidade[f].n)} ${f === 'Venda' ? 'à venda' : 'para locação'}`)
+                const tipo = d.tipos[0] ? ` ${d.tipos[0].tipo} é o tipo com mais imóveis (${fmtNum(d.tipos[0].n)}).` : ''
+                const onde = d.bairrosTop.length ? ` O estoque se concentra em ${d.bairrosTop.map((b) => b.bairro).join(', ')}.` : ''
+                return `Temos ${fmtNum(d.total)} imóveis vagos/disponíveis: ${partes.join(' e ')}.${tipo}${onde}`
+              })()}
+              rodape="Clique num tipo para abrir a busca do Estoque com ele. Disponível = situação Vago/Disponível no Imoview, lido todo dia (em moderação, reforma e desocupação ficam fora deste card, mas entram no mapa). Valores: soma e mediana do preço pedido; locação em R$/mês, nunca somada à venda. O mapa mostra o estoque inteiro de hoje pela localização cadastrada no Imoview; quanto mais quente, mais imóveis. Mapa © OpenStreetMap."
+            >
+              <EstoqueDisponivel dados={h.disponivel} finalidade={filtros.finalidade} />
+            </Capitulo>
+          )}
+
+          {/* 5 — Carteira de imóveis por captador (só Gestão) */}
+          {h.carteira && (
+            <Capitulo
+              numero="5"
               pergunta="A carteira está atualizada?"
               conclusao={(() => {
                 const c = h.carteira
@@ -309,9 +332,9 @@ export default function PainelGestao() {
             </Capitulo>
           )}
 
-          {/* 5 — Pessoas */}
+          {/* 6 — Pessoas */}
           <Capitulo
-            numero={h.carteira ? '5' : '4'}
+            numero={h.carteira ? '6' : '4'}
             pergunta="Quem precisa agir agora?"
             conclusao={`${fmtNum(h.pessoasCap.totais.semContato)} leads ativos sem nenhum contato, ${fmtNum(h.pessoasCap.totais.abertos30)} abertos há mais de 30 dias e ${fmtNum(h.pessoasCap.totais.vencidas30)} atividades vencidas no último mês.`}
             rodape={`Quanto mais escura a célula, pior em relação aos colegas. Clique num corretor para ver o painel inteiro só com a carteira dele. Há ainda ${fmtNum(h.pessoasCap.totais.esquecidas)} atividades vencidas há mais de 30 dias (provável limpeza no CRM). "Abertos" conta dias desde a entrada do lead; o CRM não exporta a data da última interação.`}

@@ -586,6 +586,47 @@ Cada número abre a lista dos imóveis. O código leva ao imóvel no Imoview.
 - **E4 Captador (resolvido em 16/10):** a consulta pública por imóvel dá 403 e não traz o captador (08/10). A consulta com login (`Imovel/App_RetornarDetalhesImovel`) traz `captadores[]` (nome, principal, percentual): testada em 10 imóveis, 10 de 10 OK. O n8n lê o detalhe só dos imóveis em estoque sem captador ou alterados depois da última leitura.
 - **E6 Condomínio para o corretor:** nome do condomínio e valor da taxa entram; o endereço do condomínio não. Confirmar.
 
+#### Revisão de 16/10 (pedido do Eduardo) — **APROVADA em 16/10; feita no localhost, aguarda publicação**
+Três pedidos novos, que mudam parte das decisões de 08/10 (E1, B2, B3 e "Corretor (futuro)"):
+
+**1. Painel da Gestão — card "Quanto temos disponível?"** (capítulo novo, só Gestão)
+- Volume de imóveis com situação **Vago/Disponível** (só essa situação, não o estoque inteiro), por finalidade (venda × locação) e por tipo (apartamento, casa, casa em condomínio, terreno, comercial…).
+- Valor total e ticket mediano, venda em R$ e locação em R$/mês, nunca somados.
+- Segue o filtro de finalidade do painel. Clicar num tipo abre a busca do Estoque já filtrada.
+
+**2. Painel da Gestão — mapa de calor de Campinas** (no mesmo capítulo)
+- Mapa de Campinas e arredores com mapa de calor de onde está o **estoque atual** (decisão de 16/10: estoque de hoje, não captações do período), pela latitude/longitude do Imoview.
+- Segue o filtro de finalidade. Mostra quantos imóveis ficaram fora do mapa por falta de coordenadas (hoje 56 de 1.308).
+- Ao passar o mouse ou tocar numa região, mostra os bairros com mais imóveis ali.
+- Mapa: OpenStreetMap (gratuito, sem chave), com a biblioteca Leaflet e a camada de calor `leaflet.heat`.
+
+**3. Dash ▸ Estoque: busca para o corretor** (`/dashboard/estoque`)
+- Substitui o plano "Ferramentas ▸ Buscar imóveis só para a Gestão": a busca nasce para **corretor e Gestão** (muda E1 e "Corretor (futuro)").
+- **Caixa de texto livre já na 1ª versão, por regras, sem IA** (muda B3): o Hub lê frases como "apartamento 3 quartos com piscina no Cambuí até 1,5 mi para alugar" e transforma em chips editáveis:
+  - finalidade ("alugar", "locação", "comprar", "venda");
+  - tipo ("apto", "apartamento", "casa", "casa em condomínio", "terreno", "sala"…);
+  - bairro ou região (lista dos bairros e regiões do próprio estoque, sem acento e tolerando erro de digitação);
+  - preço ("até 1,5 mi", "entre 800 mil e 1 milhão", "até 5 mil");
+  - quartos, suítes, vagas, área ("3 quartos", "2 suítes", "120 m²"), tratados como mínimo;
+  - características ("piscina", "churrasqueira", "mobiliado", "aceita pet", "portaria 24h", "varanda gourmet"…), das ~60 que o Imoview marca.
+  - O que não for reconhecido vira busca por palavra no título, condomínio, rua e bairro.
+  - Bairro: aceita o nome inteiro, uma palavra marcante ("no Gramado" → Sítios de Recreio Gramado) e erro de 1 letra; um nome leva junto os bairros que o contêm ("Sousas" → os loteamentos "(Sousas)"; "Alphaville" → todas as fases). O Imoview não preenche "região", então região = bairro + vizinhos a até 2 km.
+  - Sem "alugar"/"comprar" na frase, o preço decide: teto ou piso de R$ 100 mil ou mais = venda; até R$ 60 mil = locação.
+- Filtros clicáveis ao lado dos chips, para quem preferir clicar. A busca vai na URL, para mandar a alguém.
+- Resultado nos blocos já aprovados: "Atendem a tudo", "Quase lá" (margens B1, com o motivo) e "o que mais restringe".
+- **Ordenação** (pedido de 16/10), vale para os dois blocos: atualizados há menos tempo (padrão), menor preço, maior preço, maior área, menor preço por m² e cadastrados mais recentemente. Imóvel sem o dado (preço sob consulta, sem área) vai para o fim. A ordem vai na URL e continua quando se faz outra busca ou se limpa os filtros.
+- **Ficha comercial** (decisão de 16/10), igual para corretor e Gestão:
+  - foto principal, título, código, tipo, finalidade, situação;
+  - bairro, região, cidade e **rua sem número** (muda a decisão de 08/10, que tirava a rua);
+  - valor, condomínio (nome e valor), IPTU, área, quartos, suítes, banheiros, vagas;
+  - características marcadas, captador(es), "atualizado há N dias";
+  - link do anúncio no site (quando publicado) e o código para abrir no Imoview.
+  - **Nunca:** número, complemento, CEP, coordenadas, chaves (local, número, identificador), comissão e taxas, matrícula/cartório, proprietário e anotações. A busca roda numa função no servidor que só devolve esses campos permitidos.
+- Quem vê: `corretor` e `gestao`. Marketing, ADM e "Sem nível" ficam sem acesso.
+- Por padrão entram os imóveis Vago/Disponível e Em desocupação; uma opção mostra também os em moderação e em reforma.
+
+**Fica para depois:** o painel do estoque em capítulos (parte A acima, que vira o restante do Dash ▸ Estoque) e a interpretação da frase por IA (vale se as regras não derem conta).
+
 ### 5.15 Cadastro Locador PF no Hub (pedido do Eduardo, 09/10) - **APROVADO**
 Traz o Google Form "Cadastro Locador(a) - Pessoa Física" para dentro do Hub, no visual do Hub e com os mesmos campos. O locador preenche pelo link fixo aberto (sem login); a resposta cai no Supabase e vai por e-mail para `administrativo3@imovit.com.br` (com cópia ao locador, como o Google fazia). A lista dos cadastros fica junto das Propostas, visível só para gestão/adm. Na mesma entrega, o módulo Propostas passa a aparecer em produção, só para gestão/adm (o corretor entra depois).
 

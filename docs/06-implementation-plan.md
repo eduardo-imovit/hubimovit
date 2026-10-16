@@ -274,6 +274,13 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 ## Fase 18 — Estoque de imóveis: painel + busca (RF27, PRD §5.14) — proposta (08/10)
 - **S0 Captador (E4) — feito em 16/10:** `App_RetornarDetalhesImovel` traz o captador (10 de 10). Migration `20261016120000_estoque_captadores` + sub-fluxo n8n `estoque_captadores_bloco` (100 por bloco), chamado depois da carga diária só para os pendentes. 1ª leitura: ~1.300 imóveis.
 - **S0b Card da carteira na Gestão (pedido de 16/10):** capítulo 4 do Painel da Gestão (PRD §5.0c), por captador, atualizados × desatualizados, mais o valor desatualizado (venda em R$, locação em R$/mês). **Pronto quando:** os números batem com o banco, testado no localhost como Gestão, `npm run build` passa.
+- **Revisão de 16/10 (PRD §5.14, "Revisão de 16/10") — aprovada e feita no localhost em 16/10 (S0c e S4'); falta publicar.** Ordem:
+  - **S0c Card "Quanto temos disponível?" + mapa de calor** no Painel da Gestão: Vago/Disponível por finalidade e tipo, valor e ticket; mapa Leaflet + `leaflet.heat` com o estoque atual. Dados da `vw_estoque_imoveis` (já liberada para a Gestão). **Pronto quando:** os números batem com o SQL, o mapa mostra Campinas com o calor nos bairros certos (conferir 3 imóveis), testado no localhost como Gestão, `npm run build` passa.
+  - **S4' Busca para corretor e Gestão** (`/dashboard/estoque`):
+    - migration `20261016150000_estoque_busca` (aplicada): RPCs `estoque_busca()` e `estoque_bairros()` `security definer`, que conferem o papel e só devolvem a ficha comercial; a busca e as margens rodam no navegador (~1.300 imóveis), sem índice de texto. Testado: corretor lê 1.308 pela RPC e 0 na tabela; marketing e ADM recebem 42501; anon sem `execute`;
+    - interpretador da frase em `src/lib/buscaImoveis.js` com testes de frases reais;
+    - tela com caixa de busca, chips, filtros, os três blocos de resultado, ordenação (6 opções, na URL) e a ficha; item "Estoque" no Dash para corretor e Gestão;
+    - **pronto quando:** 10 frases de teste viram os chips certos, os resultados batem com o SQL, testado no localhost como corretor e como Gestão, `npm run build` passa.
 - **S1 Banco:** migration do Schema §2.11 (tabela, views, RPC de carga), testada em transação. RLS: Gestão lê; corretor, ADM e anon recebem zero.
 - **S2 Carga (revista em 09/10, vem antes do resto):**
   - fluxo n8n `estoque_imoveis_diario` que lê o Imoview direto (sem Edge Function) e grava pela RPC. Criado desligado; o Eduardo liga as credenciais Imoview e Supabase, roda uma vez e ativa às 5h30;

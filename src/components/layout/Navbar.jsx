@@ -20,6 +20,7 @@ function buildMenus(perfil) {
   if (pode(perfil, 'dashComercial')) paineis.push({ to: '/dashboard/comercial', label: ehCorretor ? 'Meus números' : 'Comercial' })
   if (pode(perfil, 'dash')) paineis.push({ to: '/dashboard/gestao', label: 'Painel da Gestão' })
   if (pode(perfil, 'dashPerformance')) paineis.push({ to: '/dashboard/performance', label: 'Painel de Performance' })
+  if (pode(perfil, 'dashEstoque')) paineis.push({ to: '/dashboard/estoque', label: 'Estoque' })
   if (pode(perfil, 'dashAdmLocacao')) paineis.push({ to: '/dashboard/adm-locacao', label: 'Adm locação' })
   menus.push({ label: 'Painéis', children: paineis })
 

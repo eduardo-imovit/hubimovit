@@ -261,11 +261,10 @@ Escrita só pela RPC `carregar_estoque_imoveis` (service role). Leitura direta d
   - `estoque_captadores_pendentes(limite)`: códigos em estoque com `captadores_lido_em` nulo ou anterior a `alterado_em`;
   - `gravar_captadores_estoque(itens jsonb)`: `[{codigo, captadores[]}]`, até 500; grava nas duas finalidades do código e marca `captadores_lido_em`;
   - `carregar_estoque_imoveis` passou a manter `captadores` quando a lista vem sem ele.
-- **RPC `buscar_imoveis(filtros jsonb, margens jsonb default null)`** (security definer):
-  - confere `papel_atual()` (hoje `gestao`);
-  - devolve `{exatos[], quase_la[], restricao}`:
-    - cada "quase lá" traz `motivo` em texto e o critério que falhou;
-    - margens padrão: preço 10%, área 10%, 1 quarto/suíte/vaga, 2 km.
+- **Busca do estoque** (migration `20261016150000_estoque_busca`, 16/10; substitui a `buscar_imoveis` planejada): duas funções `security definer` que conferem `papel_atual()` em (`corretor`, `gestao`) e dão erro 42501 para os outros papéis; `execute` só para `authenticated`.
+  - `estoque_busca()`: a **ficha comercial** de todo o estoque (`vw_estoque_imoveis`, ~1.300 linhas): código, finalidade, situação, tipo, título, rua (sem número), bairro, cidade, condomínio, valores, áreas, quartos/suítes/banheiros/vagas, `caracteristicas text[]` (lista fechada de marcações do `payload` + `extra:<nome>` dos extras marcados), captadores, foto principal, `no_site`, `tem_video`, dias sem atualizar, `desatualizado`, `cadastrado_em`. **Nunca** devolve número, complemento, CEP, coordenadas, chaves, taxas, cartório nem o `payload`.
+  - `estoque_bairros()`: bairro, cidade, quantidade e `vizinhos text[]` a até 2 km (pelo centro dos imóveis de cada bairro). Serve à "região" e à margem de 2 km sem expor coordenadas.
+  - O filtro, as margens ("quase lá") e "o que mais restringe" rodam no navegador sobre essa ficha (`src/lib/buscaImoveis.js`): com ~1.300 imóveis a resposta é instantânea e as regras ficam testáveis.
 - **Índices:** `(finalidade, situacao)`, `bairro`, `valor`, `quartos`.
 
 ### 2.12 Cadastros de locador (RF28, PRD §5.15) — **PROPOSTA, não aplicada**

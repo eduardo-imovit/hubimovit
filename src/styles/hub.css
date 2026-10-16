@@ -897,6 +897,59 @@
 .pg-carteira-valor { font-size: var(--text-xs); color: var(--grafite-soft); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pg-carteira-resumo { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 .pg-carteira-linha { cursor: default; }
+
+/* mapa de calor do estoque (Leaflet) */
+.pg-mapa { margin-top: var(--space-2); }
+.pg-mapa-caixa { height: 420px; border-radius: 8px; overflow: hidden; border: 1px solid var(--champagne); background: var(--pergaminho); z-index: 0; position: relative; }
+/* Dash ▸ Estoque: busca (PRD §5.14, revisão de 16/10; DS "Busca de imóveis") */
+.estoque-filtros { position: static; }
+.estoque-busca { display: flex; gap: var(--space-2); align-items: center; }
+.estoque-busca .search-bar input { height: 46px; font-size: var(--text-base); }
+.estoque-exemplos { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); margin: var(--space-2) 0 var(--space-5); }
+.estoque-filtros .pg-campo input {
+  height: 34px; width: 110px; padding: 0 var(--space-3);
+  border: 1px solid var(--champagne); border-radius: var(--radius-sm);
+  background: var(--branco); color: var(--grafite); font: inherit; font-size: var(--text-sm);
+}
+.estoque-filtros .pg-campo input:focus { outline: none; border-color: var(--coral); }
+.estoque-filtros .pg-campo select { min-width: 110px; }
+.estoque-opcoes { display: flex; flex-direction: column; gap: 2px; font-size: var(--text-xs); color: var(--grafite-mid); }
+.estoque-opcoes label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.estoque-chips { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-3); }
+.estoque-chip-x { border: 0; background: none; color: inherit; font: inherit; font-size: var(--text-sm); line-height: 1; padding: 0 0 0 2px; cursor: pointer; }
+.estoque-chip-x:focus-visible { outline: 2px solid var(--coral); outline-offset: 1px; border-radius: 2px; }
+.estoque-resumo-linha { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-3); margin: 0 0 var(--space-4); }
+.estoque-resumo { font-size: var(--text-sm); color: var(--grafite-mid); margin: 0; flex: 1 1 320px; }
+.estoque-ordem select { min-width: 220px; }
+.imovel-bloco { margin-bottom: var(--space-6); }
+.imovel-bloco > .btn { margin-top: var(--space-3); }
+.imovel-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--space-4); margin-top: var(--space-3); }
+.imovel-card {
+  display: flex; flex-direction: column; text-align: left; padding: 0; overflow: hidden; cursor: pointer;
+  background: var(--branco); border: 1px solid var(--champagne); border-radius: var(--radius-md);
+  font: inherit; color: var(--grafite); transition: box-shadow var(--duration-base) var(--ease-out), border-color var(--duration-base);
+}
+.imovel-card:hover { border-color: var(--coral-light); box-shadow: var(--shadow-md); }
+.imovel-card:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+.imovel-card-foto { position: relative; overflow: hidden; flex-shrink: 0; aspect-ratio: 4 / 3; background: var(--pergaminho); display: flex; align-items: center; justify-content: center; color: var(--grafite-fade); font-size: var(--text-xs); }
+.imovel-card-foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.imovel-card-corpo { display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3); }
+.imovel-card-corpo .badge { align-self: flex-start; }
+.imovel-card-titulo { font-size: var(--text-sm); color: var(--grafite-mid); }
+.imovel-card-valor { font-size: var(--text-md); font-weight: 500; font-variant-numeric: tabular-nums; }
+.imovel-card-atributos { font-size: var(--text-xs); color: var(--grafite-soft); }
+.imovel-card-rodape { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--space-1); margin-top: var(--space-1); font-size: 11px; color: var(--grafite-soft); }
+.imovel-ficha { display: flex; flex-direction: column; gap: var(--space-3); }
+.imovel-ficha-foto { width: 100%; max-height: 320px; object-fit: cover; border-radius: var(--radius-md); }
+.imovel-ficha-valor { font-size: var(--text-lg); font-weight: 500; }
+.imovel-ficha dl { margin: 0; display: flex; flex-direction: column; gap: var(--space-1); font-size: var(--text-sm); }
+.imovel-ficha-linha { display: flex; gap: var(--space-2); }
+.imovel-ficha-linha dt { min-width: 110px; color: var(--grafite-soft); }
+.imovel-ficha-linha dd { margin: 0; }
+.imovel-ficha-car { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+.imovel-ficha-acoes { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+
+.pg-mapa-perto { font-size: var(--text-xs); color: var(--grafite-soft); margin-top: var(--space-2); min-height: 1.5em; }
 .pg-carteira-linha:hover { background: none; }
 
 @media (max-width: 640px) {
@@ -908,6 +961,7 @@
   .pg-atividade { grid-template-columns: 96px 1fr 32px; }
   .pg-atividade .badge { grid-column: 1 / -1; }
   .pg-atividade.pg-carteira { grid-template-columns: 96px 1fr 32px 64px; }
+  .pg-mapa-caixa { height: 320px; }
   .pg-funil-linha2 { grid-template-columns: 1fr; gap: var(--space-2); }
   .pg-funil-linha2-nome { flex-direction: row; justify-content: space-between; align-items: baseline; }
   .pg-funil-linha2-legenda { grid-template-columns: 1fr 1fr; }

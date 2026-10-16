@@ -666,4 +666,53 @@ export function carteiraPorCaptador(imoveis, finalidade) {
   }
 }
 
+/** Situação que conta como "disponível" no capítulo do estoque (PRD §5.14, revisão de 16/10). */
+export const SITUACAO_DISPONIVEL = 'Vago/Disponível'
+
+// coordenadas plausíveis para a região de Campinas (descarta 0/0 e erros de cadastro)
+const coordValida = (lat, lng) => lat > -24.5 && lat < -21.5 && lng > -48.5 && lng < -45.5
+
+/**
+ * Disponíveis (Vago/Disponível) por finalidade e tipo, e os pontos do mapa de calor
+ * (o mapa mostra o estoque inteiro de hoje, decisão de 16/10).
+ */
+export function estoqueDisponivel(imoveis, finalidade) {
+  const naFinalidade = finalidade === 'todas' ? imoveis : imoveis.filter((i) => i.finalidade === finalidade)
+  const disponiveis = naFinalidade.filter((i) => i.situacao === SITUACAO_DISPONIVEL)
+  const porFinalidade = {}
+  for (const f of ['Venda', 'Aluguel']) {
+    const l = disponiveis.filter((i) => i.finalidade === f)
+    const valores = l.map((i) => Number(i.valor)).filter((v) => v > 0)
+    porFinalidade[f] = { n: l.length, valor: valores.reduce((a, b) => a + b, 0), ticket: mediana(valores) }
+  }
+  const tipos = new Map()
+  for (const i of disponiveis) {
+    const t = i.tipo || 'Sem tipo'
+    const l = tipos.get(t) ?? { tipo: t, n: 0, Venda: 0, Aluguel: 0 }
+    l.n++
+    if (i.finalidade in l) l[i.finalidade]++
+    tipos.set(t, l)
+  }
+  const pontos = []
+  let semCoordenada = 0
+  for (const i of naFinalidade) {
+    const lat = Number(i.latitude)
+    const lng = Number(i.longitude)
+    if (coordValida(lat, lng)) pontos.push({ lat, lng, bairro: i.bairro || 'Sem bairro', disponivel: i.situacao === SITUACAO_DISPONIVEL })
+    else semCoordenada++
+  }
+  const porBairro = new Map()
+  for (const i of naFinalidade) {
+    const b = i.bairro || 'Sem bairro'
+    porBairro.set(b, (porBairro.get(b) ?? 0) + 1)
+  }
+  return {
+    total: disponiveis.length,
+    porFinalidade,
+    bairrosTop: [...porBairro.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([bairro, n]) => ({ bairro, n })),
+    tipos: [...tipos.values()].sort((a, b) => b.n - a.n || a.tipo.localeCompare(b.tipo, 'pt-BR')),
+    mapa: { pontos, semCoordenada, total: naFinalidade.length },
+  }
+}
+
 export { INICIO_HISTORICO_CONFIAVEL }

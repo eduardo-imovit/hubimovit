@@ -79,8 +79,8 @@ function carregarGestao() {
     ),
     // equipe do corretor = cargo (vendas | locação) da equipe comercial ativa (15/10)
     colaboradores: fetchTodasLinhas(() => supabase.from('colaboradores_raw').select('nome_completo, equipe, cargo, ativo')),
-    // carteira de imóveis em estoque por captador (cap. 4, 16/10); RLS: só a Gestão lê, os outros recebem []
-    estoque: fetchTodasLinhas(() => supabase.from('vw_estoque_imoveis').select('codigo, finalidade, valor, captadores, desatualizado, dias_sem_atualizar').order('codigo').order('finalidade')),
+    // estoque de imóveis: disponíveis + mapa e carteira por captador (16/10); RLS: só a Gestão lê, os outros recebem []
+    estoque: fetchTodasLinhas(() => supabase.from('vw_estoque_imoveis').select('codigo, finalidade, situacao, tipo, bairro, latitude, longitude, valor, captadores, desatualizado, dias_sem_atualizar').order('codigo').order('finalidade')),
     ultimaEstoque: ultimaData('estoque_cargas', 'feita_em'),
     ultimaCrm: op.ultimaCrm,
     ultimaAtividades: op.ultimaAtividades,
@@ -119,6 +119,19 @@ function carregarComercial() {
     ultimaCrm: ultimaData('dashboard_atendimentos_crm', 'data_de_entrada'),
     ultimaAtividades: ultimaData('atividades', 'inserido_em'),
   }
+}
+
+function carregarEstoque() {
+  return {
+    // ficha comercial pelas RPCs security definer (corretor e Gestão); a tabela continua só da Gestão
+    imoveis: fetchTodasLinhas(() => supabase.rpc('estoque_busca')),
+    bairros: unica(supabase.rpc('estoque_bairros')),
+  }
+}
+
+/** Dash ▸ Estoque (PRD §5.14, revisão de 16/10): a busca roda no navegador sobre a ficha. */
+export function usePainelEstoque() {
+  return useCarga(carregarEstoque)
 }
 
 /** Dados do Painel Comercial (PRD §5.8): os filtros rodam no navegador sobre a base inteira. */
