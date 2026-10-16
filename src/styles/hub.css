@@ -518,14 +518,16 @@
 .km32-tv-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--coral); }
 .km32-tv-parada { position: absolute; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--grafite); border: 2px solid rgba(255,255,255,.35); box-sizing: border-box; }
 .km32-tv-hoje { position: absolute; top: -5px; bottom: -5px; border-left: 2px dashed rgba(255,255,255,.55); }
-.km32-tv-numeros { display: grid; grid-template-columns: 1.1fr 1.1fr .8fr; gap: var(--space-3); }
+.km32-tv-numeros { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-3); }
 .km32-tv-numeros > div { min-width: 0; }
-.km32-tv-ritmo { font-size: var(--text-lg); font-weight: var(--weight-medium); line-height: 1.3; color: var(--branco); white-space: nowrap; }
+.km32-tv-valor { white-space: nowrap; }
+.km32-tv-lado { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
+.km32-tv-lado .kpi-tv-sub { white-space: nowrap; }
+.km32-tv-ritmo { font-size: var(--text-sm); font-weight: var(--weight-semibold); line-height: 1.6; color: var(--branco); white-space: nowrap; }
 /* selo cheio: verde/coral escuros não leem sobre o grafite, branco sobre a cor lê de longe */
-.km32-tv-ritmo.is-acima, .km32-tv-ritmo.is-abaixo { display: inline-block; padding: 0 10px; border-radius: 999px; }
+.km32-tv-ritmo.is-acima, .km32-tv-ritmo.is-abaixo { padding: 0 10px; border-radius: 999px; }
 .km32-tv-ritmo.is-acima { background: var(--success); }
 .km32-tv-ritmo.is-abaixo { background: var(--coral); }
-.km32-tv-proposta { font-size: var(--text-lg); line-height: 1.3; color: rgba(255,255,255,.85); white-space: nowrap; }
 
 /* Agenda de eventos: 7 dias em vez dos 3 da agenda do fotógrafo */
 .agenda-eventos-tv-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }

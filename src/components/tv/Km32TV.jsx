@@ -37,12 +37,12 @@ export function Km32TV({ dados }) {
 
               <div className="km32-tv-numeros">
                 <div>
-                  <div className="kpi-tv-valor">{moeda(chave, l.valorMes)}</div>
+                  <div className="kpi-tv-valor km32-tv-valor">{moeda(chave, l.valorMes)}</div>
                   <div className="kpi-tv-sub">
                     de {moeda(chave, l.metaMes.valor)} · meta de {l.metaMes.mes} · {pctTexto(Math.min(1, l.valorMes / l.metaMes.valor))}
                   </div>
                 </div>
-                <div>
+                <div className="km32-tv-lado">
                   {l.batida ? (
                     <div className="km32-tv-ritmo is-acima">Meta batida</div>
                   ) : l.noRitmo ? (
@@ -53,10 +53,7 @@ export function Km32TV({ dados }) {
                     </div>
                   )}
                   <div className="kpi-tv-sub">do esperado até hoje ({moeda(chave, l.esperado)})</div>
-                </div>
-                <div>
-                  <div className="km32-tv-proposta">{moeda(chave, f.em_proposta)}</div>
-                  <div className="kpi-tv-sub">em proposta ({f.propostas})</div>
+                  <div className="kpi-tv-sub">{moeda(chave, f.em_proposta)} em proposta ({f.propostas})</div>
                 </div>
               </div>
             </div>
