@@ -14,6 +14,8 @@ import {
   FILTROS_ADM_LOCACAO,
   fmtMoedaCurta,
   inadimplencia,
+  movimentoAno,
+  mrrEmRisco,
   ondeEOque,
   opcoesFiltros,
   proprietarios,
@@ -237,6 +239,7 @@ export default function PainelAdmLocacao() {
       filtrado: alterados,
       resumo: resumoCarteira(contratos, dados.recebimentos, hoje),
       crescimento: crescimento(contratos, dados.mensal, hoje),
+      movimento: movimentoAno(contratos, hoje),
       onde: ondeEOque(contratos),
       saidas: saidas(contratos, hoje),
       reajustes: reajustes(contratos, hoje),
@@ -250,6 +253,10 @@ export default function PainelAdmLocacao() {
   }, [dados, filtros, alterados, hoje])
 
   const r = h?.resumo
+  const risco = h ? mrrEmRisco(aplicarFiltros(dados.contratos, filtros), r.admPrevista) : null
+  const mov = h?.movimento
+  const sinal = (n) => (n > 0 ? '+' : n < 0 ? '−' : '')
+  const moedaSinal = (v) => `${sinal(v)}${fmtMoedaCurta(Math.abs(v))}`
   const lidoTxt = h?.lidoEm ? new Date(h.lidoEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : null
 
   return (
@@ -295,40 +302,62 @@ export default function PainelAdmLocacao() {
           <section className="pg-manchete" aria-label="Índices da carteira">
             <div className="pg-indices">
               <Indice
-                rotulo={r.admUltimoMes ? `Administração recebida em ${rotuloMes(r.admUltimoMes.mes)}` : 'Administração prevista por mês'}
-                valor={fmtMoedaCurta(r.admUltimoMes ? r.admUltimoMes.valor : r.admPrevista)}
-                variacao={r.admVariacao}
-                contexto={r.admUltimoMes ? 'vs mês anterior' : 'aluguel × taxa de cada contrato ativo'}
-                detalhe={r.admUltimoMes ? `prevista ${fmtMoedaCurta(r.admPrevista)}/mês · ${fmtMoedaCurta(r.admMesCorrente)} já neste mês` : null}
+                rotulo="MRR de administração"
+                valor={fmtMoedaCurta(r.admPrevista)}
+                contexto="contratado por mês"
+                detalhe={
+                  r.realizado3m != null
+                    ? `realizado ${fmtMoedaCurta(r.realizado3m)}/mês (${r.meses3m}) · ${fmtPct(r.taxaRecebimento, 0)} do contratado`
+                    : null
+                }
                 serie={r.serieAdm.length > 1 ? r.serieAdm.map((m) => m.adm) : null}
-                formula="Taxa de administração retida no repasse ao proprietário, pela data do pagamento do aluguel. Não segue os filtros."
+                formula="Contratado = aluguel × taxa de administração de cada contrato ativo. Realizado = média da administração recebida nos 3 últimos meses fechados."
               />
               <Indice
                 rotulo="Contratos ativos"
                 valor={fmtNum(r.ativos)}
-                contexto={`${fmtNum(r.saudaveis)} saudáveis · ${fmtNum(r.atrasados)} em atraso`}
+                contexto={`${fmtNum(r.saudaveis)} em dia · ${fmtNum(r.atrasados)} em atraso`}
                 detalhe={r.emAtivacao ? `+${r.emAtivacao} em ativação` : null}
                 serie={h.filtrado ? null : h.serieAtivos}
                 formula="Contratos com situação Ativo no Imoview. Em ativação = situação Moderação."
               />
               <Indice
-                rotulo="Inadimplência"
-                valor={fmtPct(h.inad.taxa)}
-                contexto={`${fmtNum(h.inad.inadimplentes.length)} contratos em cobrança`}
-                detalhe={`${fmtMoedaCurta(h.inad.valor)} vencidos`}
-                formula="Regra do Imoview: contrato ativo marcado como Atrasado (cobrança amigável) ÷ contratos ativos."
+                rotulo={`Novos × encerrados em ${mov.atual.ano}`}
+                valor={`${fmtNum(mov.atual.novos)} × ${fmtNum(mov.atual.encerrados)}`}
+                contexto={`saldo ${sinal(mov.atual.saldo)}${fmtNum(Math.abs(mov.atual.saldo))} contratos · ${moedaSinal(mov.atual.saldoMrr)}/mês de MRR`}
+                detalhe={`${mov.anterior.ano}: ${fmtNum(mov.anterior.novos)} × ${fmtNum(mov.anterior.encerrados)}`}
+                formula="Mesma conta do Imoview: novos pela data de início, encerrados pela data de rescisão, no ano."
               />
               <Indice
-                rotulo={`Novos × encerrados (${h.crescimento.periodo12})`}
-                valor={`${fmtNum(h.crescimento.entradas12)} × ${fmtNum(h.crescimento.saidas12)}`}
-                contexto={`saldo ${h.crescimento.saldo12 > 0 ? '+' : ''}${fmtNum(h.crescimento.saldo12)} contratos`}
-                detalhe={h.crescimento.rotatividade != null ? `rotatividade de ${fmtPct(h.crescimento.rotatividade, 0)} ao ano` : null}
-                formula="Novos pela data de início; encerrados pela data de rescisão."
+                rotulo="MRR em risco"
+                valor={fmtMoedaCurta(risco.valor)}
+                contexto={`${fmtNum(risco.contratos)} contratos · ${fmtPct(risco.parte, 0)} do MRR`}
+                detalhe={`${fmtNum(risco.aviso)} com aviso de saída · ${fmtNum(risco.fim90)} terminam em 90 dias`}
+                formula="Administração mensal dos contratos com aviso de desocupação e dos que chegam ao fim do prazo nos próximos 90 dias."
               />
             </div>
-            <p className="pg-recorte pg-recorte--escuro">
-              {h.recorte} · tamanho da carteira: {fmtMoedaCurta(r.somaAluguel)}/mês em aluguéis administrados, ticket médio {fmtMoedaCurta(r.ticketMedio)}
-            </p>
+            <div className="pg-recorte pg-recorte--escuro">
+              <p style={{ margin: '0 0 var(--space-2)' }}>
+                <strong>Como ler:</strong>
+              </p>
+              <p style={{ margin: '0 0 var(--space-1)' }}>
+                <strong>MRR</strong> é o que a Imovit recebe todo mês pela administração. <strong>Contratado</strong> = aluguel × taxa de cada contrato ativo, se
+                todos pagarem; <strong>realizado</strong> = o que de fato entrou, em média, nos 3 últimos meses fechados. A diferença vem de atrasos e
+                inadimplência. A linha mostra o realizado mês a mês.
+              </p>
+              <p style={{ margin: '0 0 var(--space-1)' }}>
+                <strong>Novos × encerrados</strong> conta contratos que começaram e que foram rescindidos no ano, igual ao relatório do Imoview. O saldo em MRR
+                mostra quanto de administração mensal a carteira ganhou ou perdeu com essas entradas e saídas.
+              </p>
+              <p style={{ margin: '0 0 var(--space-1)' }}>
+                <strong>MRR em risco</strong> é a administração dos contratos que podem sair em breve: locatários que já avisaram e contratos cujo prazo termina
+                nos próximos 90 dias. Os detalhes estão no capítulo 4.
+              </p>
+              <p style={{ margin: 'var(--space-2) 0 0' }}>
+                {h.recorte} · {fmtMoedaCurta(r.somaAluguel)}/mês em aluguéis administrados · aluguel médio {fmtMoedaCurta(r.ticketMedio)} · taxa média{' '}
+                {fmtPct(r.taxaMedia)}. A administração recebida não segue os filtros.
+              </p>
+            </div>
           </section>
 
           <Capitulo
@@ -357,7 +386,9 @@ export default function PainelAdmLocacao() {
           <Capitulo
             numero="2"
             pergunta="A carteira está crescendo?"
-            conclusao={`Nos últimos 12 meses entraram ${fmtNum(h.crescimento.entradas12)} contratos e saíram ${fmtNum(h.crescimento.saidas12)}: ${h.crescimento.saldo12 > 0 ? 'a carteira cresceu' : h.crescimento.saldo12 < 0 ? 'a carteira encolheu' : 'a carteira ficou estável'}${h.crescimento.rotatividade != null ? `, com ${fmtPct(h.crescimento.rotatividade, 0)} dela trocando por ano` : ''}.`}
+            conclusao={`Em ${mov.atual.ano} entraram ${fmtNum(mov.atual.novos)} contratos e saíram ${fmtNum(mov.atual.encerrados)} (em ${mov.anterior.ano}, ${fmtNum(mov.anterior.novos)} × ${fmtNum(mov.anterior.encerrados)}): ${
+              mov.atual.saldo > 0 ? 'a carteira cresceu' : mov.atual.saldo < 0 ? 'a carteira encolheu' : 'a carteira ficou estável'
+            } em contratos e ${mov.atual.saldoMrr >= 0 ? 'ganhou' : 'perdeu'} ${fmtMoedaCurta(Math.abs(mov.atual.saldoMrr))}/mês de administração${h.crescimento.rotatividade != null ? `. Nos últimos 12 meses, ${fmtPct(h.crescimento.rotatividade, 0)} da carteira trocou` : ''}.`}
             rodape={`Mesma regra do CRM: novos pela data de início do contrato; encerrados pela data de rescisão. Os últimos 12 meses vão de ${h.crescimento.periodo12}. Rotatividade = encerrados nos últimos 12 meses ÷ média de contratos ativos no período. Permanência = mediana de meses entre o início e a rescisão dos contratos encerrados nos últimos 2 anos. ${h.crescimento.semDataRescisao} contratos estão rescindidos no Imoview sem data de rescisão: não contam como encerrados, mas saem da contagem de ativos na data de fim do contrato.`}
           >
             <Recorte oque="Contratos ativos e encerrados" recorte={`${h.recorte}, últimos 24 meses`} />

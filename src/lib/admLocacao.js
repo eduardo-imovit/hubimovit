@@ -68,6 +68,8 @@ export function resumoCarteira(contratos, recebimentosMensais, hoje) {
   const ultimo = fechados.at(-1) ?? null
   const anterior = fechados.at(-2) ?? null
   const corrente = meses.find((m) => m.mes === mesAtual) ?? null
+  const ult3 = fechados.slice(-3)
+  const realizado3m = ult3.length ? ult3.reduce((s, m) => s + Number(m.adm_recebida), 0) / ult3.length : null
 
   return {
     ativos: ativos.length,
@@ -81,6 +83,9 @@ export function resumoCarteira(contratos, recebimentosMensais, hoje) {
     admUltimoMes: ultimo ? { mes: ultimo.mes, valor: Number(ultimo.adm_recebida), intermediacao: Number(ultimo.intermediacao_recebida), pagantes: ultimo.contratos_pagantes } : null,
     admVariacao: ultimo && anterior && Number(anterior.adm_recebida) > 0 ? pct(Number(ultimo.adm_recebida) - Number(anterior.adm_recebida), Number(anterior.adm_recebida)) : null,
     admMesCorrente: corrente ? Number(corrente.adm_recebida) : 0,
+    realizado3m,
+    meses3m: ult3.length ? `${rotuloMes(ult3[0].mes)} a ${rotuloMes(ult3.at(-1).mes)}` : null,
+    taxaRecebimento: realizado3m != null ? pct(realizado3m, admPrevista) : null,
     serieAdm: fechados.slice(-12).map((m) => ({ mes: m.mes, rotulo: rotuloMes(m.mes), adm: Number(m.adm_recebida), intermediacao: Number(m.intermediacao_recebida) })),
   }
 }
@@ -115,6 +120,37 @@ export function crescimento(contratos, mensal, hoje) {
     permanenciaMeses: mediana(encerrados.map((c) => c.meses_de_contrato)),
     permanenciaN: encerrados.length,
   }
+}
+
+/** Administração mensal de um contrato pelo cadastro (vale também para os rescindidos, que a view zera). */
+export const admDoContrato = (c) => (c.taxa_adm_tipo === '%' ? ((Number(c.valor_aluguel) || 0) * (Number(c.taxa_adm) || 0)) / 100 : Number(c.taxa_adm) || 0)
+
+/**
+ * Novos × encerrados por ano civil, como o relatório do Imoview (conferido em
+ * 16/10: 2025 = 71 × 70, 2026 = 52 × 50). Novos = contratos Ativo ou Rescindido
+ * pela data de início; encerrados = pela data de rescisão. MRR ganho/perdido =
+ * administração mensal desses contratos.
+ */
+export function movimentoAno(contratos, hoje) {
+  const doAno = (ano) => {
+    const base = contratos.filter((c) => ['Ativo', 'Rescindido'].includes(c.situacao) && c.data_inicio)
+    const novos = base.filter((c) => c.data_inicio.startsWith(ano))
+    const encerrados = base.filter((c) => c.data_rescisao?.startsWith(ano))
+    const ganho = novos.reduce((s, c) => s + admDoContrato(c), 0)
+    const perdido = encerrados.reduce((s, c) => s + admDoContrato(c), 0)
+    return { ano, novos: novos.length, encerrados: encerrados.length, saldo: novos.length - encerrados.length, ganho, perdido, saldoMrr: ganho - perdido }
+  }
+  const ano = hoje.slice(0, 4)
+  return { atual: doAno(ano), anterior: doAno(String(Number(ano) - 1)) }
+}
+
+/** Administração mensal em risco: locatários que avisaram que vão sair + contratos no último trimestre do prazo. */
+export function mrrEmRisco(contratos, mrr) {
+  const ativos = contratos.filter((c) => c.situacao === 'Ativo')
+  const aviso = ativos.filter((c) => c.com_aviso)
+  const fim90 = ativos.filter((c) => !c.com_aviso && c.dias_para_fim != null && c.dias_para_fim >= 0 && c.dias_para_fim <= 90)
+  const valor = soma([...aviso, ...fim90], 'receita_adm')
+  return { valor, contratos: aviso.length + fim90.length, aviso: aviso.length, fim90: fim90.length, parte: pct(valor, mrr) }
 }
 
 const FAIXAS_ALUGUEL = [

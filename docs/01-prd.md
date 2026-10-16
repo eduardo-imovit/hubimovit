@@ -389,6 +389,14 @@ Ao lado: **tempo total até o negócio** (mediana, da entrada ao "NEGÓCIO REALI
 
 **Regra da manchete (Eduardo, 07/10):** o número principal é o dinheiro que fica com a Imovit, a **administração recebida**. A soma dos aluguéis (R$ 1,3 mi/mês) é só o tamanho da carteira e aparece como contexto.
 
+**Cards revistos (Eduardo, 16/10):**
+1. **MRR de administração.** O valor principal é o contratado (aluguel × taxa de cada contrato ativo). Embaixo vêm o realizado (média dos 3 últimos meses fechados) e a taxa de recebimento.
+2. **Contratos ativos.**
+3. **Novos × encerrados no ano civil.** Mesma conta do relatório do Imoview, conferida em 16/10: 2025 = 71 × 70 e 2026 = 52 × 50. Traz o saldo em contratos e em MRR, e o ano anterior como comparação.
+4. **MRR em risco.** Administração dos contratos com aviso de desocupação e dos que terminam o prazo em até 90 dias.
+
+A inadimplência saiu dos cards e fica no capítulo 6. Abaixo dos cards, um bloco "Como ler" explica cada número em texto visível, e não só no tooltip.
+
 **Quem vê.** Só a `gestao` por enquanto (decisão de 07/10; `ACESSO.dashAdmLocacao`; RLS `is_gestao()`). Abrir para o ADM depois é trocar a policy e o acesso. A página tem nomes de locatários e proprietários, valores e inadimplência.
 
 **Onde.** Dash ▸ **Adm locação** (`/dashboard/adm-locacao`), com capítulos `.pg-capitulo` e os componentes do Painel. Filtros na URL: destinação, tipo de imóvel, garantia e índice. Recebimentos e proprietários não seguem os filtros (a tela diz isso).
