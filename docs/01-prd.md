@@ -113,7 +113,7 @@ Faltava um lugar único para:
    - propostas em andamento;
    - atividades realizadas no período, contra a média da equipe.
    As frases automáticas falam de atendimento, sem nenhuma frase sobre o ritmo de leads.
-1. **Como está o funil?** Clientes ativos em cada etapa (Lead, Qualificado, Visita, Proposta), com **inbound e outbound lado a lado**, e a taxa de passagem entre etapas pela safra madura, que já é usada hoje. Fonte: campo `funil` do CRM (`Inbound (passivo)` / `Outbound (ativo)`), que já vem em `vw_atendimentos_base`.
+1. **Como foi o funil no período?** (revisto em 16/10: segue o filtro de período, para mostrar a efetividade) Leads que entraram no período, **inbound e outbound lado a lado**, divididos pela etapa mais avançada que alcançaram (Lead, Qualificado, Visita, Proposta, Negócio), com a taxa de passagem entre etapas dessa mesma safra e a diferença para o período anterior. Em período curto a conversão parece menor, porque parte dos leads ainda está em andamento; o rodapé avisa. Fonte: campo `funil` do CRM (`Inbound (passivo)` / `Outbound (ativo)`), que já vem em `vw_atendimentos_base`.
 2. **Onde perdemos mais?** A passagem mais fraca do funil, comparando:
    - inbound × outbound;
    - a passagem de cada corretor com a média da equipe dele.

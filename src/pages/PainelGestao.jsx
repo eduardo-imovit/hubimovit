@@ -57,7 +57,7 @@ export default function PainelGestao() {
     const propostas = filtros.finalidade === 'Venda' ? [] : dados.propostas
     const soCorretor = (linhas, campo) => (filtros.corretor === 'todos' ? linhas : linhas.filter((l) => l[campo] === filtros.corretor))
     const atendimento = emAtendimento(base)
-    const origem = funilPorOrigem(base, hoje)
+    const origem = funilPorOrigem(base, periodo)
     // onde perdemos: respeita o filtro; com corretor, a referência é a equipe dele (sem nomes)
     const comCorretor = filtros.corretor !== 'todos'
     const equipeSel = comCorretor ? equipes.get(filtros.corretor.trim().toLowerCase())?.equipe : null
@@ -201,16 +201,18 @@ export default function PainelGestao() {
           {/* 1 — Funil: clientes por etapa, inbound × outbound */}
           <Capitulo
             numero="1"
-            pergunta="Como está o funil?"
+            pergunta={`Como foi o funil ${h.periodo.label}?`}
             conclusao={(() => {
-              const prop = (f) => h.atendimento.etapas.find((e) => e.label === 'Proposta')?.porFunil[f.chave] ?? 0
-              const parte = (f) => `${f.label}: ${fmtNum(h.atendimento.porFunil[f.chave])} entre qualificado e proposta (${fmtNum(prop(f))} em proposta)`
-              if (!h.atendimento.total) return 'Nenhum cliente entre qualificado e proposta neste recorte.'
-              return `${parte(inbound)}. ${parte(outbound)}.`
+              const parte = (g) =>
+                `${g.rotulo}: ${fmtNum(g.total)} ${g.total === 1 ? 'entrou' : 'entraram'}, ${fmtNum(g.proposta)} ${g.proposta === 1 ? 'chegou' : 'chegaram'} a proposta${
+                  g.conversao != null ? ` (${fmtPct(g.conversao, 0)})` : ''
+                } e ${fmtNum(g.negocios)} ${g.negocios === 1 ? 'virou negócio' : 'viraram negócio'}`
+              if (!h.origem.grupos.some((g) => g.total)) return 'Nenhum lead entrou no período neste recorte.'
+              return h.origem.grupos.map(parte).join('. ') + '.'
             })()}
-            rodape={`Cada linha é um funil, com quem está ativo hoje em cada etapa; os valores estão na legenda ao lado. Abaixo da linha, a conversão de cada passagem (em vermelho, a mais fraca): leads que entraram de ${fmtData(h.origem.janela.inicio)} a ${fmtData(h.origem.janela.fim)} (já tiveram tempo de fechar), pela fase atual de cada atendimento; o CRM não guarda o histórico de fases. Inbound e outbound vêm do campo "funil" do CRM.`}
+            rodape={`Cada linha é um funil com os leads que entraram ${h.periodo.label}, divididos pela etapa mais avançada que alcançaram (pela fase atual no CRM, que não guarda o histórico de fases); os valores estão na legenda ao lado. Abaixo da linha, a conversão de cada passagem (em vermelho, a mais fraca) e, entre parênteses, a diferença para o período anterior. Em períodos curtos ou no mês corrente a conversão parece menor: muitos leads ainda estão em andamento. Inbound e outbound vêm do campo "funil" do CRM.`}
           >
-            <FunilLinhas etapas={h.atendimento.etapas} grupos={h.origem.grupos} />
+            <FunilLinhas grupos={h.origem.grupos} />
           </Capitulo>
 
           {/* 2 — Onde perdemos: respeita os filtros; Gestão compara com outro corretor */}

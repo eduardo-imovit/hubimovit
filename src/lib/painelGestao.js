@@ -374,27 +374,54 @@ export function emAtendimento(base) {
   }
 }
 
-/** Funil da safra madura com inbound e outbound lado a lado (mesma regra de gargalo do capítulo de funil). */
-export function funilPorOrigem(base, hoje) {
-  const atual = safraMadura(base, hoje, { de: 242, ate: 60 })
-  const anterior = safraMadura(base, hoje, { de: 425, ate: 243 })
+/** Etapa mais avançada que o atendimento alcançou (pela fase atual; o CRM não guarda o histórico de fases). */
+const etapaAlcancada = (a) => {
+  if (a.is_negocio || (a.fase_ordem ?? 0) >= 7) return 'Negócio'
+  return ETAPAS_ATIVAS.find((e) => (a.fase_ordem ?? 0) >= e.de && (a.fase_ordem ?? 0) <= e.ate)?.label ?? 'Lead'
+}
+const ETAPAS_ALCANCADAS = [...ETAPAS_ATIVAS.map((e) => e.label), 'Negócio']
+
+/**
+ * Funil do período (16/10: efetividade no período): leads que entraram no
+ * período, por funil, com a etapa mais avançada que alcançaram e a conversão de
+ * cada passagem, comparada com o período anterior. Gargalo = menor passagem a
+ * partir de Qualificado, com pelo menos 10 na etapa de origem.
+ */
+export function funilPorOrigem(base, periodo) {
+  const doPeriodo = (p) => base.filter((a) => dentro(a.data_entrada, p))
+  const atual = doPeriodo(periodo)
+  const anterior = doPeriodo(periodo.anterior)
   const grupos = FUNIS.map((f) => {
-    const etapas = funilDe(atual.linhas.filter((a) => a.funil === f.chave))
-    const etapasAnt = funilDe(anterior.linhas.filter((a) => a.funil === f.chave))
+    const linhas = atual.filter((a) => a.funil === f.chave)
+    const etapas = funilDe(linhas)
+    const etapasAnt = funilDe(anterior.filter((a) => a.funil === f.chave))
     const comDelta = etapas.map((e, i) => ({
       ...e,
       delta: e.passagem != null && etapasAnt[i].passagem != null && etapasAnt[i - 1]?.n >= 10 ? e.passagem - etapasAnt[i].passagem : null,
     }))
     const candidatas = comDelta.filter((e, i) => e.passagem != null && e.ordem >= 5 && comDelta[i - 1].n >= 10)
     const gargalo = candidatas.reduce((min, e) => (min == null || e.passagem < min.passagem ? e : min), null)
-    return { chave: f.chave, rotulo: f.label, cor: f.cor, etapas: comDelta, gargalo, conversao: pct(etapas[4].n, etapas[0].n) }
+    const alcancadas = ETAPAS_ALCANCADAS.map((label) => ({ label, n: linhas.filter((a) => etapaAlcancada(a) === label).length }))
+    return {
+      chave: f.chave,
+      rotulo: f.label,
+      cor: f.cor,
+      total: linhas.length,
+      ativos: linhas.filter((a) => a.is_ativo).length,
+      alcancadas,
+      etapas: comDelta,
+      gargalo,
+      proposta: etapas[3].n,
+      negocios: etapas[4].n,
+      conversao: pct(etapas[3].n, etapas[0].n),
+    }
   })
   const pior = grupos.filter((g) => g.gargalo).reduce((min, g) => (min == null || g.gargalo.passagem < min.gargalo.passagem ? g : min), null)
-  return { grupos, pior, janela: { inicio: atual.inicio, fim: atual.fim }, anterior: { inicio: anterior.inicio, fim: anterior.fim } }
+  return { grupos, pior }
 }
 
 /** Cores das etapas na linha do funil (tokens do design system), da entrada ao fim. */
-export const CORES_ETAPA = { Lead: '#B8B5B0', Qualificado: '#C9A96E', Visita: '#D4755A', Proposta: '#5C8A6B' }
+export const CORES_ETAPA = { Lead: '#B8B5B0', Qualificado: '#C9A96E', Visita: '#D4755A', Proposta: '#5C8A6B', 'Negócio': '#2D2D2D' }
 
 /** Passagens do funil (safra madura) de um recorte: [{ de, para, ordem, n, passaram, taxa }]. */
 function passagensDe(linhas) {

@@ -153,56 +153,48 @@ export function FunilCascata({ grupos }) {
 // ---------------------------------------------------------------------------
 
 /** Uma linha por funil (inbound, outbound) com as etapas em cores e a legenda com os valores ao lado. */
-export function FunilLinhas({ etapas, grupos }) {
-  const totais = FUNIS.map((f) => etapas.reduce((s, e) => s + e.porFunil[f.chave], 0))
-  const maior = Math.max(...totais, 1)
+export function FunilLinhas({ grupos }) {
+  const maior = Math.max(...grupos.map((g) => g.total), 1)
   return (
     <div className="pg-grafico">
-      <div className="pg-grafico-titulo">Clientes em atendimento agora, por etapa</div>
-      {FUNIS.map((f, i) => {
-        const grupo = grupos.find((g) => g.chave === f.chave)
-        return (
-          <div key={f.chave} className="pg-funil-linha2">
-            <div className="pg-funil-linha2-nome">
-              <strong>{f.label}</strong>
-              <span>{fmtNum(totais[i])}</span>
-            </div>
-            <div className="pg-funil-linha2-corpo">
-              <div className="pg-funil-linha2-trilho" style={{ width: `${Math.max(4, (totais[i] / maior) * 100)}%` }}>
-                {etapas.map((e) =>
-                  e.porFunil[f.chave] > 0 ? (
-                    <div
-                      key={e.label}
-                      className="pg-funil-linha2-seg"
-                      style={{ flexGrow: e.porFunil[f.chave], background: CORES_ETAPA[e.label] }}
-                      title={`${e.label}: ${e.porFunil[f.chave]}`}
-                    />
-                  ) : null
-                )}
-              </div>
-              {grupo && (
-                <div className="pg-funil-linha2-conv">
-                  Conversão:{' '}
-                  {grupo.etapas.slice(1).map((e, j) => (
-                    <span key={e.ordem} className={grupo.gargalo?.ordem === e.ordem ? 'is-gargalo' : undefined}>
-                      {grupo.etapas[j].label} → {e.label} {fmtPct(e.passagem, 0)}
-                    </span>
-                  ))}
-                </div>
+      <div className="pg-grafico-titulo">Leads que entraram no período, pela etapa mais avançada que alcançaram</div>
+      {grupos.map((g) => (
+        <div key={g.chave} className="pg-funil-linha2">
+          <div className="pg-funil-linha2-nome">
+            <strong>{g.rotulo}</strong>
+            <span>{fmtNum(g.total)}</span>
+          </div>
+          <div className="pg-funil-linha2-corpo">
+            <div className="pg-funil-linha2-trilho" style={{ width: `${Math.max(4, (g.total / maior) * 100)}%` }}>
+              {g.alcancadas.map((e) =>
+                e.n > 0 ? (
+                  <div key={e.label} className="pg-funil-linha2-seg" style={{ flexGrow: e.n, background: CORES_ETAPA[e.label] }} title={`${e.label}: ${e.n}`} />
+                ) : null
               )}
             </div>
-            <ul className="pg-funil-linha2-legenda">
-              {etapas.map((e) => (
-                <li key={e.label}>
-                  <span className="pg-ponto" style={{ background: CORES_ETAPA[e.label] }} aria-hidden="true" />
-                  {e.label}
-                  <strong>{fmtNum(e.porFunil[f.chave])}</strong>
-                </li>
-              ))}
-            </ul>
+            {g.total > 0 && (
+              <div className="pg-funil-linha2-conv">
+                Conversão:{' '}
+                {g.etapas.slice(1).map((e, j) => (
+                  <span key={e.ordem} className={g.gargalo?.ordem === e.ordem ? 'is-gargalo' : undefined}>
+                    {g.etapas[j].label} → {e.label} {fmtPct(e.passagem, 0)}
+                    {e.delta != null && Math.abs(e.delta) >= 1 && ` (${e.delta > 0 ? '+' : ''}${Math.round(e.delta)} p.p.)`}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-        )
-      })}
+          <ul className="pg-funil-linha2-legenda">
+            {g.alcancadas.map((e) => (
+              <li key={e.label}>
+                <span className="pg-ponto" style={{ background: CORES_ETAPA[e.label] }} aria-hidden="true" />
+                {e.label}
+                <strong>{fmtNum(e.n)}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   )
 }
