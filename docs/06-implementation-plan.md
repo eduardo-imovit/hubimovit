@@ -282,6 +282,7 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
     - interpretador da frase em `src/lib/buscaImoveis.js` com testes de frases reais;
     - tela com caixa de busca, chips, filtros, os três blocos de resultado, ordenação (6 opções, na URL) e a ficha; item "Estoque" no Dash para corretor e Gestão;
     - **pronto quando:** 10 frases de teste viram os chips certos, os resultados batem com o SQL, testado no localhost como corretor e como Gestão, `npm run build` passa.
+    - [x] 16/10: busca tolera erros de português (correção pelo som + 1 letra, protegendo as palavras do estoque e dos bairros) e avisa o que corrigiu (PRD §5.14).
 - **S1 Banco:** migration do Schema §2.11 (tabela, views, RPC de carga), testada em transação. RLS: Gestão lê; corretor, ADM e anon recebem zero.
 - **S2 Carga (revista em 09/10, vem antes do resto):**
   - fluxo n8n `estoque_imoveis_diario` que lê o Imoview direto (sem Edge Function) e grava pela RPC. Criado desligado; o Eduardo liga as credenciais Imoview e Supabase, roda uma vez e ativa às 5h30;

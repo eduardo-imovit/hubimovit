@@ -175,20 +175,61 @@ function casaTermo(texto, termo) {
   return m ? { inicio: m.index + m[1].length, fim: m.index + m[0].length } : null
 }
 
-/** distância de edição (para tolerar erro de digitação no bairro) */
+/**
+ * Distância de edição com troca de letras vizinhas contando 1 ("quatros" →
+ * "quartos"), para tolerar erro de digitação.
+ */
 function levenshtein(a, b) {
   if (a === b) return 0
-  const d = Array.from({ length: b.length + 1 }, (_, i) => i)
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)])
+  for (let j = 1; j <= b.length; j++) d[0][j] = j
   for (let i = 1; i <= a.length; i++) {
-    let anterior = d[0]
-    d[0] = i
     for (let j = 1; j <= b.length; j++) {
-      const t = d[j]
-      d[j] = Math.min(d[j] + 1, d[j - 1] + 1, anterior + (a[i - 1] === b[j - 1] ? 0 : 1))
-      anterior = t
+      const custo = a[i - 1] === b[j - 1] ? 0 : 1
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + custo)
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1)
     }
   }
-  return d[b.length]
+  return d[a.length][b.length]
+}
+
+/**
+ * Chave "pelo som" (16/10): erros de português que soam igual viram a mesma
+ * chave: pissina/picina → piscina, churasqueira, mobilhado, garagen, trez,
+ * exelente, kitinete… Recebe texto já normalizado (sem acento).
+ */
+export function chaveSom(p) {
+  return p
+    .replace(/^h/, '')
+    .replace(/ph/g, 'f')
+    .replace(/y/g, 'i')
+    .replace(/w/g, 'v')
+    .replace(/ch|sh/g, 'x')
+    .replace(/lh/g, 'li')
+    .replace(/nh/g, 'ni')
+    .replace(/xc(?=[ei])|sc(?=[ei])|ss|c(?=[ei])|z|x(?=[ei])/g, 's') // som de "s"
+    .replace(/qu(?=[ei])|q|c|k/g, 'k') // som de "k"
+    .replace(/gu(?=[ei])/g, 'G')
+    .replace(/g(?=[ei])/g, 'j')
+    .replace(/G/g, 'g')
+    .replace(/(?<=[aeiou])h/g, '')
+    .replace(/([a-z])\1+/g, '$1')
+    .replace(/m$/, 'n')
+    .replace(/[eo]$/, (v) => (v === 'e' ? 'i' : 'u'))
+}
+
+/** `a` e `b` são a mesma palavra com erro de digitação ou de português? Devolve a distância ou null. */
+function parecida(a, b) {
+  if (a === b) return 0
+  if (a.length < 4 || b.length < 4) return null
+  const sa = chaveSom(a)
+  const sb = chaveSom(b)
+  if (sa === sb) return 0.5
+  // fora o "pelo som", a 1ª letra tem de bater (palau ≠ salão) e 2 erros só em palavra longa
+  const limite = Math.min(a.length, b.length) >= 10 ? 2 : Math.min(a.length, b.length) >= 5 ? 1 : 0
+  if (!limite || a[0] !== b[0] || Math.abs(a.length - b.length) > limite) return null
+  const d = Math.min(levenshtein(a, b), levenshtein(sa, sb))
+  return d <= limite ? d : null
 }
 
 // palavras que não identificam um bairro sozinhas ("Jardim", "Parque", "Campinas"…)
@@ -202,18 +243,66 @@ function bairrosPorPalavra(palavra, porTamanho) {
   const achados = []
   for (const [nb, b] of porTamanho) {
     const marcantes = nb.split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !GENERICOS.has(w))
-    if (marcantes.some((w) => w === palavra || (palavra.length >= 5 && Math.abs(w.length - palavra.length) <= 1 && levenshtein(w, palavra) <= 1))) achados.push(b)
+    if (marcantes.some((w) => w === palavra || (palavra.length >= 5 && parecida(w, palavra) != null))) achados.push(b)
   }
   return achados.slice(0, 12)
 }
 
+// palavras que a busca entende (para corrigir erro de português antes de ler a frase)
+const DICIONARIO = new Set(
+  [
+    ...Object.values(CARACTERISTICAS).flatMap((c) => c.termos),
+    ...TIPOS.flatMap(([termos]) => termos),
+    ...FINALIDADE.flatMap(([termos]) => termos),
+    ...Object.keys(NUMEROS),
+    'quarto quartos dormitorio dormitorios suite suites vaga vagas garagem garagens banheiro banheiros',
+    'entre partir acima abaixo maximo minimo menos metros quadrados milhao milhoes reais perto proximo proxima regiao arredores',
+  ]
+    .flatMap((t) => t.split(/[^a-z0-9]+/))
+    .filter((w) => w.length >= 4)
+)
+
+/** palavras dos títulos, condomínios e ruas do estoque: nome próprio que a correção não pode "consertar" */
+export function palavrasDoEstoque(imoveis = []) {
+  const set = new Set()
+  for (const i of imoveis) for (const w of normalizar([i.titulo, i.condominio, i.logradouro].join(' ')).split(/[^a-z0-9]+/)) if (w.length >= 4) set.add(w)
+  return set
+}
+
+/**
+ * Corrige erro de digitação e de português nas palavras que a busca conhece
+ * ("apartameto", "pissina", "quatros", "churasqueira", "alugel"). Não mexe em
+ * número, em palavra que já é conhecida, em palavra de nome de bairro (o
+ * bairro tem tolerância própria) nem em palavra que existe no estoque
+ * (`conhecidas`: Pinheiro não vira banheiro, Porto não vira ponto).
+ * Devolve a frase normalizada e as trocas feitas.
+ */
+export function corrigirFrase(frase, bairros = [], conhecidas = new Set()) {
+  const doBairro = new Set(bairros.flatMap((b) => normalizar(b).split(/[^a-z0-9]+/)))
+  const trocas = []
+  const texto = normalizar(frase).replace(/[a-z]{4,}/g, (w) => {
+    if (DICIONARIO.has(w) || VAZIAS.has(w) || doBairro.has(w) || conhecidas.has(w)) return w
+    let melhor = null
+    for (const cand of DICIONARIO) {
+      const d = parecida(w, cand)
+      // empate: a de mesmo tamanho ("quatros" → quartos, não quatro)
+      if (d != null && (!melhor || d < melhor.d || (d === melhor.d && cand.length === w.length && melhor.c.length !== w.length))) melhor = { c: cand, d }
+    }
+    if (!melhor) return w
+    if (!trocas.some((t) => t.de === w)) trocas.push({ de: w, para: melhor.c })
+    return melhor.c
+  })
+  return { texto, trocas }
+}
+
 /**
  * Lê a frase e devolve os filtros + o que foi reconhecido.
- * `bairros`: lista de nomes de bairro do estoque (de `estoque_bairros()`).
+ * `bairros`: lista de nomes de bairro do estoque (de `estoque_bairros()`);
+ * `conhecidas`: `palavrasDoEstoque()`, para a correção não mexer em nome próprio.
  */
-export function interpretarFrase(frase, bairros = []) {
+export function interpretarFrase(frase, bairros = [], conhecidas = new Set()) {
   const f = { ...FILTROS_VAZIOS, tipos: [], bairros: [], caracteristicas: [] }
-  let t = ` ${normalizar(frase)} `
+  let t = ` ${corrigirFrase(frase, bairros, conhecidas).texto} `
 
   // finalidade
   for (const [termos, fin] of FINALIDADE) {
@@ -349,7 +438,7 @@ export function interpretarFrase(frase, bairros = []) {
         let melhor = null
         for (const [nb, b] of porTamanho) {
           if (Math.abs(nb.length - trecho.length) > limite) continue
-          const d = levenshtein(trecho, nb)
+          const d = Math.min(levenshtein(trecho, nb), levenshtein(chaveSom(trecho), chaveSom(nb)))
           if (d <= limite && (!melhor || d < melhor.d)) melhor = { b, d }
         }
         if (melhor && !f.bairros.includes(melhor.b)) {
@@ -367,7 +456,9 @@ export function interpretarFrase(frase, bairros = []) {
       return !achados.length
     })
   }
-  f.texto = palavras.filter((p) => p.length >= 3 && !/^\d+$/.test(p)).join(' ')
+  // o que sobrou do nome de um bairro já reconhecido ("dom") ou do vocabulário ("partir") não é texto livre
+  const doBairroEscolhido = new Set(f.bairros.flatMap((b) => normalizar(b).split(/[^a-z0-9]+/)))
+  f.texto = palavras.filter((p) => p.length >= 3 && !/^\d+$/.test(p) && !doBairroEscolhido.has(p) && !DICIONARIO.has(p)).join(' ')
   return f
 }
 
@@ -468,7 +559,9 @@ function criterios(f, vizinhosDe) {
       rotulo: `"${f.texto}"`,
       teste: (i) => {
         const alvo = normalizar([i.titulo, i.condominio, i.logradouro, i.bairro, i.cidade, i.tipo, i.codigo].join(' '))
-        return palavras.every((p) => alvo.includes(p))
+        const termos = alvo.split(/[^a-z0-9]+/)
+        // pedaço da palavra (código, começo de nome) ou a palavra com erro ("Alphavile")
+        return palavras.every((p) => alvo.includes(p) || termos.some((w) => parecida(p, w) != null))
       },
     })
   }

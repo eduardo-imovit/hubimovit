@@ -7,11 +7,13 @@ import { fmtMoedaCurta } from '../lib/admLocacao'
 import {
   buscar,
   CARACTERISTICAS,
+  corrigirFrase,
   FILTROS_VAZIOS,
   filtrosDaUrl,
   filtrosParaUrl,
   interpretarFrase,
   ORDENACOES,
+  palavrasDoEstoque,
   semCriterio,
 } from '../lib/buscaImoveis'
 
@@ -154,6 +156,9 @@ export default function EstoqueBusca() {
   const [aberto, setAberto] = useState(null)
 
   const nomesBairros = useMemo(() => (dados?.bairros ?? []).map((b) => b.bairro), [dados])
+  const conhecidas = useMemo(() => palavrasDoEstoque(dados?.imoveis), [dados])
+  // erros de português corrigidos na frase buscada (16/10), para o corretor ver o que a busca entendeu
+  const trocas = useMemo(() => (fraseUrl ? corrigirFrase(fraseUrl, nomesBairros, conhecidas).trocas : []), [fraseUrl, nomesBairros, conhecidas])
   const tipos = useMemo(() => [...new Set((dados?.imoveis ?? []).map((i) => i.tipo).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [dados])
   const caracteristicasNoEstoque = useMemo(() => {
     const n = new Map()
@@ -170,11 +175,11 @@ export default function EstoqueBusca() {
 
   const enviar = (e) => {
     e.preventDefault()
-    aplicar({ ...interpretarFrase(frase, nomesBairros), ordem: filtros.ordem }, frase.trim())
+    aplicar({ ...interpretarFrase(frase, nomesBairros, conhecidas), ordem: filtros.ordem }, frase.trim())
   }
   const usarExemplo = (ex) => {
     setFrase(ex)
-    aplicar({ ...interpretarFrase(ex, nomesBairros), ordem: filtros.ordem }, ex)
+    aplicar({ ...interpretarFrase(ex, nomesBairros, conhecidas), ordem: filtros.ordem }, ex)
   }
   // a ordem escolhida sobrevive a uma busca nova e ao "Limpar"
   const limpar = () => {
@@ -302,6 +307,14 @@ export default function EstoqueBusca() {
               <button type="button" className="btn btn-ghost btn-sm" onClick={limpar}>Limpar busca</button>
             </div>
           </div>
+
+          {trocas.length > 0 && (
+            <p className="field-hint">
+              Buscando por {trocas.map((t, n) => (
+                <span key={t.de}>{n > 0 && ', '}<strong>{t.para}</strong> (você digitou "{t.de}")</span>
+              ))}
+            </p>
+          )}
 
           {resultado.criterios.length > 0 && (
             <div className="estoque-chips" aria-label="Filtros ativos">
