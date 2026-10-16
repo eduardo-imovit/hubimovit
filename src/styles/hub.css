@@ -1242,7 +1242,7 @@
 .km32-escala span:last-child { transform: translateX(-100%); align-items: flex-end; }
 .km32-escala small { font-size: 11px; font-weight: var(--weight-regular); letter-spacing: 0.08em; text-transform: uppercase; color: var(--grafite-fade); }
 
-.km32-numeros { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-5); margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid rgba(245, 240, 232, 0.12); }
+.km32-numeros { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-5); margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid rgba(245, 240, 232, 0.12); }
 .km32-numeros > div { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .km32-n { font-family: var(--font-serif); font-size: var(--text-2xl); line-height: 1.05; color: var(--creme); }
 .km32-n small { font-size: var(--text-lg); color: var(--grafite-fade); }

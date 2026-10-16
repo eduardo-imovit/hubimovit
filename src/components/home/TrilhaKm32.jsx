@@ -165,10 +165,6 @@ export function TrilhaKm32() {
               de {moeda(aba, metaMes.valor)} · meta de {metaMes.mes} · {pctTexto(Math.min(1, valorMes / metaMes.valor))}
             </span>
           </div>
-          <div>
-            <span className="km32-n">{moeda(aba, f.ticket)}</span>
-            <span className="km32-l">ticket médio</span>
-          </div>
           <div title={`Meta da campanha ÷ ${diasCampanha} dias = ${moeda(aba, porDia)} por dia, somados até hoje`}>
             {batida ? (
               <>
@@ -207,7 +203,7 @@ export function TrilhaKm32() {
       {dados && (
         <p className="km32-rodape">
           {f && f.negocios === 0 && `A largada foi dada em ${inicioTexto}. Nenhum negócio realizado ainda. `}
-          {f && f.sem_valor > 0 && `${f.sem_valor} ${f.sem_valor === 1 ? 'negócio' : 'negócios'} sem valor no CRM (fora do valor e do ticket). `}
+          {f && f.sem_valor > 0 && `${f.sem_valor} ${f.sem_valor === 1 ? 'negócio' : 'negócios'} sem valor no CRM (fora do valor). `}
           Negócios realizados no CRM desde {inicioTexto}
           {leitura && ` · atualizado em ${leitura.toLocaleDateString('pt-BR')} às ${leitura.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
           {atrasado && <strong className="km32-atraso"> · dados do CRM atrasados</strong>}
