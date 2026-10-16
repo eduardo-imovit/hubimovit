@@ -1,88 +1,17 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabaseClient'
+import { useCampanha } from '../../hooks/useCampanha'
+import {
+  SLUG_KM32, KM_INICIO, KM_FIM, FINALIDADES_KM32 as ABAS, DIA_MS, dataLocal, moeda, km, pct, pctTexto,
+  paradasDa, campanhaNoAr, leituraFinalidade,
+} from '../../lib/campanhaKm32'
 
 // Campanha Km 32 na Home (RF25, PRD §5.9). Os números vêm de campanha_resumo(),
 // que soma os negócios realizados no CRM (jornada do atendimento) dentro do
-// período da campanha. Nada é digitado nem fica no código.
-const SLUG = 'km32-4tri-2026'
-const KM_INICIO = 32
-const KM_FIM = 42
-const ABAS = [
-  { chave: 'Venda', rotulo: 'Venda' },
-  { chave: 'Aluguel', rotulo: 'Locação' },
-]
-const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
-
-const DIA_MS = 24 * 60 * 60 * 1000
-const dataLocal = (iso) => {
-  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
-  return new Date(y, m - 1, d)
-}
-
-const fmtUm = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-/** Venda em milhões (abaixo de R$ 1 MM, em mil); locação em mil (é aluguel mensal). */
-const moeda = (finalidade, v) => (v == null ? '—' : finalidade === 'Venda' && Math.abs(v) >= 1_000_000 ? `R$ ${fmtUm(v / 1_000_000)} MM` : `R$ ${fmtUm(v / 1_000)} mil`)
-const km = (fracao) => Math.round(KM_INICIO + (KM_FIM - KM_INICIO) * fracao)
-// `pct` é só para posições no CSS; `pctTexto` é para ler (vírgula decimal)
-const pct = (f) => `${(f * 100).toFixed(2)}%`
-const pctTexto = (f) => `${(f * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
-
-/** Quanto do período já passou (0–1) até a data, contando o próprio dia. */
-function fracaoAte(inicio, fim, data) {
-  const total = (dataLocal(fim) - dataLocal(inicio)) / DIA_MS + 1
-  const passados = (data - dataLocal(inicio)) / DIA_MS + 1
-  return Math.min(1, Math.max(0, passados / total))
-}
-
-/** Dias de calendário entre duas datas, contando as duas pontas. */
-const diasEntre = (a, b) => Math.round((b - a) / DIA_MS) + 1
-
-/**
- * Meta do mês corrente pela mesma régua diária (16/10): meta da campanha ÷ dias
- * da campanha × dias do mês dentro dela. Dá a sensação de possível sem trocar
- * a conta: a soma das metas dos meses é a meta da campanha.
- */
-function metaDoMes(inicio, fim, hoje, meta) {
-  const a = dataLocal(inicio)
-  const b = dataLocal(fim)
-  const h = dataLocal(hoje)
-  const de = new Date(Math.max(a, new Date(h.getFullYear(), h.getMonth(), 1)))
-  const ate = new Date(Math.min(b, new Date(h.getFullYear(), h.getMonth() + 1, 0)))
-  return { valor: (meta / diasEntre(a, b)) * diasEntre(de, ate), mes: MESES_LONGOS[h.getMonth()] }
-}
-
-/**
- * Paradas no último dia de cada mês, na mesma régua do tempo: a tracejada
- * "hoje" encosta na parada no fim do mês. A meta acumulada da parada é a mesma
- * fração (ex.: 31/10 = 29,9% do período = 29,9% da meta).
- */
-function paradasDa(inicio, fim) {
-  const a = dataLocal(inicio)
-  const b = dataLocal(fim)
-  const paradas = []
-  for (let d = new Date(a.getFullYear(), a.getMonth(), 1); d <= b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
-    const fimDoMes = new Date(d.getFullYear(), d.getMonth() + 1, 0)
-    const data = fimDoMes < b ? fimDoMes : b
-    paradas.push({ mes: MESES[d.getMonth()], data, fracao: fracaoAte(inicio, fim, data) })
-  }
-  return paradas
-}
-
-function useCampanha(slug) {
-  const [estado, setEstado] = useState({ dados: null, erro: false, carregando: true })
-  useEffect(() => {
-    let ativo = true
-    supabase.rpc('campanha_resumo', { p_slug: slug }).then(({ data, error }) => {
-      if (ativo) setEstado({ dados: data ?? null, erro: !!error, carregando: false })
-    })
-    return () => { ativo = false }
-  }, [slug])
-  return estado
-}
+// período da campanha. Nada é digitado nem fica no código. A régua (meta do
+// mês, esperado até hoje) fica em lib/campanhaKm32, a mesma da TV Display.
 
 export function TrilhaKm32() {
-  const { dados, erro, carregando } = useCampanha(SLUG)
+  const { dados, erro, carregando } = useCampanha(SLUG_KM32)
   const [aba, setAba] = useState('Venda')
   const [montado, setMontado] = useState(false)
   useEffect(() => {
@@ -99,23 +28,14 @@ export function TrilhaKm32() {
     )
   }
   // campanha inexistente, inativa ou fora do período: o bloco não aparece
-  if (!carregando && (!dados || dados.hoje < dados.inicio || dados.hoje > dados.fim)) return null
+  if (!carregando && !campanhaNoAr(dados)) return null
 
   const f = dados?.finalidades?.[aba]
-  const progresso = f ? Math.min(1, f.valor / f.meta_valor) : 0
-  const tempo = dados ? fracaoAte(dados.inicio, dados.fim, dataLocal(dados.hoje)) : 0
+  const l = f ? leituraFinalidade(dados, f) : null
+  const progresso = l?.progresso ?? 0
   const paradas = dados ? paradasDa(dados.inicio, dados.fim) : []
   const abaAtual = ABAS.find((a) => a.chave === aba)
-  // Esperado até hoje: meta total ÷ dias da campanha × dias já passados (= meta × fração do calendário)
-  const esperado = f ? f.meta_valor * tempo : 0
-  const diferenca = f ? f.valor - esperado : 0
-  const noRitmo = f ? Math.abs(diferenca) < f.meta_valor * 0.01 : true
-  const diasCampanha = dados ? diasEntre(dataLocal(dados.inicio), dataLocal(dados.fim)) : 0
-  const diasPassados = dados ? diasEntre(dataLocal(dados.inicio), dataLocal(dados.hoje)) : 0
-  const porDia = f ? f.meta_valor / diasCampanha : 0
-  const metaMes = f ? metaDoMes(dados.inicio, dados.fim, dados.hoje, f.meta_valor) : null
-  const valorMes = f ? (f.valor_mes ?? f.valor) : 0
-  const batida = f ? f.valor >= f.meta_valor : false
+  const { tempo = 0, esperado, diferenca, noRitmo, diasCampanha, diasPassados, porDia, metaMes, valorMes, batida } = l ?? {}
 
   const leitura = dados?.ultima_leitura ? new Date(dados.ultima_leitura) : null
   const atrasado = leitura && (dataLocal(dados.hoje) - new Date(leitura.getFullYear(), leitura.getMonth(), leitura.getDate())) / DIA_MS > 1

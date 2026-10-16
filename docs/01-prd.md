@@ -279,6 +279,8 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 
 **Ajuste de 16/10 (Eduardo):** o 1º quadro passa a mostrar o realizado no mês contra a meta do mês. A meta do mês é a meta da campanha ÷ dias da campanha × dias do mês dentro dela, e serve para dar a sensação de possível. O % do trimestre fica no tooltip e no Km. O quadro da próxima parada volta a ser **"esperado até hoje"**: a meta diária somada até hoje, com quanto o time está acima ou abaixo desse valor.
 
+**Na TV Display (16/10, Eduardo):** painel "Km 32" no carrossel do rodapé, entre Plantão e Comercial, só com a campanha no ar. Venda e Locação aparecem lado a lado (a TV não tem aba). Cada uma mostra a trilha com o Km e a marca de hoje, o realizado no mês × meta do mês, um selo acima (verde) ou abaixo (coral) do esperado até hoje e o valor em proposta. A régua é a mesma da Home (`lib/campanhaKm32.js`), e os números são relidos a cada 5 min. As barrinhas do indicador do rodapé passam a ser clicáveis: o clique vai direto ao painel e recomeça a contagem de 15 s.
+
 Também mostra as paradas no último dia de cada mês (meta acumulada proporcional aos dias) e o marcador "hoje".
 
 **Metas (da apresentação; ficam numa tabela, não no código).**

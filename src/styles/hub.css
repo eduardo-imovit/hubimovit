@@ -489,7 +489,12 @@
   display: flex;
   gap: var(--space-3);
 }
-.tv-carrossel-passo { display: flex; flex-direction: column; gap: 3px; min-width: 56px; }
+.tv-carrossel-passo {
+  display: flex; flex-direction: column; gap: 3px; min-width: 56px;
+  border: 0; padding: 4px 0; background: none; font: inherit; text-align: left; cursor: pointer;
+}
+.tv-carrossel-passo:hover .tv-carrossel-passo-rotulo { color: rgba(255,255,255,.7); }
+.tv-carrossel-passo:focus-visible { outline: 1px solid var(--coral); outline-offset: 2px; }
 .tv-carrossel-passo-rotulo {
   font-size: 9px; text-transform: uppercase; letter-spacing: .1em;
   color: rgba(255,255,255,.35); font-weight: var(--weight-medium);
@@ -505,6 +510,22 @@
   .tv-carrossel-painel, .tv-carrossel-painel.is-ativo { transition: none; }
   .tv-carrossel-passo-barra { animation: none; }
 }
+
+/* Km 32 no rodapé (16/10): Venda e Locação lado a lado, mesma régua da Home */
+.km32-tv-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.km32-tv-card { gap: 6px; }
+.km32-tv-track { position: relative; height: 6px; margin: 4px 0 2px; border-radius: 999px; background: rgba(255,255,255,.12); }
+.km32-tv-fill { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: var(--coral); }
+.km32-tv-parada { position: absolute; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--grafite); border: 2px solid rgba(255,255,255,.35); box-sizing: border-box; }
+.km32-tv-hoje { position: absolute; top: -5px; bottom: -5px; border-left: 2px dashed rgba(255,255,255,.55); }
+.km32-tv-numeros { display: grid; grid-template-columns: 1.1fr 1.1fr .8fr; gap: var(--space-3); }
+.km32-tv-numeros > div { min-width: 0; }
+.km32-tv-ritmo { font-size: var(--text-lg); font-weight: var(--weight-medium); line-height: 1.3; color: var(--branco); white-space: nowrap; }
+/* selo cheio: verde/coral escuros não leem sobre o grafite, branco sobre a cor lê de longe */
+.km32-tv-ritmo.is-acima, .km32-tv-ritmo.is-abaixo { display: inline-block; padding: 0 10px; border-radius: 999px; }
+.km32-tv-ritmo.is-acima { background: var(--success); }
+.km32-tv-ritmo.is-abaixo { background: var(--coral); }
+.km32-tv-proposta { font-size: var(--text-lg); line-height: 1.3; color: rgba(255,255,255,.85); white-space: nowrap; }
 
 /* Agenda de eventos: 7 dias em vez dos 3 da agenda do fotógrafo */
 .agenda-eventos-tv-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
