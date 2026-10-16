@@ -277,6 +277,8 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 
 **Ajuste de 13/10 (Eduardo):** volta a meta total do trimestre (a meta mensal de outubro foi só para a reunião), sai o quadro "1 de 14 vendas" (o volume continua no banco), o ritmo em pontos virou o quadro "esperado até hoje" e entrou o quadro "em proposta". No mesmo dia o "esperado até hoje" virou "próxima parada": estando à frente, o time relaxava; o alvo do fim do mês mantém a urgência (Eduardo).
 
+**Ajuste de 16/10 (Eduardo):** o 1º quadro passa a mostrar o realizado no mês contra a meta do mês. A meta do mês é a meta da campanha ÷ dias da campanha × dias do mês dentro dela, e serve para dar a sensação de possível. O % do trimestre fica no tooltip e no Km. O quadro da próxima parada volta a ser **"esperado até hoje"**: a meta diária somada até hoje, com quanto o time está acima ou abaixo desse valor.
+
 Também mostra as paradas no último dia de cada mês (meta acumulada proporcional aos dias) e o marcador "hoje".
 
 **Metas (da apresentação; ficam numa tabela, não no código).**
