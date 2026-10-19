@@ -279,6 +279,13 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 
 **Ajuste de 16/10 (Eduardo):** o 1º quadro passa a mostrar o realizado no mês contra a meta do mês. A meta do mês é a meta da campanha ÷ dias da campanha × dias do mês dentro dela, e serve para dar a sensação de possível. O % do trimestre fica no tooltip e no Km. O quadro da próxima parada volta a ser **"esperado até hoje"**: a meta diária somada até hoje, com quanto o time está acima ou abaixo desse valor.
 
+**Ajuste de 19/10 (Eduardo, pedido da direção): a locação conta contratos iniciados.**
+- Conta todo contrato de locação com **data de início** de **01/10/2026** até hoje (e até 31/12/2026), sem os cancelados. Contrato com início futuro entra no dia em que começa.
+- O dia 01/10 entra: é antes do lançamento (06/10), mas é do trimestre.
+- Valor = aluguel do contrato. A venda continua por negócio realizado no CRM, desde 06/10.
+- No quadro da locação (Home e TV) aparece embaixo "N contratos iniciados · X ativos" (e "· Y em ativação" quando houver). O rodapé diz a regra.
+- Conferido com o Eduardo em 19/10: **3 contratos, R$ 39.450** (1824, 1823 e 1826, todos ativos). Antes eram 2 negócios do CRM, R$ 17.800. Primeiro testamos "contrato gerado" (data de inclusão, R$ 25.000), mas a direção quer os iniciados.
+
 **Na TV Display (16/10, Eduardo):** painel "Km 32" no carrossel do rodapé, entre Plantão e Comercial, só com a campanha no ar. Venda e Locação aparecem lado a lado (a TV não tem aba). Cada uma mostra a trilha com o Km e a marca de hoje, o realizado no mês × meta do mês, um selo acima (verde) ou abaixo (coral) do esperado até hoje e o valor em proposta. A régua é a mesma da Home (`lib/campanhaKm32.js`), e os números são relidos a cada 5 min. As barrinhas do indicador do rodapé passam a ser clicáveis: o clique vai direto ao painel e recomeça a contagem de 15 s.
 
 Também mostra as paradas no último dia de cada mês (meta acumulada proporcional aos dias) e o marcador "hoje".
@@ -760,6 +767,99 @@ Trazer os demais Google Forms de cadastro para o Hub sem replicar o custo do Loc
 - Pendente do Eduardo: link da pág. 2 do Locatário PF + link do Locatário PJ (se existir) e os e-mails de destino dos dois locatários.
 
 **Critérios de pronto:** um Locador PJ de teste aparece na tabela e na lista com o filtro, e os 2 e-mails chegam ao destino do tipo; `/cadastro-locador` antigo continua funcionando; `npm run build` ok; histórico visível na lista com origem "planilha".
+
+### 5.18 Onboarding de colaboradores (pedido do Eduardo, 19/10) — **APROVADO em 19/10**; schema §2.16, plano Fase 23
+**Problema.** A entrada da Giovana (corretora de locação, 19/10) foi feita à mão:
+- o cadastro entrou em `colaboradores_raw` por um `INSERT` no SQL;
+- o CPF circulou no chat;
+- o checklist ficou numa nota do Obsidian ("🟡 Onboarding de Colaboradores - Procedimento");
+- ninguém lembrava que é preciso incluir a pessoa nas filas de repique, que ficam fixas no n8n.
+
+O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colaboradores_raw.email_oficial`) e o **nome completo** (os atendimentos do CRM são casados por nome). Basta um e-mail ou um nome diferente para o colaborador sumir dos dashboards sem nenhum aviso. E `colaboradores_raw` não tem lugar seguro para CPF, porque todo usuário logado lê a tabela.
+
+**Objetivo.**
+- O colaborador novo passa os dados por um link, sem login.
+- A Gestão usa esses dados para criar o e-mail e o usuário no Imoview, informa os dois no Hub e aprova. Então o Hub grava em `colaboradores_raw` e manda o acesso para a pessoa.
+- Cada colaborador tem um checklist de entrada no Hub, incluindo **CRM** e **filas de repique**.
+- CPF e endereço ficam numa área que **só a Gestão** lê.
+
+**Decisões do Eduardo (19/10).**
+- D1. Quem preenche é o **colaborador, por link** com token (`/onboarding/<token>`), no padrão do Distrato (§5.16).
+- D2. O colaborador passa: **nome completo, telefone, CPF, CRECI, equipe (locação ou venda) e endereço**. O e-mail @imovit e a conta no Imoview **são criados pelo Eduardo** depois, a partir desses dados.
+- D3. A ordem é: **colaborador preenche → Eduardo cria e-mail e Imoview → informa no Hub e aprova → `colaboradores_raw` → acesso enviado para a pessoa**.
+- D4. O **checklist** fica no Hub, por colaborador, e inclui **CRM** e **filas de repique**.
+
+**Fluxo.**
+1. **Link.** Em Configurações ▸ **Onboarding**, a Gestão clica em "Novo colaborador". O Hub gera `/onboarding/<token>`, válido por 15 dias e de uso único. A Gestão copia o link ou abre o WhatsApp com uma mensagem pronta.
+2. **O colaborador preenche**, sem login, numa página única:
+   - nome completo;
+   - telefone/WhatsApp;
+   - CPF, com dígito validado;
+   - CRECI (número e UF);
+   - equipe: **Locação** ou **Venda**;
+   - endereço com CEP, com busca do CEP.
+
+   No fim, há um aceite de uso dos dados (LGPD). Ao enviar, o status vira "dados recebidos", a Gestão recebe um e-mail e o link passa a mostrar só "recebido".
+3. **O Eduardo cria as contas fora do Hub.** A ficha mostra os dados com botão de copiar, para criar:
+   - o e-mail @imovit;
+   - o usuário corretor no Imoview, com o **nome exatamente como foi digitado**.
+4. **Aprovação no Hub.** A Gestão informa:
+   - o **e-mail @imovit** criado;
+   - o **código no Imoview** (`id_corretor_crm`).
+
+   Antes de aprovar, o Hub valida que o e-mail é `@imovit.com.br` e que o código e o e-mail não pertencem a outra pessoa. Ao aprovar, faz o upsert em `colaboradores_raw`:
+   - nome;
+   - e-mail;
+   - telefone no formato `(19) 99999-9999`;
+   - `equipe = 'comercial'`;
+   - `cargo` = `locação` ou `vendas`;
+   - `data_admissao` = dia da aprovação;
+   - `ativo = true`.
+5. **Acesso para a pessoa.** O botão "Enviar acesso" abre o WhatsApp com uma mensagem pronta: o e-mail @imovit e o link do Hub, com o passo "crie sua conta com este e-mail". Quando ela cria a conta, o checklist mostra o botão "Definir nível Corretor".
+6. **Checklist do colaborador** (na mesma ficha):
+
+   | Etapa | Como marca |
+   |---|---|
+   | Dados recebidos | automático |
+   | E-mail @imovit criado | automático: informado na aprovação |
+   | Usuário no Imoview | automático: código informado na aprovação |
+   | Cadastro em `colaboradores_raw` | automático |
+   | **CRM: equipe/distribuição no Imoview** | manual |
+   | **Fila de repique** (venda ou locação) | manual, com a instrução na tela (ver P2) |
+   | Acesso enviado | automático: botão usado |
+   | Login no Hub | automático: existe `perfis` com o mesmo e-mail |
+   | Nível Corretor | automático: `perfis.role = 'corretor'` |
+   | Plantão | manual |
+
+   **Status:** link enviado · dados recebidos · aprovado · concluído (checklist completo) · cancelado.
+
+**Requisitos.**
+- RF32.1: aba Configurações ▸ **Onboarding** (só gestão), com lista (nome, equipe, status, checklist x/10), "Novo colaborador" e a ficha com os dados, os botões de copiar, a aprovação e o checklist.
+- RF32.2: rota pública `/onboarding/<token>`, servida por uma Edge Function `onboarding` no padrão da `distrato`. O anônimo não lê nem escreve nas tabelas.
+- RF32.3: a tabela `onboarding_colaboradores` (dados enviados, CPF, CRECI, endereço, e-mail @imovit, código do Imoview, status, marcações manuais, token) tem RLS **só gestão**.
+- RF32.4: aprovar = upsert em `colaboradores_raw` com os campos acima. CPF e endereço **nunca** vão para ela.
+- RF32.5: e-mail via Brevo (`notificar`) para a Gestão quando chegam dados.
+- RF32.6: as marcações automáticas são calculadas na leitura (`onboarding_colaboradores`, `colaboradores_raw` e `perfis`), não gravadas.
+
+**Fora de escopo (1ª entrega).**
+- Criar o e-mail @imovit ou o usuário do Imoview automaticamente: o Eduardo cria (D2).
+- Upload de documentos (ver P1).
+- Desligamento: o fluxo inverso (inativar, tirar das filas e do plantão) fica para depois.
+
+**Perguntas em aberto.**
+- P1. **Data de nascimento e documentos**: a data de nascimento alimenta os aniversários da agenda. Entra no formulário? Os documentos (RG, comprovante de endereço, CRECI) sobem no Hub ou ficam fora?
+- P2. **Filas de repique:** hoje as filas são **listas fixas** no nó "Calcular fila" do n8n. O fluxo ativo é o "teste repique" (`n6NEH8TiFRs2yQor`), e o "Repique 3.0" (`4wQRK0lOBk2vuFwP`, desligado) tem a mesma lista. Incluir alguém exige editar os dois fluxos. Proposta para depois: criar a coluna `no_repique` em `colaboradores_raw` e fazer o n8n montar a fila a partir dela. Assim, a etapa vira um botão no Hub e entra e sai junto com `ativo`. Isso é uma mudança no n8n, feita pelo Eduardo no editor.
+- P3. **Retenção:** o que acontece com o CPF e o endereço quando o colaborador sai?
+- P4. **Outras funções** (adm, marketing, recepção) usam o mesmo formulário sem CRECI, ou a 1ª entrega é só corretor?
+
+**Critérios de pronto.**
+- Um colaborador de teste preenche o link e a Gestão recebe o e-mail.
+- Ao aprovar com e-mail e código, aparece em `colaboradores_raw` no padrão.
+- "Enviar acesso" abre o WhatsApp com a mensagem certa.
+- Logado como corretor, nem a aba nem os dados de ninguém aparecem. Conferir no banco (RLS).
+- Um link vencido ou já usado não lê nada.
+- O checklist marca sozinho login e nível.
+- `npm run build` ok.
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.

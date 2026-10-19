@@ -209,6 +209,8 @@ Ordem pensada para a precisão: primeiro o dado acumula certo, depois as métric
 ## Fase 13 — Campanha Km 32 na Home (RF25, PRD §5.9) — **NO AR (06/10)**
 Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 
+**Ajuste de 19/10 (PRD §5.9):** a locação passa a contar contratos iniciados (`contratos_locacao.data_inicio` de 01/10 até hoje, sem cancelados). Migration `20261019180000_km32_locacao_contratos`, testada numa transação abortada: 3 contratos e R$ 39.450, igual ao número do Eduardo. Telas: `TrilhaKm32.jsx` e `Km32TV.jsx` (quebra entre ativos e em ativação, rodapé com a regra). A migration e o deploy saem juntos.
+
 **S1 — Banco**
 - [x] Migration: `campanhas`, `campanha_metas` (com a carga do Km 32), RLS e `campanha_resumo()` (Schema §2.8)
 - [x] Teste em transação desfeita, com negócio simulado (venda e locação, com e sem valor, antes e depois de 06/10, reaberto) e permissões (corretor recebe o total; "Sem nível" e anon não recebem nada)
@@ -361,6 +363,27 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 - **Pronto quando:** os critérios do PRD §5.0c forem atendidos.
 - **Depois:** vendas em R$, quando houver fonte de valor.
 
+## Fase 23 — Onboarding de colaboradores (RF32, PRD §5.18) — PRD aprovado (19/10); **plano aguardando aprovação**
+- **S0 Aprovação:** PRD aprovado em 19/10. Faltam a aprovação deste plano e as respostas P1 (data de nascimento no formulário?) e P3 (retenção do CPF). Sem a P1, a coluna existe e o campo fica fora.
+- **S1 Banco:** migration da §2.16 (tabela `onboarding_colaboradores`, RLS só gestão, grants). Testar em transação desfeita: gestão lê; adm, corretor e anon recebem zero.
+- **S2 Função:** `onboarding` (criar, abrir, enviar, aprovar, marcar, cancelar), com `notificar` (Brevo) no `enviar`. Testar o `aprovar` contra um código de teste e conferir a recusa por código ou e-mail duplicado. Deploy pelo MCP.
+- **S3 Link público:** `/onboarding/<token>`, no padrão `CadastroLocador`/`Distrato` (validação de CPF, busca de CEP). Testar no localhost e a 375 px.
+- **S4 Gestão:**
+  - aba Configurações ▸ **Onboarding** (lista, ficha, aprovação, enviar acesso, checklist calculado);
+  - "Definir nível" reaproveita a troca de role de Usuários & Acessos;
+  - `acessos.js` só gestão.
+- **S5 Publicar e testar ponta a ponta:**
+  - push `main` + `main:teste`;
+  - colaborador de teste: link → envio → e-mail → aprovação → linha em `colaboradores_raw` → checklist;
+  - conferir como corretor (sem aba, RLS zero);
+  - **apagar o teste** de `onboarding_colaboradores` **e** de `colaboradores_raw`.
+- **Pronto quando:** os critérios do PRD §5.18 forem atendidos.
+- **Depois:**
+  - P2: fila de repique lida de `colaboradores_raw.no_repique` (mudança no n8n pelo Eduardo + botão no Hub);
+  - upload de documentos;
+  - desligamento (fluxo inverso);
+  - outras funções além de corretor (P4).
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).
@@ -391,3 +414,4 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 | 2026-10-09 | Fase 19 (cadastro locador PF) | Eduardo: Google Form vira rota pública de link fixo (grava + e-mail a administrativo3); Propostas em produção só gestão/adm; documentos seguem por e-mail |
 | 2026-10-14 | Fase 20 (distratos) | Pedido do Eduardo: procedimento de desocupação + motivo + pesquisa de satisfação pelo Hub; o ADM gera o link por contrato; o envio é o aviso oficial; 1ª entrega só com registro + lista |
 | 2026-10-14 | Fase 21 (central de cadastros) | Eduardo: 6 cadastros do Google num motor único (1 página + 1 tabela + 1 função + 1 lista); piloto Locador PJ; destino de e-mail por tipo; histórico das 2 planilhas importado; pode construir |
+| 2026-10-19 | Fase 23 (onboarding de colaboradores) | Entrada da Giovana feita à mão (INSERT + checklist no Obsidian); Eduardo: a pessoa passa os dados por link, ele cria e-mail e Imoview, aprova no Hub → `colaboradores_raw`; checklist com CRM e fila de repique |

@@ -18,7 +18,7 @@ auth.users 1──1 perfis ──1:N── solicitacoes_acesso
                                                   │
                                                   └──1:N── status_historico
 
-colaboradores_raw (Imoview, via n8n) 1──N plantao
+colaboradores_raw (carga manual / onboarding) 1──N plantao
                                      1──N agendamentos_fotografo
 
 atividades 1──N atividades_notas          (Imoview, via n8n)
@@ -42,7 +42,7 @@ Não há FK entre `perfis` e `colaboradores_raw` (a ligação é por e-mail, qua
 
 **`solicitacoes_acesso`**: pedidos de nível. `perfil_id`→perfis (cascade), `role_atual`, `role_solicitado` (check: gestao/adm/marketing/corretor), `motivo`, `status` (`pendente, aprovada, recusada, cancelada`), `resposta`, `decidido_por`→perfis, `decidido_em`, `criado_em`.
 
-**`colaboradores_raw`** (n8n ← Imoview): `id_corretor_crm` bigint PK, `nome_completo`!, `email_oficial` unique, `telefone_whats`, `ativo`, `equipe`, `cargo`, `data_nascimento`, `data_admissao`, `atualizado_em`. Base de aniversários e tempo de casa na agenda.
+**`colaboradores_raw`** (carga **manual**: quase tudo veio numa carga única em 06/08; não há sincronização com o Imoview. Desde a §2.16, entradas novas vêm da aprovação do onboarding): `id_corretor_crm` bigint PK, `nome_completo`!, `email_oficial` unique, `telefone_whats`, `ativo`, `equipe`, `cargo`, `data_nascimento`, `data_admissao`, `atualizado_em`. Base de aniversários e tempo de casa na agenda.
 
 ### 2.2 Conteúdo da Home (escrita: gestao/marketing)
 | Tabela | Campos principais | Nota |
@@ -155,6 +155,12 @@ Princípio: o n8n **só insere**. Nada de *upsert* nem de *update* em dado comer
 
 **APLICADO em 01/10** (migration `20261001160000_crm_jornada`): `crm_leituras`, `crm_atendimento_jornada` (RLS: só quem tem nível; corretor só o dele; sem escrita pela API) e `registrar_atendimentos_crm(jsonb)` (execução só `service_role`). Teste antes (transação desfeita, 4 leituras simuladas): entrada, primeira_leitura, mudanca_etapa, lead novo que já andou (entrada + mudança), encerramento, reabertura, leitura repetida sem linha nova e item sem fase ignorado; a Gestão não executa nem grava, e o anon lê 0. Nesta etapa a RPC **não** escreve em `dashboard_atendimentos_crm`; isso fica para a virada, depois dos 3 dias em paralelo.
 
+**Foto atual (migration `20261019160000_jornada_payload_atual`, APLICADA em 19/10):**
+- quando a leitura não traz mudança de fase nem de situação, a RPC atualiza o `payload` da **última linha** do código (só se mudou). Não cria linha nova, e tipo, fase, situação e `data_evento` não mudam;
+- motivo: o status das propostas (`imoveisproposta[].negociacoes[]`) e a última interação mudam dentro da mesma fase. Antes, a foto ficava congelada no dia da mudança de fase (6182 Cancelado e 6383 Reservado no CRM seguiam "Em análise" no Km 32);
+- efeito colateral bom: descartes antigos lidos de novo (encerrados de 60 dias na diária; todos no domingo) ganham `interacoes` no payload, e a `vw_atendimentos_base` passa a ter a data do descarte deles;
+- testado numa transação abortada antes de aplicar: payload atualizado, 0 linhas novas e contadores zerados.
+
 **Revisão do desenho (01/10, conversa com o Eduardo).** Para não guardar ~2.800 linhas por dia, o n8n não grava a foto inteira. O fluxo `crm_jornada_diaria` (n8n `4tzh8UFpxciJOYiY`, criado **desligado**) lê todos os atendimentos e chama a RPC `registrar_atendimentos_crm(itens jsonb)` (security definer, só `service_role`). A RPC:
 - grava em **`crm_atendimento_jornada`** (append-only) 1 linha quando o código aparece pela primeira vez e 1 linha a cada mudança de fase ou situação. Campos: `codigo`, `fase_crm`, `situacao`, `data_evento`, `tipo` (`entrada` | `primeira_leitura` | `mudanca_etapa` | `encerramento`), `origem_data` (`crm` | `captura`), `finalidade`, `corretor`, `midia`, `campanha`, `funil`, `detectado_em`, `payload`;
 - mantém `dashboard_atendimentos_crm` como estado atual, para Kanban, TV e views continuarem iguais e o `crm_atendimentos` antigo poder ser desligado depois;
@@ -197,7 +203,13 @@ Na primeira leitura, um código que já está além do Pré-atendimento vira `pr
 
 Carga inicial: Km 32, de 06/10 a 31/12/2026. Venda: R$ 28.000.000 / 14. Aluguel: R$ 160.000 / 18.
 
-**Negócios da campanha (derivados, nada é digitado):** vêm de `crm_atendimento_jornada`, nas linhas com `situacao = 'Negócio realizado'` e payload completo (gravado pelo `crm_jornada_diaria v3`):
+**Locação = contratos iniciados (migration `20261019180000_km32_locacao_contratos`, 19/10):** desde então, a finalidade `Aluguel` sai de `contratos_locacao`, e não mais dos negócios do CRM:
+- conta o contrato com `data_inicio` do 1º dia do mês do início da campanha (01/10) até `least(fim, hoje)`, com `situacao <> 'Cancelado'`. A data do contrato no cálculo do mês é `data_inicio`;
+- valor = `valor_aluguel`;
+- `campanha_resumo` devolve também `ativos` (`situacao = 'Ativo'`) e `em_ativacao` (`'Moderação'`);
+- a função é security definer e só devolve somas: quem lê a campanha não lê os contratos (RLS só Gestão).
+
+**Negócios da campanha (derivados, nada é digitado; desde 19/10, só venda):** vêm de `crm_atendimento_jornada`, nas linhas com `situacao = 'Negócio realizado'` e payload completo (gravado pelo `crm_jornada_diaria v3`):
 - **data** = maior `datahora` entre as `payload.interacoes` cuja descrição começa com "NEGÓCIO REALIZADO";
 - **valor** = soma de `payload.imoveisnegocio[].valornegocio`;
 - 1 negócio por código de atendimento: vale o registro mais recente (por exemplo, reaberto e fechado de novo).
@@ -342,6 +354,51 @@ Generaliza a §2.12: em vez de 1 tabela por formulário, **1 tabela `cadastros`*
   4. senão, nula (data desconhecida).
   - Antes, 2.493 descartes antigos ficavam com 06/10 (dia da carga) e outubro somava 2.635 descartes. Depois: 145 em outubro e 2.490 sem data. Negócios não mudaram (89; 3 em outubro).
   - Em 19/10, nenhum painel nem a `kpis_tv` usa `data_encerramento` dos descartes (só a dos negócios), então não muda nada na tela. A data vale para a análise de perdas (Fase 16).
+
+### 2.16 Onboarding de colaboradores (RF32, PRD §5.18) — **PROPOSTA, não aplicada**
+A escrita é feita só pela Edge Function `onboarding` (service role). A leitura direta é **só `is_gestao()`**. O anon não lê nem escreve: o colaborador só acessa pelo token, via função. Mesmo padrão da §2.13 (Distratos).
+
+**Tabela `onboarding_colaboradores`**
+- Identificação: `id` uuid PK, `token` text unique (aleatório, 48 hex), `criado_por` uuid→perfis, `created_at`, `expira_em` (created_at + 15 dias).
+- `status` check: `link_enviado` | `dados_recebidos` | `aprovado` | `concluido` | `cancelado`. "Expirado" é calculado (`expira_em < now()` e ainda `link_enviado`).
+- Dados enviados pelo colaborador:
+  - `nome_completo`, `telefone`;
+  - `cpf`: text, só dígitos, com dígito verificador validado na função;
+  - `creci_numero`, `creci_uf`;
+  - `equipe`: check `locacao` | `venda`;
+  - `endereco` jsonb `{cep, logradouro, numero, complemento, bairro, cidade, uf}`;
+  - `data_nascimento` date, nula (só entra no formulário se a P1 for "sim");
+  - `aceite_lgpd_em`, `enviado_em`.
+- Aprovação: `email_imovit` (check `like '%@imovit.com.br'`), `id_corretor_crm` bigint, `aprovado_por` uuid→perfis, `aprovado_em`.
+- Checklist manual: `marcacoes` jsonb, `{crm, repique, plantao, acesso_enviado}` → `{em, por}`. "Acesso enviado" é gravado pelo botão.
+- `email_ok` (bool), `cancelado_em`, `cancelado_por`.
+- **CPF e endereço só existem aqui.** Nada de view, índice ou cópia em `colaboradores_raw`.
+
+**RLS e grants**
+- RLS ligada; policy de SELECT `is_gestao()`. Sem policy de escrita: todo insert e update passa pela função.
+- `revoke all on onboarding_colaboradores from anon, authenticated`; `grant select to authenticated` (a policy filtra).
+
+**Aprovar → `colaboradores_raw`** (evento `aprovar` da função, em uma transação)
+- Recusa se `id_corretor_crm` já existe com outro `email_oficial`, ou se `email_imovit` já existe com outro código.
+- Upsert por `id_corretor_crm`:
+  - `nome_completo`, `email_oficial = email_imovit`;
+  - `telefone_whats` formatado `(DD) 9XXXX-XXXX`;
+  - `equipe = 'comercial'`, `cargo` = `locação` | `vendas`;
+  - `data_nascimento`;
+  - `data_admissao = aprovado_em::date`; não sobrescreve se já houver data;
+  - `ativo = true`, `atualizado_em = now()`.
+
+**Checklist calculado na leitura** (front, só gestão): junta `onboarding_colaboradores` com `colaboradores_raw` (por `id_corretor_crm`) e `perfis` (por `lower(email)`). Login = existe perfil. Nível = `perfis.role = 'corretor'`. Nada disso é gravado.
+
+**Edge Function `onboarding`**, eventos:
+- `criar` (JWT gestão): gera o token e devolve o link.
+- `abrir` (token): diz se o link vale (ou se já foi enviado, expirou ou foi cancelado). Não devolve dados.
+- `enviar` (token): valida (CPF, CEP, telefone, equipe, aceite), grava, muda para `dados_recebidos` e manda e-mail à Gestão via `notificar` (só o nome e o link da ficha, **sem CPF no e-mail**).
+- `aprovar` (JWT gestão): e-mail @imovit + código → upsert em `colaboradores_raw` → `aprovado`.
+- `marcar` (JWT gestão): liga ou desliga uma marcação manual. Com tudo marcado e login e nível ok, vira `concluido`.
+- `cancelar` (JWT gestão).
+
+**Em aberto (PRD P3):** prazo para apagar CPF e endereço depois do desligamento.
 
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
