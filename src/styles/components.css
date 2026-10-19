@@ -616,6 +616,11 @@
   z-index: var(--z-drawer);
 }
 .navbar-subitem:hover > .navbar-flyout, .navbar-subitem:focus-within > .navbar-flyout { display: flex; }
+/* ponte invisível sobre o vão de 4px: o mouse não "cai" fora do hover ao ir do menu para o submenu */
+@media (min-width: 1101px) {
+  .navbar-dropdown::before { content: ''; position: absolute; left: 0; right: 0; top: -8px; height: 8px; }
+  .navbar-flyout::before { content: ''; position: absolute; top: 0; bottom: 0; left: -8px; width: 8px; }
+}
 .navbar-flyout a {
   padding: 8px var(--space-3);
   border-radius: var(--radius-sm);
