@@ -105,7 +105,7 @@ export default function PainelGestao() {
       origem,
       perda,
       descartes: descartesPorEtapa(base, hoje),
-      jornada: jornadaLead({ base, etapas: dados.jornadaEtapas, descartes: dados.jornadaDescartes, periodo, finalidades }),
+      jornada: jornadaLead({ base, etapas: dados.jornadaEtapas, descartes: dados.jornadaDescartes, periodo }),
       motivos: motivosDescarte({ base, descartes: dados.jornadaDescartes, periodo, posicao: etapaDescarte }),
       atividades,
       pessoasCap,
@@ -275,13 +275,10 @@ export default function PainelGestao() {
             numero="3"
             pergunta="Quanto tempo o lead leva em cada etapa?"
             conclusao={(() => {
-              if (!h.jornada.some((g) => g.n[0])) return `Nenhum lead andou na jornada ${h.periodo.label} neste recorte (a jornada é medida desde 06/10).`
-              const partes = h.jornada
-                .filter((g) => g.lento != null)
-                .map((g) => `na ${LABEL_FINALIDADE[g.finalidade].toLowerCase()}, o lead trava ${NA_ETAPA[g.lento]} (${fmtDecimal(g.dias[g.lento].media)} dias para avançar)`)
-              if (!partes.length) return `Tempos ainda acumulando: cada etapa precisa de ${MIN_PASSAGENS_TEMPO} passagens no período para ter média.`
-              const frase = partes.join('; ')
-              return `${frase.charAt(0).toUpperCase()}${frase.slice(1)}.`
+              const j = h.jornada
+              if (!j.n[0]) return `Nenhum lead andou na jornada ${h.periodo.label} neste recorte (a jornada é medida desde 06/10).`
+              if (j.lento == null) return `Tempos ainda acumulando: cada etapa precisa de ${MIN_PASSAGENS_TEMPO} passagens no período para ter média.`
+              return `O lead trava ${NA_ETAPA[j.lento]}: ${fmtDecimal(j.dias[j.lento].media)} dias em média para avançar.`
             })()}
             rodape={`Quadro: leads que chegaram até a etapa ${h.periodo.label} (pela etapa mais avançada; quem pulou etapa conta nas que pulou). Seta: dias em média entre entrar na etapa e passar para uma etapa à frente, nas passagens concluídas no período; "acum." = menos de ${MIN_PASSAGENS_TEMPO} passagens (passe o mouse para ver quantas). Em coral, a transição mais lenta. Em vermelho, os descartados na etapa, pela data do descarte; clique para ver os motivos no capítulo 4. A jornada é lida do CRM todo dia desde 06/10 (precisão de 1 dia); leads que já estavam no meio do funil nessa data ficam fora.`}
           >

@@ -1339,7 +1339,6 @@
 }
 
 /* ------- Jornada do lead no Painel da Gestão (PRD §5.12, maquete v4) ------- */
-.jl-grupos { display: grid; gap: var(--space-6); }
 .jl-como { font-size: var(--text-xs); color: var(--grafite-soft); margin: 0 0 var(--space-4); }
 .jl-como b { font-weight: var(--weight-medium); color: var(--danger); }
 .jl { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr) 52px) minmax(0, 1fr); align-items: center; row-gap: var(--space-3); }

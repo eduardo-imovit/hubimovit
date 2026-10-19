@@ -354,7 +354,7 @@ Também mostra as paradas no último dia de cada mês (meta acumulada proporcion
 ### 5.12 Jornada do lead: tempos, perdas e motivos (pedido do Eduardo, 07/10) — **APROVADA em 19/10 (maquete v4), no Painel da Gestão**
 **Objetivo.** Ver quanto tempo o lead leva em cada etapa, onde ele se perde e por quê. A fonte é a jornada diária (`crm_atendimento_jornada`, fluxo `crm_jornada_diaria v3`, rodando desde 06/10).
 
-**Onde (decisão de 19/10, vale esta):** no **Painel da Gestão**, capítulo 3 (jornada em linha) e capítulo 4 (motivos), seguindo os filtros da página (período, finalidade, canal, corretor). Com "todas" as finalidades, aparece uma linha para Venda e outra para Locação. J2 ficou como proposto: só os descartes da jornada. J1 não se aplica por enquanto, porque o cartão de "parados" saiu na v4.
+**Onde (decisão de 19/10, vale esta):** no **Painel da Gestão**, capítulo 3 (jornada em linha) e capítulo 4 (motivos), seguindo os filtros da página (período, finalidade, canal, corretor). É sempre **uma linha só**, com a média do recorte: a finalidade é dividida pelo filtro de cima (Eduardo, 19/10). J2 ficou como proposto: só os descartes da jornada. J1 não se aplica por enquanto, porque o cartão de "parados" saiu na v4.
 
 **Onde (revisto em 07/10, substituído em 19/10).** Não vira um gráfico novo. A jornada completa dois capítulos que já existem na página Comercial, com os mesmos componentes:
 - **Capítulo 1 (funil):** a coluna "tempo na etapa", hoje reservada com "—", passa a mostrar a mediana em dias ("acum." com menos de 5 passagens). Embaixo, dois cartões `.pg-mesa-card`: tempo até o negócio e parados há N+ dias.
