@@ -363,7 +363,7 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 - **Pronto quando:** os critérios do PRD §5.0c forem atendidos.
 - **Depois:** vendas em R$, quando houver fonte de valor.
 
-## Fase 23 — Onboarding de colaboradores (RF32, PRD §5.18) — S1–S4 feitas em 19/10 (banco e função no ar; front no localhost); **falta S5: publicar**
+## Fase 23 — Onboarding de colaboradores (RF32, PRD §5.18) — **NO AR em 19/10** (commit 0cfd8d2, produção); falta o push na `teste`
 - **S0 Aprovação:** PRD aprovado em 19/10. Faltam a aprovação deste plano e as respostas P1 (data de nascimento no formulário?) e P3 (retenção do CPF). Sem a P1, a coluna existe e o campo fica fora.
 - **S1 Banco:** migration da §2.16 (tabela `onboarding_colaboradores`, RLS só gestão, grants). Testar em transação desfeita: gestão lê; adm, corretor e anon recebem zero.
 - **S2 Função:** `onboarding` (criar, abrir, enviar, aprovar, marcar, cancelar), com `notificar` (Brevo) no `enviar`. Testar o `aprovar` contra um código de teste e conferir a recusa por código ou e-mail duplicado. Deploy pelo MCP.
