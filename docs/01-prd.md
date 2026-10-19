@@ -768,7 +768,7 @@ Trazer os demais Google Forms de cadastro para o Hub sem replicar o custo do Loc
 
 **Critérios de pronto:** um Locador PJ de teste aparece na tabela e na lista com o filtro, e os 2 e-mails chegam ao destino do tipo; `/cadastro-locador` antigo continua funcionando; `npm run build` ok; histórico visível na lista com origem "planilha".
 
-### 5.18 Onboarding de colaboradores (pedido do Eduardo, 19/10) — **APROVADO em 19/10**; schema §2.16, plano Fase 23
+### 5.18 Onboarding de colaboradores (pedido do Eduardo, 19/10) — **APROVADO em 19/10**; banco e função no ar, front no localhost (plano Fase 23)
 **Problema.** A entrada da Giovana (corretora de locação, 19/10) foi feita à mão:
 - o cadastro entrou em `colaboradores_raw` por um `INSERT` no SQL;
 - o CPF circulou no chat;

@@ -355,7 +355,7 @@ Generaliza a §2.12: em vez de 1 tabela por formulário, **1 tabela `cadastros`*
   - Antes, 2.493 descartes antigos ficavam com 06/10 (dia da carga) e outubro somava 2.635 descartes. Depois: 145 em outubro e 2.490 sem data. Negócios não mudaram (89; 3 em outubro).
   - Em 19/10, nenhum painel nem a `kpis_tv` usa `data_encerramento` dos descartes (só a dos negócios), então não muda nada na tela. A data vale para a análise de perdas (Fase 16).
 
-### 2.16 Onboarding de colaboradores (RF32, PRD §5.18) — **PROPOSTA, não aplicada**
+### 2.16 Onboarding de colaboradores (RF32, PRD §5.18) — migration `20261019200000_onboarding_colaboradores`, **APLICADA em 19/10**; Edge Function `onboarding` v1 publicada (`verify_jwt` desligado: a função confere o login sozinha)
 A escrita é feita só pela Edge Function `onboarding` (service role). A leitura direta é **só `is_gestao()`**. O anon não lê nem escreve: o colaborador só acessa pelo token, via função. Mesmo padrão da §2.13 (Distratos).
 
 **Tabela `onboarding_colaboradores`**
@@ -378,7 +378,7 @@ A escrita é feita só pela Edge Function `onboarding` (service role). A leitura
 - RLS ligada; policy de SELECT `is_gestao()`. Sem policy de escrita: todo insert e update passa pela função.
 - `revoke all on onboarding_colaboradores from anon, authenticated`; `grant select to authenticated` (a policy filtra).
 
-**Aprovar → `colaboradores_raw`** (evento `aprovar` da função, em uma transação)
+**Aprovar → `colaboradores_raw`** (evento `aprovar` da função: primeiro o upsert, depois o status; não é uma transação única, mas o upsert é idempotente e pode ser repetido)
 - Recusa se `id_corretor_crm` já existe com outro `email_oficial`, ou se `email_imovit` já existe com outro código.
 - Upsert por `id_corretor_crm`:
   - `nome_completo`, `email_oficial = email_imovit`;
@@ -393,9 +393,9 @@ A escrita é feita só pela Edge Function `onboarding` (service role). A leitura
 **Edge Function `onboarding`**, eventos:
 - `criar` (JWT gestão): gera o token e devolve o link.
 - `abrir` (token): diz se o link vale (ou se já foi enviado, expirou ou foi cancelado). Não devolve dados.
-- `enviar` (token): valida (CPF, CEP, telefone, equipe, aceite), grava, muda para `dados_recebidos` e manda e-mail à Gestão via `notificar` (só o nome e o link da ficha, **sem CPF no e-mail**).
+- `enviar` (token): valida (CPF, CEP, telefone, equipe, aceite), grava, muda para `dados_recebidos` e manda e-mail para `eduardo@imovit.com.br` (quem cria o e-mail e o Imoview) via `notificar`: só o nome e o link da ficha, **sem CPF no e-mail**.
 - `aprovar` (JWT gestão): e-mail @imovit + código → upsert em `colaboradores_raw` → `aprovado`.
-- `marcar` (JWT gestão): liga ou desliga uma marcação manual. Com tudo marcado e login e nível ok, vira `concluido`.
+- `marcar` (JWT gestão): liga ou desliga uma marcação manual. "Concluído" é calculado na tela (todas as 10 etapas feitas); o status `concluido` fica reservado e não é gravado na v1.
 - `cancelar` (JWT gestão).
 
 **Em aberto (PRD P3):** prazo para apagar CPF e endereço depois do desligamento.
