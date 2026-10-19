@@ -1337,3 +1337,42 @@
   .km32-numeros { grid-template-columns: 1fr; gap: var(--space-4); }
   .km32-escala small { display: none; }
 }
+
+/* ------- Jornada do lead no Painel da Gestão (PRD §5.12, maquete v4) ------- */
+.jl-grupos { display: grid; gap: var(--space-6); }
+.jl-como { font-size: var(--text-xs); color: var(--grafite-soft); margin: 0 0 var(--space-4); }
+.jl-como b { font-weight: var(--weight-medium); color: var(--danger); }
+.jl { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr) 52px) minmax(0, 1fr); align-items: center; row-gap: var(--space-3); }
+.jl-etapa { background: var(--pergaminho); border-radius: var(--radius-md); padding: var(--space-4) var(--space-2); text-align: center; min-width: 0; }
+.jl-n { font-size: 32px; font-weight: var(--weight-medium); line-height: 1; color: var(--grafite); font-variant-numeric: tabular-nums; }
+.jl-nome { font-size: 12px; color: var(--grafite-mid); margin-top: var(--space-2); line-height: 1.25; }
+.jl-etapa--fim { background: var(--grafite); }
+.jl-etapa--fim .jl-n { color: var(--branco); }
+.jl-etapa--fim .jl-nome { color: var(--grafite-fade); }
+.jl-passo { display: flex; flex-direction: column; align-items: center; line-height: 1.1; color: var(--grafite-soft); }
+.jl-dias { font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--grafite-mid); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.jl-seta { font-size: 18px; }
+.jl-passo.is-lento, .jl-passo.is-lento .jl-dias { color: var(--coral); }
+.jl-passo.is-acum .jl-dias { color: var(--grafite-fade); font-weight: var(--weight-regular); }
+.jl-desc { text-align: center; }
+.jl-desc-n {
+  border: 0; background: transparent; cursor: pointer; font: inherit;
+  font-size: var(--text-sm); color: var(--danger); font-variant-numeric: tabular-nums;
+  border-radius: var(--radius-full); padding: 2px 10px;
+}
+.jl-desc-n:hover { background: var(--danger-soft); }
+.jl-desc-n:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+.jl-desc-n.is-maior { background: var(--danger-soft); font-weight: var(--weight-semibold); }
+.jl-desc-n.is-sel { background: var(--danger); color: var(--branco); }
+.jl-desc-zero { font-size: var(--text-sm); color: var(--grafite-fade); }
+.jl-desc-inline { display: none; }
+@media (max-width: 760px) {
+  .jl { grid-template-columns: 1fr; row-gap: 0; }
+  .jl-etapa { display: flex; align-items: baseline; gap: var(--space-3); text-align: left; padding: var(--space-3) var(--space-4); }
+  .jl-n { font-size: 24px; min-width: 40px; }
+  .jl-nome { margin: 0; flex: 1; font-size: var(--text-sm); }
+  .jl-passo { flex-direction: row; gap: var(--space-2); padding: var(--space-2) 0 var(--space-2) var(--space-5); }
+  .jl-seta { transform: rotate(90deg); }
+  .jl-desc, .jl-desc + div { display: none; }
+  .jl-desc-inline { display: inline; font-size: var(--text-xs); color: var(--danger); }
+}

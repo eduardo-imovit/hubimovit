@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { Fragment, lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Bar,
@@ -15,7 +15,7 @@ import {
   YAxis,
   ZAxis,
 } from 'recharts'
-import { CORES, CORES_ETAPA, FUNIS, LABEL_FINALIDADE, simularGanho } from '../../lib/painelGestao'
+import { CORES, CORES_ETAPA, ETAPAS_JORNADA, fmtDecimal, FUNIS, LABEL_FINALIDADE, simularGanho } from '../../lib/painelGestao'
 import { fmtMoeda, fmtNum, fmtPct } from '../../lib/paineis'
 import { fmtMoedaCurta } from '../../lib/admLocacao'
 
@@ -386,6 +386,89 @@ export function Descartes({ dados }) {
             </div>
             <span className="pg-funil-n">
               {fmtNum(e.n)} <span className="is-muted">({fmtPct((e.n / (dados.total || 1)) * 100, 0)})</span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Jornada do lead (PRD §5.12, maquete v4): número grande por etapa, dias na seta, descartados embaixo
+export function JornadaLinha({ dados, etapaSel, onEtapa }) {
+  return (
+    <div className="jl-grupos">
+      {dados.map((g) => (
+        <div key={g.finalidade}>
+          {dados.length > 1 && (
+            <div className="pg-funil-titulo">
+              <span className={`pg-ponto pg-ponto--${g.finalidade}`} aria-hidden="true" />
+              {LABEL_FINALIDADE[g.finalidade]}
+            </div>
+          )}
+          <div className="jl" role="list" aria-label={`Jornada do lead · ${LABEL_FINALIDADE[g.finalidade]}`}>
+            {ETAPAS_JORNADA.map((nome, i) => {
+              const tem = i < 6
+              const d = g.dias[i]
+              return (
+                <Fragment key={nome}>
+                  <div className={`jl-etapa${tem ? '' : ' jl-etapa--fim'}`} role="listitem">
+                    <div className="jl-n">{fmtNum(g.n[i])}</div>
+                    <div className="jl-nome">
+                      {nome}
+                      {tem && <span className="jl-desc-inline"> · {fmtNum(g.desc[i])} descartados</span>}
+                    </div>
+                  </div>
+                  {tem && (
+                    <div className={`jl-passo${d.media == null ? ' is-acum' : i === g.lento ? ' is-lento' : ''}`} title={`${d.n} ${d.n === 1 ? 'passagem' : 'passagens'}`}>
+                      <span className="jl-dias">{d.media == null ? 'acum.' : `${fmtDecimal(d.media)} d`}</span>
+                      <span className="jl-seta" aria-hidden="true">→</span>
+                    </div>
+                  )}
+                </Fragment>
+              )
+            })}
+            {ETAPAS_JORNADA.map((nome, i) => (
+              <Fragment key={`d-${nome}`}>
+                <div className="jl-desc">
+                  {i < 6 && g.desc[i] > 0 && (
+                    <button
+                      type="button"
+                      className={`jl-desc-n${i === g.maiorDesc ? ' is-maior' : ''}${etapaSel === i + 1 ? ' is-sel' : ''}`}
+                      aria-pressed={etapaSel === i + 1}
+                      aria-label={`${g.desc[i]} descartados em ${nome}: ver os motivos`}
+                      onClick={() => onEtapa(etapaSel === i + 1 ? null : i + 1)}
+                    >
+                      −{fmtNum(g.desc[i])}
+                    </button>
+                  )}
+                  {i < 6 && g.desc[i] === 0 && <span className="jl-desc-zero">0</span>}
+                </div>
+                {i < 6 && <div />}
+              </Fragment>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function MotivosDescarte({ dados, titulo }) {
+  if (!dados.total) return <div className="pg-vazio">Nenhum descarte com motivo registrado neste recorte.</div>
+  const max = dados.motivos[0].n
+  return (
+    <div className="pg-grafico">
+      <div className="pg-grafico-titulo">{titulo}</div>
+      <div className="pg-hbarras">
+        {dados.motivos.slice(0, 8).map((m, i) => (
+          <div key={m.motivo} className="pg-hbarra pg-hbarra--larga">
+            <span className="pg-hbarra-rotulo" title={m.motivo}>{m.motivo}</span>
+            <div className="pg-funil-trilho">
+              <div className="pg-funil-barra" style={{ width: `${Math.max(2, (m.n / max) * 100)}%`, background: i === 0 ? 'var(--coral)' : CORES.contexto }} />
+            </div>
+            <span className="pg-funil-n">
+              {fmtNum(m.n)} <span className="is-muted">({fmtPct((m.n / dados.total) * 100, 0)})</span>
             </span>
           </div>
         ))}

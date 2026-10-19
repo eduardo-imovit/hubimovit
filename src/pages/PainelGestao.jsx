@@ -1,13 +1,14 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { usePainelGestao } from '../hooks/usePaineis'
 import { usePerfil } from '../hooks/usePerfil'
 import { useFiltrosUrl } from '../hooks/useFiltrosUrl'
 import { BarraFiltros, Capitulo, Indice } from '../components/painel/Estrutura'
-import { AtividadesPainel, CarteiraCaptadores, Descartes, EstoqueDisponivel, FunilLinhas, MapaPessoas, PerdaComparada, SaudeDados } from '../components/painel/Graficos'
+import { AtividadesPainel, CarteiraCaptadores, Descartes, EstoqueDisponivel, FunilLinhas, JornadaLinha, MapaPessoas, MotivosDescarte, PerdaComparada, SaudeDados } from '../components/painel/Graficos'
 import { fmtMoeda, fmtNum, fmtPct, isoLocal, saudeDados } from '../lib/paineis'
 import { fmtMoedaCurta } from '../lib/admLocacao'
 import {
   atividadesPainel,
+  AVISO_JORNADA_ATE,
   capituloPessoas,
   carteiraPorCaptador,
   estoqueDisponivel,
@@ -17,7 +18,13 @@ import {
   descartesPorEtapa,
   emAtendimento,
   equipesComerciais,
+  ETAPAS_JORNADA,
   filtrarBase,
+  fmtDecimal,
+  jornadaLead,
+  MIN_PASSAGENS_TEMPO,
+  NA_ETAPA,
+  motivosDescarte,
   FILTROS_PADRAO_GESTAO,
   FUNIS,
   funilPorOrigem,
@@ -40,6 +47,8 @@ export default function PainelGestao() {
   // comparar corretor × corretor: só a Gestão (pedido de 15/10)
   const ehGestao = perfil?.role === 'gestao'
   const { dados, carregando, erro } = usePainelGestao()
+  // etapa clicada na linha de descartes da jornada → motivos só dela
+  const [etapaDescarte, setEtapaDescarte] = useState(null)
 
   // canais com o nome de exibição (a view grava alguns sem acento)
   const baseNorm = useMemo(() => (dados ? dados.base.map((a) => ({ ...a, canal: nomeCanal(a.canal) })) : null), [dados])
@@ -96,6 +105,8 @@ export default function PainelGestao() {
       origem,
       perda,
       descartes: descartesPorEtapa(base, hoje),
+      jornada: jornadaLead({ base, etapas: dados.jornadaEtapas, descartes: dados.jornadaDescartes, periodo, finalidades }),
+      motivos: motivosDescarte({ base, descartes: dados.jornadaDescartes, periodo, posicao: etapaDescarte }),
       atividades,
       pessoasCap,
       // carteira por captador: o estoque só é lido pela Gestão (RLS)
@@ -112,7 +123,7 @@ export default function PainelGestao() {
       comparar,
       frases: mancheteAtendimento({ atendimento, perda, atividades, pessoasCap, corretor: comCorretor ? filtros.corretor : null }),
     }
-  }, [dados, baseNorm, equipes, filtros, hoje, ehGestao])
+  }, [dados, baseNorm, equipes, filtros, hoje, ehGestao, etapaDescarte])
 
   const recorte = [
     filtros.finalidade !== 'todas' && LABEL_FINALIDADE[filtros.finalidade],
@@ -124,6 +135,11 @@ export default function PainelGestao() {
   // o captador vem do Imoview; só vira filtro quando é um corretor da lista (mesmo nome, sem diferenciar maiúsculas)
   const corretorDoCaptador = (nome) => opcoes.corretores.find((c) => c.trim().toLowerCase() === nome.trim().toLowerCase()) ?? null
   const [inbound, outbound] = FUNIS
+  const avisoJornada = hoje <= AVISO_JORNADA_ATE && (
+    <div className="pg-aviso" role="note">
+      <strong>Base de dados em construção.</strong> A jornada é medida desde 06/10: os números ainda são poucos e vão ganhar amostra nas próximas semanas.
+    </div>
+  )
 
   return (
     <div className="pg">
@@ -254,9 +270,53 @@ export default function PainelGestao() {
             </div>
           </Capitulo>
 
-          {/* 3 — Atividades: volume e variedade × média da equipe */}
+          {/* 3 — Jornada do lead: volume por etapa, dias para avançar, descartados (PRD §5.12) */}
           <Capitulo
             numero="3"
+            pergunta="Quanto tempo o lead leva em cada etapa?"
+            conclusao={(() => {
+              if (!h.jornada.some((g) => g.n[0])) return `Nenhum lead andou na jornada ${h.periodo.label} neste recorte (a jornada é medida desde 06/10).`
+              const partes = h.jornada
+                .filter((g) => g.lento != null)
+                .map((g) => `na ${LABEL_FINALIDADE[g.finalidade].toLowerCase()}, o lead trava ${NA_ETAPA[g.lento]} (${fmtDecimal(g.dias[g.lento].media)} dias para avançar)`)
+              if (!partes.length) return `Tempos ainda acumulando: cada etapa precisa de ${MIN_PASSAGENS_TEMPO} passagens no período para ter média.`
+              const frase = partes.join('; ')
+              return `${frase.charAt(0).toUpperCase()}${frase.slice(1)}.`
+            })()}
+            rodape={`Quadro: leads que chegaram até a etapa ${h.periodo.label} (pela etapa mais avançada; quem pulou etapa conta nas que pulou). Seta: dias em média entre entrar na etapa e passar para uma etapa à frente, nas passagens concluídas no período; "acum." = menos de ${MIN_PASSAGENS_TEMPO} passagens (passe o mouse para ver quantas). Em coral, a transição mais lenta. Em vermelho, os descartados na etapa, pela data do descarte; clique para ver os motivos no capítulo 4. A jornada é lida do CRM todo dia desde 06/10 (precisão de 1 dia); leads que já estavam no meio do funil nessa data ficam fora.`}
+          >
+            {avisoJornada}
+            <p className="jl-como">Leads em cada etapa · dias em média para avançar · <b>descartados</b></p>
+            <JornadaLinha dados={h.jornada} etapaSel={etapaDescarte} onEtapa={setEtapaDescarte} />
+          </Capitulo>
+
+          {/* 4 — Motivos de descarte (todas as etapas ou a clicada no capítulo 3) */}
+          <Capitulo
+            numero="4"
+            pergunta="Por que os leads são descartados?"
+            conclusao={(() => {
+              const m = h.motivos
+              if (!m.total) return `Nenhum descarte com motivo ${h.periodo.label} neste recorte.`
+              const onde = etapaDescarte ? `${NA_ETAPA[etapaDescarte - 1].charAt(0).toUpperCase()}${NA_ETAPA[etapaDescarte - 1].slice(1)}, o` : 'O'
+              return `${onde} motivo mais comum é "${m.motivos[0].motivo}": ${fmtNum(m.motivos[0].n)} de ${fmtNum(m.total)} descartes (${fmtPct((m.motivos[0].n / m.total) * 100, 0)}).`
+            })()}
+            rodape="Motivo padrão que o corretor escolhe no Imoview ao descartar (o texto antes da vírgula; a observação livre fica de fora). Conta os descartes vistos pela jornada desde 06/10, pela data do descarte."
+          >
+            {avisoJornada}
+            {etapaDescarte && (
+              <p className="jl-como">
+                Só {ETAPAS_JORNADA[etapaDescarte - 1].toLowerCase()} ·{' '}
+                <button type="button" className="btn-link" onClick={() => setEtapaDescarte(null)}>
+                  ver todas as etapas
+                </button>
+              </p>
+            )}
+            <MotivosDescarte dados={h.motivos} titulo={etapaDescarte ? `Motivos ${NA_ETAPA[etapaDescarte - 1]}` : 'Motivos de todas as etapas'} />
+          </Capitulo>
+
+          {/* 5 — Atividades: volume e variedade × média da equipe */}
+          <Capitulo
+            numero="5"
             pergunta="Quem está atendendo?"
             conclusao={
               h.atividades.modo === 'corretor'
@@ -272,10 +332,10 @@ export default function PainelGestao() {
             <AtividadesPainel dados={h.atividades} selecionado={filtros.corretor} onSelecionar={selecionar} />
           </Capitulo>
 
-          {/* 4 — Estoque disponível + mapa de calor (só Gestão) */}
+          {/* 6 — Estoque disponível + mapa de calor (só Gestão) */}
           {h.disponivel && (
             <Capitulo
-              numero="4"
+              numero="6"
               pergunta="Quanto temos disponível?"
               conclusao={(() => {
                 const d = h.disponivel
@@ -293,10 +353,10 @@ export default function PainelGestao() {
             </Capitulo>
           )}
 
-          {/* 5 — Carteira de imóveis por captador (só Gestão) */}
+          {/* 7 — Carteira de imóveis por captador (só Gestão) */}
           {h.carteira && (
             <Capitulo
-              numero="5"
+              numero="7"
               pergunta="A carteira está atualizada?"
               conclusao={(() => {
                 const c = h.carteira
@@ -332,9 +392,9 @@ export default function PainelGestao() {
             </Capitulo>
           )}
 
-          {/* 6 — Pessoas */}
+          {/* 8 — Pessoas */}
           <Capitulo
-            numero={h.carteira ? '6' : '4'}
+            numero={h.carteira ? '8' : '6'}
             pergunta="Quem precisa agir agora?"
             conclusao={`${fmtNum(h.pessoasCap.totais.semContato)} leads ativos sem nenhum contato, ${fmtNum(h.pessoasCap.totais.abertos30)} abertos há mais de 30 dias e ${fmtNum(h.pessoasCap.totais.vencidas30)} atividades vencidas no último mês.`}
             rodape={`Quanto mais escura a célula, pior em relação aos colegas. Clique num corretor para ver o painel inteiro só com a carteira dele. Há ainda ${fmtNum(h.pessoasCap.totais.esquecidas)} atividades vencidas há mais de 30 dias (provável limpeza no CRM). "Abertos" conta dias desde a entrada do lead; o CRM não exporta a data da última interação.`}

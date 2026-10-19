@@ -206,10 +206,16 @@ Carga inicial: Km 32, de 06/10 a 31/12/2026. Venda: R$ 28.000.000 / 14. Aluguel:
 
 **RLS:** `campanhas` e `campanha_metas` com leitura por `pode_ler_comercial()` e escrita só pela Gestão.
 
-### 2.9 Jornada para análise (RF/PRD §5.12) — **PROPOSTA, não aplicada**
+### 2.9 Jornada para análise (RF/PRD §5.12) — migration `20261019140000_vw_jornada`, **APLICADA em 19/10**
 - **View `vw_jornada_etapas`** (security_invoker, herda a RLS da jornada: o corretor vê só a dele): uma linha por passagem por etapa, com `codigo`, `finalidade`, `corretor`, `midia`, `fase_crm`, `posicao` (1–7 no funil do Hub), `entrou_em`, `saiu_em` (próximo evento do mesmo código), `dias_na_etapa`, `como_saiu` (`avancou` | `voltou` | `descartado` | `negocio` | `em_aberto`) e `entrada_conhecida` (false quando a passagem começa numa `primeira_leitura`).
 - **View `vw_jornada_descartes`** (security_invoker): descartes da jornada, com a etapa em que estavam, a data e o **motivo**, lido de `payload.interacoes` (a interação de descarte; o padrão exato do texto vai ser conferido no primeiro descarte capturado com a v5).
-- O front lê as views com os filtros da página, igual ao resto do Painel Comercial.
+- **Como ficou (19/10):**
+  - `vw_jornada_etapas` tem `codigo`, `posicao`, `entrou_em`, `saiu_em`, `dias`, `como_saiu` e `entrada_conhecida`. Descartes não viram etapa.
+  - `entrada_conhecida` vale para `entrada`, `mudanca_etapa`, `reabertura` e `encerramento`, e para `primeira_leitura` só quando o lead entrou no CRM até 2 dias antes (outbound que nasce qualificado).
+  - `vw_jornada_descartes` tem `codigo`, `posicao`, `descartado_em`, `motivo` e `observacao`. Só entram os `encerramento` Descartado. O Imoview grava "ATENDIMENTO descartado motivo: <motivo padrão>, <observação>"; `motivo` é o texto antes da 1ª vírgula, e sem texto vira "Sem motivo registrado".
+  - Sem `payload` nas views; finalidade, canal e corretor vêm da `vw_atendimentos_base` no front, pelo código.
+  - Grants: só SELECT para `authenticated`; `anon` sem acesso.
+- O front lê as views no Painel da Gestão (capítulos 3 e 4) e aplica os filtros da página.
 
 ### 2.10 Carteira de locação (RF26, PRD §5.13) — migrations `20261007200000_carteira_locacao` e `20261007220000_carteira_locacao_v2`, **APLICADAS em 07/10**
 Escrita só pela RPC `carregar_carteira_locacao` (service role: n8n `carteira_locacao_diaria` e Edge Function `carteira-locacao`). Leitura: **só `is_gestao()`** (migration `20261007233000_adm_locacao_so_gestao`, 07/10; antes Gestão e ADM). Sem grant para `anon`; o `authenticated` só tem SELECT; views com `security_invoker`.
@@ -329,6 +335,13 @@ Generaliza a §2.12: em vez de 1 tabela por formulário, **1 tabela `cadastros`*
   - mesmas colunas e ordem, então as `vw_*` dependentes seguem iguais.
 - **Efeito em 15/10:** em atendimento de Qualificado a Proposta passou de 118 para 136.
 - **Ainda lendo a tabela direto:** Kanban e TV continuam com a fase antiga. A correção definitiva é a RPC `registrar_atendimentos_crm` atualizar `dashboard_atendimentos_crm` (a "virada" do §2.6c), que ainda não foi feita.
+- **Data dos descartes — migration `20261019120000_vw_base_data_descarte`, APLICADA em 19/10:** `data_encerramento` passou a seguir esta ordem:
+  1. `data_fechamento` da tabela;
+  2. se descartado, a data mais recente da interação "ATENDIMENTO descartado" em `payload.interacoes`;
+  3. `data_evento` da jornada, só quando a última linha não é `primeira_leitura`;
+  4. senão, nula (data desconhecida).
+  - Antes, 2.493 descartes antigos ficavam com 06/10 (dia da carga) e outubro somava 2.635 descartes. Depois: 145 em outubro e 2.490 sem data. Negócios não mudaram (89; 3 em outubro).
+  - Em 19/10, nenhum painel nem a `kpis_tv` usa `data_encerramento` dos descartes (só a dos negócios), então não muda nada na tela. A data vale para a análise de perdas (Fase 16).
 
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.

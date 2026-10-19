@@ -242,10 +242,12 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 - [x] "Ver o Hub como" (Gestão) — testado em localhost como Gabriel Simon: menu, Meus números, Kanban (13 cards, só dele), Relatório, Performance, pendências (33 leads sem contato)
 - [ ] Conferir com o primeiro corretor real logado
 
-## Fase 16 — Jornada do lead: tempos, perdas e motivos (PRD §5.12) — proposta (07/10)
+## Fase 16 — Jornada do lead: tempos, perdas e motivos (PRD §5.12) — aprovada (19/10); no localhost
 - **S0:** o Eduardo cola a v5 do "Marcar fase" (interações dos descartados), e eu confiro o primeiro descarte e o padrão do texto do motivo.
 - **S1:** views `vw_jornada_etapas` e `vw_jornada_descartes` (Schema §2.9), testadas em transação e com consulta de conferência.
-- **S2:** capítulo "Jornada do lead" no Comercial (etapas com tempo, passagem, perdas e motivos; tempo até o negócio; parados).
+- **S1 feito (19/10):** views aplicadas (`20261019140000_vw_jornada`); números de outubro conferidos em SQL.
+- **S2 (revisto em 19/10):** vai para o **Painel da Gestão**, como capítulo 3 ("Quanto tempo o lead leva em cada etapa?", jornada em linha da maquete v4) e capítulo 4 ("Por que os leads são descartados?", motivos; clicar num descarte do capítulo 3 filtra a etapa). Os dois seguem período, finalidade, canal e corretor. Os capítulos seguintes passam a ser 5 a 8. Sem os cartões de tempo até o negócio e de parados, que saíram na v4.
+  - Código: `usePaineis.js` (carga), `painelGestao.js` (`jornadaLead`, `motivosDescarte`), `Graficos.jsx` (`JornadaLinha`, `MotivosDescarte`), `hub.css` (`.jl-*`) e `PainelGestao.jsx`.
 - **S3:** publicar e acompanhar; os tempos ganham amostra com as semanas.
 
 ## Fase 17 — Carteira de locação: contratos ativos (RF26, PRD §5.13) — proposta (07/10)

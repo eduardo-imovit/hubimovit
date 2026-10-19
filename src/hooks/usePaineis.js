@@ -82,6 +82,11 @@ function carregarGestao() {
     // estoque de imóveis: disponíveis + mapa e carteira por captador (16/10); RLS: só a Gestão lê, os outros recebem []
     estoque: fetchTodasLinhas(() => supabase.from('vw_estoque_imoveis').select('codigo, finalidade, situacao, tipo, bairro, latitude, longitude, valor, captadores, desatualizado, dias_sem_atualizar').order('codigo').order('finalidade')),
     ultimaEstoque: ultimaData('estoque_cargas', 'feita_em'),
+    // jornada do lead (PRD §5.12, 19/10): passagens com chegada conhecida + descartes com motivo
+    jornadaEtapas: fetchTodasLinhas(() =>
+      supabase.from('vw_jornada_etapas').select('codigo, posicao, entrou_em, saiu_em, dias, como_saiu').eq('entrada_conhecida', true).order('codigo').order('entrou_em')
+    ),
+    jornadaDescartes: fetchTodasLinhas(() => supabase.from('vw_jornada_descartes').select('codigo, posicao, descartado_em, motivo').order('codigo').order('descartado_em')),
     ultimaCrm: op.ultimaCrm,
     ultimaAtividades: op.ultimaAtividades,
   }

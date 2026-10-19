@@ -351,19 +351,23 @@ Também mostra as paradas no último dia de cada mês (meta acumulada proporcion
 
 **"Ver o Hub como" (só Gestão):** o seletor da Home troca o Hub inteiro (menu, Home, pendências, Dash) para outro nível ou para um corretor específico, com uma faixa azul e "Sair da prévia". É uma prévia de tela: os dados são os que a Gestão lê, filtrados para a pessoa. A garantia do corretor é a RLS, testada no banco. Durante a prévia, o Perfil não pode ser editado.
 
-### 5.12 Jornada do lead: tempos, perdas e motivos (pedido do Eduardo, 07/10) — **PROPOSTA, aguardando aprovação**
+### 5.12 Jornada do lead: tempos, perdas e motivos (pedido do Eduardo, 07/10) — **APROVADA em 19/10 (maquete v4), no Painel da Gestão**
 **Objetivo.** Ver quanto tempo o lead leva em cada etapa, onde ele se perde e por quê. A fonte é a jornada diária (`crm_atendimento_jornada`, fluxo `crm_jornada_diaria v3`, rodando desde 06/10).
 
-**Onde (revisto em 07/10, depois do feedback "fugiu do design kit").** Não vira um gráfico novo. A jornada completa dois capítulos que já existem na página Comercial, com os mesmos componentes:
+**Onde (decisão de 19/10, vale esta):** no **Painel da Gestão**, capítulo 3 (jornada em linha) e capítulo 4 (motivos), seguindo os filtros da página (período, finalidade, canal, corretor). Com "todas" as finalidades, aparece uma linha para Venda e outra para Locação. J2 ficou como proposto: só os descartes da jornada. J1 não se aplica por enquanto, porque o cartão de "parados" saiu na v4.
+
+**Onde (revisto em 07/10, substituído em 19/10).** Não vira um gráfico novo. A jornada completa dois capítulos que já existem na página Comercial, com os mesmos componentes:
 - **Capítulo 1 (funil):** a coluna "tempo na etapa", hoje reservada com "—", passa a mostrar a mediana em dias ("acum." com menos de 5 passagens). Embaixo, dois cartões `.pg-mesa-card`: tempo até o negócio e parados há N+ dias.
 - **Capítulo 3 ("Onde o lead se perde e por quê?"):** descartes pelas 7 etapas (`.pg-hbarras`, a maior em coral) + motivos de todas as etapas + motivos da etapa clicada. O simulador de ganho continua.
 
-Segue todos os filtros da página (período, finalidade, mídia, corretor) e o filtro geral; o corretor vê só a dele em "Meus números". Maquete: https://claude.ai/artifact/LWATNn1x2NedBQd3uYwgX8 (v2, CSS real do Hub).
+Segue todos os filtros da página (período, finalidade, mídia, corretor) e o filtro geral; o corretor vê só a dele em "Meus números". Maquete: https://claude.ai/artifact/LWATNn1x2NedBQd3uYwgX8 (v3 de 19/10, CSS real do Hub). A v3 troca o funil vertical do capítulo 1 pela jornada em linha descrita abaixo.
 
-**O gráfico.** As 7 etapas em linha (Pré-atendimento → Seleção de perfil → Seleção de imóveis → Lead qualificado → Visita → Proposta → Negócio). Em cada etapa:
-- **Tempo mediano na etapa** (dias), com o n ao lado. Tempo na etapa = data em que saiu − data em que entrou, contando só passagens com as duas pontas observadas pela jornada;
-- **Passaram:** quantos leads entraram na etapa no período;
-- **Perdas na etapa:** quantos foram descartados estando nela, com os **3 principais motivos**.
+**O gráfico (formato pedido pelo Eduardo em 19/10; maquete v4, enxuta: "simples e legível imediatamente").** No capítulo 1, as 7 etapas ficam em linha (Pré-atendimento → Seleção de perfil → Seleção de imóveis → Lead qualificado → Visita → Proposta → Negócio), com um seletor Venda | Locação e uma linha de legenda:
+- **Quadro de cada etapa:** só o número de leads que chegaram à etapa no período (grande) e o nome. O Negócio fica num quadro escuro;
+- **Seta entre as etapas:** os **dias em média** para avançar (1 casa), contando só as passagens com as duas pontas observadas pela jornada; "acum." com menos de 5 passagens. A transição mais lenta fica em coral;
+- **Linha de baixo:** os descartados de cada etapa em vermelho ("−12"); o maior ganha um fundo. Clicar abre os motivos daquela etapa no capítulo 3;
+- sem %, barras ou textos auxiliares no gráfico. A conclusão do capítulo diz onde o lead trava;
+- no celular, uma etapa por linha (número, nome e descartados), com a seta "↓ dias" entre elas.
 
 Ao lado: **tempo total até o negócio** (mediana, da entrada ao "NEGÓCIO REALIZADO") e **parados agora** (em atendimento há mais de X dias na etapa atual).
 
