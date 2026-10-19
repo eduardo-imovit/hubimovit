@@ -394,61 +394,50 @@ export function Descartes({ dados }) {
   )
 }
 
-// Jornada do lead (PRD §5.12, maquete v4): número grande por etapa, dias na seta, descartados embaixo
-export function JornadaLinha({ dados, etapaSel, onEtapa }) {
+// Jornada do lead (PRD §5.12, maquete v4): número grande por etapa, dias na seta, descartados embaixo.
+// Uma linha só, com o recorte do filtro (a finalidade vem de cima).
+export function JornadaLinha({ dados: g, etapaSel, onEtapa }) {
   return (
-    <div className="jl-grupos">
-      {dados.map((g) => (
-        <div key={g.finalidade}>
-          {dados.length > 1 && (
-            <div className="pg-funil-titulo">
-              <span className={`pg-ponto pg-ponto--${g.finalidade}`} aria-hidden="true" />
-              {LABEL_FINALIDADE[g.finalidade]}
+    <div className="jl" role="list" aria-label="Jornada do lead">
+      {ETAPAS_JORNADA.map((nome, i) => {
+        const tem = i < 6
+        const d = g.dias[i]
+        return (
+          <Fragment key={nome}>
+            <div className={`jl-etapa${tem ? '' : ' jl-etapa--fim'}`} role="listitem">
+              <div className="jl-n">{fmtNum(g.n[i])}</div>
+              <div className="jl-nome">
+                {nome}
+                {tem && <span className="jl-desc-inline"> · {fmtNum(g.desc[i])} descartados</span>}
+              </div>
             </div>
-          )}
-          <div className="jl" role="list" aria-label={`Jornada do lead · ${LABEL_FINALIDADE[g.finalidade]}`}>
-            {ETAPAS_JORNADA.map((nome, i) => {
-              const tem = i < 6
-              const d = g.dias[i]
-              return (
-                <Fragment key={nome}>
-                  <div className={`jl-etapa${tem ? '' : ' jl-etapa--fim'}`} role="listitem">
-                    <div className="jl-n">{fmtNum(g.n[i])}</div>
-                    <div className="jl-nome">
-                      {nome}
-                      {tem && <span className="jl-desc-inline"> · {fmtNum(g.desc[i])} descartados</span>}
-                    </div>
-                  </div>
-                  {tem && (
-                    <div className={`jl-passo${d.media == null ? ' is-acum' : i === g.lento ? ' is-lento' : ''}`} title={`${d.n} ${d.n === 1 ? 'passagem' : 'passagens'}`}>
-                      <span className="jl-dias">{d.media == null ? 'acum.' : `${fmtDecimal(d.media)} d`}</span>
-                      <span className="jl-seta" aria-hidden="true">→</span>
-                    </div>
-                  )}
-                </Fragment>
-              )
-            })}
-            {ETAPAS_JORNADA.map((nome, i) => (
-              <Fragment key={`d-${nome}`}>
-                <div className="jl-desc">
-                  {i < 6 && g.desc[i] > 0 && (
-                    <button
-                      type="button"
-                      className={`jl-desc-n${i === g.maiorDesc ? ' is-maior' : ''}${etapaSel === i + 1 ? ' is-sel' : ''}`}
-                      aria-pressed={etapaSel === i + 1}
-                      aria-label={`${g.desc[i]} descartados em ${nome}: ver os motivos`}
-                      onClick={() => onEtapa(etapaSel === i + 1 ? null : i + 1)}
-                    >
-                      −{fmtNum(g.desc[i])}
-                    </button>
-                  )}
-                  {i < 6 && g.desc[i] === 0 && <span className="jl-desc-zero">0</span>}
-                </div>
-                {i < 6 && <div />}
-              </Fragment>
-            ))}
+            {tem && (
+              <div className={`jl-passo${d.media == null ? ' is-acum' : i === g.lento ? ' is-lento' : ''}`} title={`${d.n} ${d.n === 1 ? 'passagem' : 'passagens'}`}>
+                <span className="jl-dias">{d.media == null ? 'acum.' : `${fmtDecimal(d.media)} d`}</span>
+                <span className="jl-seta" aria-hidden="true">→</span>
+              </div>
+            )}
+          </Fragment>
+        )
+      })}
+      {ETAPAS_JORNADA.map((nome, i) => (
+        <Fragment key={`d-${nome}`}>
+          <div className="jl-desc">
+            {i < 6 && g.desc[i] > 0 && (
+              <button
+                type="button"
+                className={`jl-desc-n${i === g.maiorDesc ? ' is-maior' : ''}${etapaSel === i + 1 ? ' is-sel' : ''}`}
+                aria-pressed={etapaSel === i + 1}
+                aria-label={`${g.desc[i]} descartados em ${nome}: ver os motivos`}
+                onClick={() => onEtapa(etapaSel === i + 1 ? null : i + 1)}
+              >
+                −{fmtNum(g.desc[i])}
+              </button>
+            )}
+            {i < 6 && g.desc[i] === 0 && <span className="jl-desc-zero">0</span>}
           </div>
-        </div>
+          {i < 6 && <div />}
+        </Fragment>
       ))}
     </div>
   )

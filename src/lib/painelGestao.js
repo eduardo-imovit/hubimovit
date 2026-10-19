@@ -625,26 +625,25 @@ export const MIN_PASSAGENS_TEMPO = 5
 // aviso "base em construção" nos capítulos da jornada: 30 dias a partir da publicação (19/10)
 export const AVISO_JORNADA_ATE = '2026-11-18'
 
-export function jornadaLead({ base, etapas, descartes, periodo, finalidades }) {
-  const finDe = new Map(base.map((a) => [a.codigo, a.finalidade]))
-  return finalidades.map((fin) => {
-    const daFin = (l) => finDe.get(l.codigo) === fin
-    // volume: leads que chegaram até a etapa no período (pela mais avançada; quem pulou etapa conta nelas)
-    const maxPos = new Map()
-    for (const p of etapas) if (daFin(p) && dentro(p.entrou_em, periodo)) maxPos.set(p.codigo, Math.max(maxPos.get(p.codigo) ?? 0, p.posicao))
-    const alcancados = [...maxPos.values()]
-    const n = ETAPAS_JORNADA.map((_, i) => alcancados.filter((m) => m >= i + 1).length)
-    // dias para avançar: passagens que saíram para uma etapa à frente dentro do período
-    const dias = ETAPAS_JORNADA.slice(0, 6).map((_, i) => {
-      const ds = etapas.filter((p) => daFin(p) && p.posicao === i + 1 && p.como_saiu === 'avancou' && dentro(p.saiu_em, periodo)).map((p) => p.dias)
-      return { media: ds.length >= MIN_PASSAGENS_TEMPO ? ds.reduce((s, d) => s + d, 0) / ds.length : null, n: ds.length }
-    })
-    const desc = ETAPAS_JORNADA.slice(0, 6).map((_, i) => descartes.filter((d) => daFin(d) && d.posicao === i + 1 && dentro(d.descartado_em, periodo)).length)
-    const medidos = dias.map((d, i) => ({ ...d, i })).filter((d) => d.media != null)
-    const lento = medidos.length ? medidos.reduce((m, d) => (d.media > m.media ? d : m)).i : null
-    const maiorDesc = desc.some((x) => x > 0) ? desc.indexOf(Math.max(...desc)) : null
-    return { finalidade: fin, n, dias, desc, lento, maiorDesc }
+// uma linha só, com a média do recorte: a finalidade vem do filtro da página (19/10)
+export function jornadaLead({ base, etapas, descartes, periodo }) {
+  const codigos = new Set(base.map((a) => a.codigo))
+  const doRecorte = (l) => codigos.has(l.codigo)
+  // volume: leads que chegaram até a etapa no período (pela mais avançada; quem pulou etapa conta nelas)
+  const maxPos = new Map()
+  for (const p of etapas) if (doRecorte(p) && dentro(p.entrou_em, periodo)) maxPos.set(p.codigo, Math.max(maxPos.get(p.codigo) ?? 0, p.posicao))
+  const alcancados = [...maxPos.values()]
+  const n = ETAPAS_JORNADA.map((_, i) => alcancados.filter((m) => m >= i + 1).length)
+  // dias para avançar: passagens que saíram para uma etapa à frente dentro do período
+  const dias = ETAPAS_JORNADA.slice(0, 6).map((_, i) => {
+    const ds = etapas.filter((p) => doRecorte(p) && p.posicao === i + 1 && p.como_saiu === 'avancou' && dentro(p.saiu_em, periodo)).map((p) => p.dias)
+    return { media: ds.length >= MIN_PASSAGENS_TEMPO ? ds.reduce((s, d) => s + d, 0) / ds.length : null, n: ds.length }
   })
+  const desc = ETAPAS_JORNADA.slice(0, 6).map((_, i) => descartes.filter((d) => doRecorte(d) && d.posicao === i + 1 && dentro(d.descartado_em, periodo)).length)
+  const medidos = dias.map((d, i) => ({ ...d, i })).filter((d) => d.media != null)
+  const lento = medidos.length ? medidos.reduce((m, d) => (d.media > m.media ? d : m)).i : null
+  const maiorDesc = desc.some((x) => x > 0) ? desc.indexOf(Math.max(...desc)) : null
+  return { n, dias, desc, lento, maiorDesc }
 }
 
 /** Motivos de descarte do período (todas as etapas ou só `posicao`). */
