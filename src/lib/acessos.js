@@ -37,17 +37,19 @@ const soComPropostas = (papeis) => papeis
 
 export const ACESSO = {
   esteira: soComPropostas(['gestao', 'adm']), // Propostas / Esteira / Processos / Cadastros locador
-  distratos: ['gestao'], // Propostas › Locação › Distratos (PRD §5.16); só a Gestão por enquanto (14/10); RLS: is_gestao()
+  distratos: ['gestao', 'adm'], // Propostas › Locação › Distratos (PRD §5.16); ADM liberado em 15/10; RLS: is_adm_ou_gestao()
   esteiraDecidir: soComPropostas(['gestao', 'adm']), // aprovar, descartar, decidir documentos, solicitar ajustes, finalizar
   vendas: soComPropostas(['gestao', 'adm']), // Propostas de venda
   vendasDecidir: soComPropostas(['gestao', 'adm']), // descartar proposta de venda
   propostas: soComPropostas(['gestao', 'adm']), // menu Propostas (locação ou venda)
   formularios: ['gestao', 'adm', 'corretor'], // Ferramentas: Captações e Feedback de visita (corretor: os dele)
   kanban: ['gestao', 'adm', 'corretor'], // corretor: só os atendimentos e atividades dele (RLS)
+  dadosAtendimento: ['gestao', 'corretor'], // Atendimento ▸ Dados de atendimento; o ADM não vê (15/10)
   dash: ['gestao', 'marketing'], // Painel da Gestão (pessoas da equipe) e Comercial com todos os corretores
   dashPerformance: ['gestao', 'marketing', 'corretor'], // mídia e leads pagos da imobiliária inteira (decisão de 06/10)
   dashComercial: ['gestao', 'marketing', 'corretor'],
-  dashAdmLocacao: ['gestao'], // carteira de contratos de locação (PRD §5.13); só a Gestão por enquanto (07/10); RLS: is_gestao()
+  dashEstoque: ['gestao', 'corretor'], // Dash ▸ Estoque, busca de imóveis (PRD §5.14, 16/10); RPCs estoque_busca/estoque_bairros conferem o papel
+  dashAdmLocacao: ['gestao', 'adm'], // carteira de contratos de locação (PRD §5.13); ADM liberado em 15/10; RLS: is_adm_ou_gestao()
   campanha: ['gestao', 'adm', 'marketing', 'corretor', 'tvaccess'], // trilha da campanha na Home (PRD §5.9, C3) // Comercial (corretor: só os dados dele, PRD §5.8)
   configuracoes: ['gestao', 'marketing'],
   usuarios: ['gestao'],

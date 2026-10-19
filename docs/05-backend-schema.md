@@ -202,14 +202,20 @@ Carga inicial: Km 32, de 06/10 a 31/12/2026. Venda: R$ 28.000.000 / 14. Aluguel:
 - **valor** = soma de `payload.imoveisnegocio[].valornegocio`;
 - 1 negócio por código de atendimento: vale o registro mais recente (por exemplo, reaberto e fechado de novo).
 
-**Função `campanha_resumo(p_slug text)`** (security definer, só para quem `pode_ler_comercial()`): devolve o período e, por finalidade, `valor`, `negocios`, `ticket`, `sem_valor`, `meta_valor`, `meta_negocios`, `em_proposta` e `propostas`, além de `ultima_leitura` (`crm_leituras`). `em_proposta` (migration `20261013120000`) soma `imoveisproposta[].negociacoes[]` (a mais recente de cada imóvel, situação "Em análise", `valorproposta`) dos atendimentos em atendimento com `fase_crm = 5` (Proposta) e `datahoraultimainteracao` nos últimos 30 dias (migration `20261013130000`; a 1ª versão usava 15). A tabela `crm_funil_etapas` citada acima não existe no banco (conferido em 13/10): o 5 está fixo na função. Devolve só agregados, nunca linhas: assim o corretor vê o total da imobiliária (C3) sem ler atendimentos de outros.
+**Função `campanha_resumo(p_slug text)`** (security definer, só para quem `pode_ler_comercial()`): devolve o período e, por finalidade, `valor`, `negocios`, `valor_mes` e `negocios_mes` (negócios do mês corrente dentro da campanha, migration `20261016140000`), `ticket`, `sem_valor`, `meta_valor`, `meta_negocios`, `em_proposta` e `propostas`, além de `ultima_leitura` (`crm_leituras`). `em_proposta` (migration `20261013120000`) soma `imoveisproposta[].negociacoes[]` (a mais recente de cada imóvel, situação "Em análise", `valorproposta`) dos atendimentos em atendimento com `fase_crm = 5` (Proposta) e `datahoraultimainteracao` nos últimos 30 dias (migration `20261013130000`; a 1ª versão usava 15). A tabela `crm_funil_etapas` citada acima não existe no banco (conferido em 13/10): o 5 está fixo na função. Devolve só agregados, nunca linhas: assim o corretor vê o total da imobiliária (C3) sem ler atendimentos de outros.
 
 **RLS:** `campanhas` e `campanha_metas` com leitura por `pode_ler_comercial()` e escrita só pela Gestão.
 
-### 2.9 Jornada para análise (RF/PRD §5.12) — **PROPOSTA, não aplicada**
+### 2.9 Jornada para análise (RF/PRD §5.12) — migration `20261019140000_vw_jornada`, **APLICADA em 19/10**
 - **View `vw_jornada_etapas`** (security_invoker, herda a RLS da jornada: o corretor vê só a dele): uma linha por passagem por etapa, com `codigo`, `finalidade`, `corretor`, `midia`, `fase_crm`, `posicao` (1–7 no funil do Hub), `entrou_em`, `saiu_em` (próximo evento do mesmo código), `dias_na_etapa`, `como_saiu` (`avancou` | `voltou` | `descartado` | `negocio` | `em_aberto`) e `entrada_conhecida` (false quando a passagem começa numa `primeira_leitura`).
 - **View `vw_jornada_descartes`** (security_invoker): descartes da jornada, com a etapa em que estavam, a data e o **motivo**, lido de `payload.interacoes` (a interação de descarte; o padrão exato do texto vai ser conferido no primeiro descarte capturado com a v5).
-- O front lê as views com os filtros da página, igual ao resto do Painel Comercial.
+- **Como ficou (19/10):**
+  - `vw_jornada_etapas` tem `codigo`, `posicao`, `entrou_em`, `saiu_em`, `dias`, `como_saiu` e `entrada_conhecida`. Descartes não viram etapa.
+  - `entrada_conhecida` vale para `entrada`, `mudanca_etapa`, `reabertura` e `encerramento`, e para `primeira_leitura` só quando o lead entrou no CRM até 2 dias antes (outbound que nasce qualificado).
+  - `vw_jornada_descartes` tem `codigo`, `posicao`, `descartado_em`, `motivo` e `observacao`. Só entram os `encerramento` Descartado. O Imoview grava "ATENDIMENTO descartado motivo: <motivo padrão>, <observação>"; `motivo` é o texto antes da 1ª vírgula, e sem texto vira "Sem motivo registrado".
+  - Sem `payload` nas views; finalidade, canal e corretor vêm da `vw_atendimentos_base` no front, pelo código.
+  - Grants: só SELECT para `authenticated`; `anon` sem acesso.
+- O front lê as views no Painel da Gestão (capítulos 3 e 4) e aplica os filtros da página.
 
 ### 2.10 Carteira de locação (RF26, PRD §5.13) — migrations `20261007200000_carteira_locacao` e `20261007220000_carteira_locacao_v2`, **APLICADAS em 07/10**
 Escrita só pela RPC `carregar_carteira_locacao` (service role: n8n `carteira_locacao_diaria` e Edge Function `carteira-locacao`). Leitura: **só `is_gestao()`** (migration `20261007233000_adm_locacao_so_gestao`, 07/10; antes Gestão e ADM). Sem grant para `anon`; o `authenticated` só tem SELECT; views com `security_invoker`.
@@ -246,7 +252,7 @@ Escrita só pela RPC `carregar_estoque_imoveis` (service role). Leitura direta d
   - `caracteristicas text[]` (os booleanos verdadeiros: piscina, varanda gourmet, mobiliado…);
   - título, descrição curta, `fotos_qtd`, `foto_principal_url`, `tem_video`;
   - `exclusivo`, `placa`, `destaque`, `tem_proposta`, `tem_reserva`, `no_site`;
-  - `captador` (null até E4);
+  - `captadores text[]` (nomes, principal primeiro) e `captadores_lido_em` (16/10): a lista não traz o captador; vem do detalhe (`App_RetornarDetalhesImovel`) e a carga diária não o apaga;
   - datas: `cadastrado_em`, `alterado_em`, `validado_em`, `situacao_em`, `vago_desde`;
   - `lido_em`.
   - **Endereço (revisto em 09/10, para achar duplicados):** `logradouro`, `numero`, `complemento`, `bloco`, `cep` e `endereco_chave`. A chave é gerada (rua sem acento, abreviação ou pontuação + número + complemento só com dígitos). Só a Gestão lê; a RPC `buscar_imoveis` continua sem devolver esses campos.
@@ -257,11 +263,14 @@ Escrita só pela RPC `carregar_estoque_imoveis` (service role). Leitura direta d
   - `vw_estoque_captacoes_mensal`: captações por mês, finalidade e bairro;
   - `vw_estoque_duplicados` (09/10): grupos de imóveis da mesma finalidade com o mesmo `endereco_chave`, com pelo menos 1 negociável. Traz o grau de certeza: **alta** quando tipo, área (±5%) e quartos batem; **revisar** quando só o endereço bate. Base da planilha para o time.
 - **RPC `carregar_estoque_imoveis(finalidade text, quantidade_api int, imoveis jsonb, publicados int[])`** (só service_role): recusa leitura incompleta (lidos ≠ `quantidade_api`), faz o upsert dos imóveis da finalidade (`'Aluguel'`/`'Venda'`, como vem da API), marca `no_site` pelos códigos publicados, guarda o `payload` (só campos simples, sem proprietários/anotações/descrição) e registra a carga em `estoque_cargas`. Auxiliares: `imoview_moeda`, `imoview_datahora`, `imoview_coordenada`, `endereco_tokens`, `endereco_chave`. Imóvel que sumiu da API fica com `lido_em` antigo e sai do estoque na view.
-- **RPC `buscar_imoveis(filtros jsonb, margens jsonb default null)`** (security definer):
-  - confere `papel_atual()` (hoje `gestao`);
-  - devolve `{exatos[], quase_la[], restricao}`:
-    - cada "quase lá" traz `motivo` em texto e o critério que falhou;
-    - margens padrão: preço 10%, área 10%, 1 quarto/suíte/vaga, 2 km.
+- **RPCs do captador** (migration `20261016120000_estoque_captadores`, aplicada em 16/10; só service_role):
+  - `estoque_captadores_pendentes(limite)`: códigos em estoque com `captadores_lido_em` nulo ou anterior a `alterado_em`;
+  - `gravar_captadores_estoque(itens jsonb)`: `[{codigo, captadores[]}]`, até 500; grava nas duas finalidades do código e marca `captadores_lido_em`;
+  - `carregar_estoque_imoveis` passou a manter `captadores` quando a lista vem sem ele.
+- **Busca do estoque** (migration `20261016150000_estoque_busca`, 16/10; substitui a `buscar_imoveis` planejada): duas funções `security definer` que conferem `papel_atual()` em (`corretor`, `gestao`) e dão erro 42501 para os outros papéis; `execute` só para `authenticated`.
+  - `estoque_busca()`: a **ficha comercial** de todo o estoque (`vw_estoque_imoveis`, ~1.300 linhas): código, finalidade, situação, tipo, título, rua (sem número), bairro, cidade, condomínio, valores, áreas, quartos/suítes/banheiros/vagas, `caracteristicas text[]` (lista fechada de marcações do `payload` + `extra:<nome>` dos extras marcados), captadores, foto principal, `no_site`, `tem_video`, dias sem atualizar, `desatualizado`, `cadastrado_em`. **Nunca** devolve número, complemento, CEP, coordenadas, chaves, taxas, cartório nem o `payload`.
+  - `estoque_bairros()`: bairro, cidade, quantidade e `vizinhos text[]` a até 2 km (pelo centro dos imóveis de cada bairro). Serve à "região" e à margem de 2 km sem expor coordenadas.
+  - O filtro, as margens ("quase lá") e "o que mais restringe" rodam no navegador sobre essa ficha (`src/lib/buscaImoveis.js`): com ~1.300 imóveis a resposta é instantânea e as regras ficam testáveis.
 - **Índices:** `(finalidade, situacao)`, `bairro`, `valor`, `quartos`.
 
 ### 2.12 Cadastros de locador (RF28, PRD §5.15) — **PROPOSTA, não aplicada**
@@ -317,6 +326,22 @@ Generaliza a §2.12: em vez de 1 tabela por formulário, **1 tabela `cadastros`*
 - **Migração da `cadastros_locador`:** as linhas existentes viram `tipo = 'locador-pf'` (`locador→pessoa`, `conjuge→acompanhante`, `banco→financeiro`, `destino = 'administrativo3@imovit.com.br'`, `origem = 'hub'`). A tabela antiga **não é apagada nem recebe escrita nova** (a função passa a gravar só em `cadastros`).
 - **Importe do histórico:** script local (`scripts/importar_cadastros_planilha.mjs`) lê os CSVs exportados das planilhas e insere com `origem = 'planilha'` e `email_ok = true` (e-mail já foi pelo Google; não reenvia). O mapa de colunas fica no topo do script, ajustável por planilha. Roda com a service_role local do Eduardo; nada de chave no repo.
 - **Edge Function `cadastro-locador`** (evento `enviar` + `tipo`): valida por tipo (zod discriminated union; sem `tipo` = locador-pf, compatível com o front já publicado), insere em `cadastros`, chama `notificar([destino_do_tipo, email_de_quem_preencheu])` com o resumo e o link de `/admin/cadastros`, marca `email_ok`. Destinos: locador-pf/pj → `administrativo3@`; fiador-pf → `administrativo@`; fiadora-pj → `pamela@`; locatários → a confirmar.
+
+### 2.15 `vw_atendimentos_base` lê o estado da jornada — migration `20261015120000_vw_base_estado_jornada`, **APLICADA em 15/10**
+- **Problema:** `dashboard_atendimentos_crm` não recebe mais as mudanças de fase e situação dos atendimentos já existentes. Em 15/10 eram 57 divergentes, e os painéis mostravam a fase antiga. Exemplos: 3 propostas do Gabriel Betti apareciam como Visita/Seleção; 2 negócios e 3 reaberturas não apareciam.
+- **Correção (só a view):** `fase`, `situacao` e `data_encerramento` vêm da última linha de `crm_atendimento_jornada` de cada código (`order by codigo, id desc`, índice `crm_jornada_codigo_id`). Detalhes:
+  - sem linha na jornada, vale a tabela (o mesmo vale para quem não lê a jornada, porque a view é `security_invoker`);
+  - `data_encerramento` = `data_fechamento` da tabela ou `data_evento` da jornada; fica nula quando o atendimento está "Em atendimento";
+  - mesmas colunas e ordem, então as `vw_*` dependentes seguem iguais.
+- **Efeito em 15/10:** em atendimento de Qualificado a Proposta passou de 118 para 136.
+- **Ainda lendo a tabela direto:** Kanban e TV continuam com a fase antiga. A correção definitiva é a RPC `registrar_atendimentos_crm` atualizar `dashboard_atendimentos_crm` (a "virada" do §2.6c), que ainda não foi feita.
+- **Data dos descartes — migration `20261019120000_vw_base_data_descarte`, APLICADA em 19/10:** `data_encerramento` passou a seguir esta ordem:
+  1. `data_fechamento` da tabela;
+  2. se descartado, a data mais recente da interação "ATENDIMENTO descartado" em `payload.interacoes`;
+  3. `data_evento` da jornada, só quando a última linha não é `primeira_leitura`;
+  4. senão, nula (data desconhecida).
+  - Antes, 2.493 descartes antigos ficavam com 06/10 (dia da carga) e outubro somava 2.635 descartes. Depois: 145 em outubro e 2.490 sem data. Negócios não mudaram (89; 3 em outubro).
+  - Em 19/10, nenhum painel nem a `kpis_tv` usa `data_encerramento` dos descartes (só a dos negócios), então não muda nada na tela. A data vale para a análise de perdas (Fase 16).
 
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.

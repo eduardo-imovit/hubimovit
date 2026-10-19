@@ -7,9 +7,9 @@
 // Esta função é a única porta de escrita na tabela `distratos`.
 //
 // Eventos:
-//   criar        (gestão) -- copia o contrato da carteira e gera o token
-//   enviar_link  (gestão) -- manda o link por e-mail ao locatário
-//   cancelar     (gestão) -- locatário desistiu
+//   criar        (gestão/ADM) -- copia o contrato da carteira e gera o token
+//   enviar_link  (gestão/ADM) -- manda o link por e-mail ao locatário
+//   cancelar     (gestão/ADM) -- locatário desistiu
 //   abrir        (token)      -- dados do link ou o comprovante
 //   enviar       (token)      -- grava o aviso; e-mail a administrativo@ + comprovante
 //
@@ -125,9 +125,9 @@ async function exigirEquipe(req: Request) {
   const { data: { user }, error } = await comoChamador.auth.getUser()
   if (error || !user) throw new HttpError(401, 'Faça login de novo')
   const { data: perfil } = await supabase.from('perfis').select('id, role, suspenso_em').eq('id', user.id).single()
-  // Só a Gestão por enquanto (decisão do Eduardo, 14/10; a RLS usa is_gestao()).
-  if (!perfil || perfil.role !== 'gestao' || perfil.suspenso_em) {
-    throw new HttpError(403, 'Só a Gestão trata distratos por enquanto')
+  // Gestão e ADM (liberado para o ADM em 15/10; a RLS usa is_adm_ou_gestao()).
+  if (!perfil || !['gestao', 'adm'].includes(perfil.role) || perfil.suspenso_em) {
+    throw new HttpError(403, 'Só a Gestão e o ADM tratam distratos')
   }
   return perfil.id as string
 }

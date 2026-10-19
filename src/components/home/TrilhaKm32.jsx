@@ -1,70 +1,17 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '../../lib/supabaseClient'
+import { useCampanha } from '../../hooks/useCampanha'
+import {
+  SLUG_KM32, KM_INICIO, KM_FIM, FINALIDADES_KM32 as ABAS, DIA_MS, dataLocal, moeda, km, pct, pctTexto,
+  paradasDa, campanhaNoAr, leituraFinalidade,
+} from '../../lib/campanhaKm32'
 
 // Campanha Km 32 na Home (RF25, PRD §5.9). Os números vêm de campanha_resumo(),
 // que soma os negócios realizados no CRM (jornada do atendimento) dentro do
-// período da campanha. Nada é digitado nem fica no código.
-const SLUG = 'km32-4tri-2026'
-const KM_INICIO = 32
-const KM_FIM = 42
-const ABAS = [
-  { chave: 'Venda', rotulo: 'Venda' },
-  { chave: 'Aluguel', rotulo: 'Locação' },
-]
-const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
-
-const DIA_MS = 24 * 60 * 60 * 1000
-const dataLocal = (iso) => {
-  const [y, m, d] = iso.slice(0, 10).split('-').map(Number)
-  return new Date(y, m - 1, d)
-}
-
-const fmtUm = (v) => v.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
-/** Venda em milhões (abaixo de R$ 1 MM, em mil); locação em mil (é aluguel mensal). */
-const moeda = (finalidade, v) => (v == null ? '—' : finalidade === 'Venda' && Math.abs(v) >= 1_000_000 ? `R$ ${fmtUm(v / 1_000_000)} MM` : `R$ ${fmtUm(v / 1_000)} mil`)
-const km = (fracao) => Math.round(KM_INICIO + (KM_FIM - KM_INICIO) * fracao)
-// `pct` é só para posições no CSS; `pctTexto` é para ler (vírgula decimal)
-const pct = (f) => `${(f * 100).toFixed(2)}%`
-const pctTexto = (f) => `${(f * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
-
-/** Quanto do período já passou (0–1) até a data, contando o próprio dia. */
-function fracaoAte(inicio, fim, data) {
-  const total = (dataLocal(fim) - dataLocal(inicio)) / DIA_MS + 1
-  const passados = (data - dataLocal(inicio)) / DIA_MS + 1
-  return Math.min(1, Math.max(0, passados / total))
-}
-
-/**
- * Paradas no último dia de cada mês, na mesma régua do tempo: a tracejada
- * "hoje" encosta na parada no fim do mês. A meta acumulada da parada é a mesma
- * fração (ex.: 31/10 = 29,9% do período = 29,9% da meta).
- */
-function paradasDa(inicio, fim) {
-  const a = dataLocal(inicio)
-  const b = dataLocal(fim)
-  const paradas = []
-  for (let d = new Date(a.getFullYear(), a.getMonth(), 1); d <= b; d = new Date(d.getFullYear(), d.getMonth() + 1, 1)) {
-    const fimDoMes = new Date(d.getFullYear(), d.getMonth() + 1, 0)
-    const data = fimDoMes < b ? fimDoMes : b
-    paradas.push({ mes: MESES[d.getMonth()], data, fracao: fracaoAte(inicio, fim, data) })
-  }
-  return paradas
-}
-
-function useCampanha(slug) {
-  const [estado, setEstado] = useState({ dados: null, erro: false, carregando: true })
-  useEffect(() => {
-    let ativo = true
-    supabase.rpc('campanha_resumo', { p_slug: slug }).then(({ data, error }) => {
-      if (ativo) setEstado({ dados: data ?? null, erro: !!error, carregando: false })
-    })
-    return () => { ativo = false }
-  }, [slug])
-  return estado
-}
+// período da campanha. Nada é digitado nem fica no código. A régua (meta do
+// mês, esperado até hoje) fica em lib/campanhaKm32, a mesma da TV Display.
 
 export function TrilhaKm32() {
-  const { dados, erro, carregando } = useCampanha(SLUG)
+  const { dados, erro, carregando } = useCampanha(SLUG_KM32)
   const [aba, setAba] = useState('Venda')
   const [montado, setMontado] = useState(false)
   useEffect(() => {
@@ -81,24 +28,14 @@ export function TrilhaKm32() {
     )
   }
   // campanha inexistente, inativa ou fora do período: o bloco não aparece
-  if (!carregando && (!dados || dados.hoje < dados.inicio || dados.hoje > dados.fim)) return null
+  if (!carregando && !campanhaNoAr(dados)) return null
 
   const f = dados?.finalidades?.[aba]
-  const progresso = f ? Math.min(1, f.valor / f.meta_valor) : 0
-  const tempo = dados ? fracaoAte(dados.inicio, dados.fim, dataLocal(dados.hoje)) : 0
+  const l = f ? leituraFinalidade(dados, f) : null
+  const progresso = l?.progresso ?? 0
   const paradas = dados ? paradasDa(dados.inicio, dados.fim) : []
   const abaAtual = ABAS.find((a) => a.chave === aba)
-  // Esperado até hoje: meta total ÷ dias da campanha × dias já passados (= meta × fração do calendário)
-  const esperado = f ? f.meta_valor * tempo : 0
-  const diferenca = f ? f.valor - esperado : 0
-  const noRitmo = f ? Math.abs(diferenca) < f.meta_valor * 0.01 : true
-  // Urgência: a próxima parada que o realizado ainda não alcançou, quanto falta e quanto por dia
-  const hojeData = dados ? dataLocal(dados.hoje) : null
-  const alvo = f ? paradas.find((p) => p.data >= hojeData && f.meta_valor * p.fracao > f.valor) : null
-  const alvoMeta = alvo ? f.meta_valor * alvo.fracao : 0
-  const falta = alvo ? alvoMeta - f.valor : 0
-  const diasAteAlvo = alvo ? Math.round((alvo.data - hojeData) / DIA_MS) + 1 : 0
-  const dataCurta = (d) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+  const { tempo = 0, esperado, diferenca, noRitmo, diasCampanha, diasPassados, porDia, metaMes, valorMes, batida } = l ?? {}
 
   const leitura = dados?.ultima_leitura ? new Date(dados.ultima_leitura) : null
   const atrasado = leitura && (dataLocal(dados.hoje) - new Date(leitura.getFullYear(), leitura.getMonth(), leitura.getDate())) / DIA_MS > 1
@@ -142,25 +79,33 @@ export function TrilhaKm32() {
 
       {f && (
         <div className="km32-numeros">
-          <div>
-            <span className="km32-n">{moeda(aba, f.valor)}</span>
-            <span className="km32-l">de {moeda(aba, f.meta_valor)} · {pctTexto(progresso)}</span>
+          <div title={`Na campanha: ${moeda(aba, f.valor)} de ${moeda(aba, f.meta_valor)} (${pctTexto(progresso)})`}>
+            <span className="km32-n">{moeda(aba, valorMes)}</span>
+            <span className="km32-l">
+              de {moeda(aba, metaMes.valor)} · meta de {metaMes.mes} · {pctTexto(Math.min(1, valorMes / metaMes.valor))}
+            </span>
           </div>
-          <div>
-            <span className="km32-n">{moeda(aba, f.ticket)}</span>
-            <span className="km32-l">ticket médio</span>
-          </div>
-          <div title={`Esperado até hoje: ${moeda(aba, esperado)}${noRitmo ? ' (no ritmo)' : ` · ${moeda(aba, Math.abs(diferenca))} ${diferenca > 0 ? 'acima' : 'abaixo'}`}`}>
-            {alvo ? (
-              <>
-                <span className={`km32-n ${!noRitmo && diferenca < 0 ? 'is-atras' : ''}`}>{moeda(aba, falta)}</span>
-                <span className="km32-l">faltam para a parada de {dataCurta(alvo.data)} ({moeda(aba, alvoMeta)})</span>
-                <span className="km32-l">{diasAteAlvo} {diasAteAlvo === 1 ? 'dia' : 'dias'} · {moeda(aba, falta / diasAteAlvo)} por dia</span>
-              </>
-            ) : (
+          <div title={`Meta da campanha ÷ ${diasCampanha} dias = ${moeda(aba, porDia)} por dia, somados até hoje`}>
+            {batida ? (
               <>
                 <span className="km32-n">Meta batida</span>
                 <span className="km32-l">{moeda(aba, f.valor)} de {moeda(aba, f.meta_valor)}</span>
+              </>
+            ) : (
+              <>
+                <span className={`km32-n${!noRitmo && diferenca < 0 ? ' is-falta' : ''}`}>{moeda(aba, esperado)}</span>
+                <span className="km32-l">
+                  esperado até hoje · {diasPassados} de {diasCampanha} dias × {moeda(aba, porDia)}
+                </span>
+                <span className="km32-l">
+                  {noRitmo ? (
+                    <strong>no ritmo esperado</strong>
+                  ) : diferenca > 0 ? (
+                    <strong>{moeda(aba, diferenca)} acima do esperado</strong>
+                  ) : (
+                    <strong className="is-atras">{moeda(aba, -diferenca)} abaixo do esperado</strong>
+                  )}
+                </span>
               </>
             )}
           </div>
@@ -178,7 +123,7 @@ export function TrilhaKm32() {
       {dados && (
         <p className="km32-rodape">
           {f && f.negocios === 0 && `A largada foi dada em ${inicioTexto}. Nenhum negócio realizado ainda. `}
-          {f && f.sem_valor > 0 && `${f.sem_valor} ${f.sem_valor === 1 ? 'negócio' : 'negócios'} sem valor no CRM (fora do valor e do ticket). `}
+          {f && f.sem_valor > 0 && `${f.sem_valor} ${f.sem_valor === 1 ? 'negócio' : 'negócios'} sem valor no CRM (fora do valor). `}
           Negócios realizados no CRM desde {inicioTexto}
           {leitura && ` · atualizado em ${leitura.toLocaleDateString('pt-BR')} às ${leitura.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
           {atrasado && <strong className="km32-atraso"> · dados do CRM atrasados</strong>}

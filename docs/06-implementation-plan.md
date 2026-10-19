@@ -218,6 +218,8 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 - [x] `TrilhaKm32.jsx` lê `campanha_resumo('km32-4tri-2026')`; sai a constante fictícia
 - [x] 4 números (valor, negócios, ticket, ritmo), rodapé com a regra e a atualização, e os estados do App Flow
 - [x] 13/10: meta total de volta no banco; quadros = valor/% da meta, ticket, próxima parada (urgência) e em proposta (migrations `20261013120000_campanha_resumo_em_proposta` e `20261013130000_campanha_resumo_proposta_30_dias`, verde = interação em até 30 dias); sai o quadro de volume
+- [x] 16/10: 1º quadro = realizado no mês × meta do mês (régua diária); 3º quadro = esperado até hoje, acima/abaixo. `campanha_resumo` devolve `valor_mes`/`negocios_mes` (migration `20261016140000_campanha_resumo_valor_mes`)
+- [x] 16/10: painel Km 32 no rodapé da TV Display (Venda e Locação lado a lado, relê a cada 5 min) e barrinhas do carrossel do rodapé clicáveis. A régua saiu do `TrilhaKm32` para `src/lib/campanhaKm32.js` + `src/hooks/useCampanha.js`
 - [x] Bloco só para quem tem nível; "hoje" a partir de 06/10
 - **Pronto quando:** com dados reais, a tela mostra o mesmo que a consulta de conferência; build ok.
 
@@ -240,10 +242,12 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 - [x] "Ver o Hub como" (Gestão) — testado em localhost como Gabriel Simon: menu, Meus números, Kanban (13 cards, só dele), Relatório, Performance, pendências (33 leads sem contato)
 - [ ] Conferir com o primeiro corretor real logado
 
-## Fase 16 — Jornada do lead: tempos, perdas e motivos (PRD §5.12) — proposta (07/10)
+## Fase 16 — Jornada do lead: tempos, perdas e motivos (PRD §5.12) — aprovada (19/10); no localhost
 - **S0:** o Eduardo cola a v5 do "Marcar fase" (interações dos descartados), e eu confiro o primeiro descarte e o padrão do texto do motivo.
 - **S1:** views `vw_jornada_etapas` e `vw_jornada_descartes` (Schema §2.9), testadas em transação e com consulta de conferência.
-- **S2:** capítulo "Jornada do lead" no Comercial (etapas com tempo, passagem, perdas e motivos; tempo até o negócio; parados).
+- **S1 feito (19/10):** views aplicadas (`20261019140000_vw_jornada`); números de outubro conferidos em SQL.
+- **S2 (revisto em 19/10):** vai para o **Painel da Gestão**, como capítulo 3 ("Quanto tempo o lead leva em cada etapa?", jornada em linha da maquete v4) e capítulo 4 ("Por que os leads são descartados?", motivos; clicar num descarte do capítulo 3 filtra a etapa). Os dois seguem período, finalidade, canal e corretor. Os capítulos seguintes passam a ser 5 a 8. Sem os cartões de tempo até o negócio e de parados, que saíram na v4.
+  - Código: `usePaineis.js` (carga), `painelGestao.js` (`jornadaLead`, `motivosDescarte`), `Graficos.jsx` (`JornadaLinha`, `MotivosDescarte`), `hub.css` (`.jl-*`) e `PainelGestao.jsx`.
 - **S3:** publicar e acompanhar; os tempos ganham amostra com as semanas.
 
 ## Fase 17 — Carteira de locação: contratos ativos (RF26, PRD §5.13) — proposta (07/10)
@@ -271,12 +275,22 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
   - [ ] conferir com a ADM na 1ª semana (atenção, reajustes vencidos, seguros).
 
 ## Fase 18 — Estoque de imóveis: painel + busca (RF27, PRD §5.14) — proposta (08/10)
-- **S0 Captador (E4, depende do Eduardo):** testar `App_RetornarDetalhesImovel` com o login do Imoview em 10 imóveis. Se trouxer o captador, entra na carga (só para o estoque, ~1.200 chamadas); se não, o campo fica vazio.
+- **S0 Captador (E4) — feito em 16/10:** `App_RetornarDetalhesImovel` traz o captador (10 de 10). Migration `20261016120000_estoque_captadores` + sub-fluxo n8n `estoque_captadores_bloco` (100 por bloco), chamado depois da carga diária só para os pendentes. 1ª leitura: ~1.300 imóveis.
+- **S0b Card da carteira na Gestão (pedido de 16/10):** capítulo 4 do Painel da Gestão (PRD §5.0c), por captador, atualizados × desatualizados, mais o valor desatualizado (venda em R$, locação em R$/mês). **Pronto quando:** os números batem com o banco, testado no localhost como Gestão, `npm run build` passa.
+- **Revisão de 16/10 (PRD §5.14, "Revisão de 16/10") — aprovada, feita e publicada em 16/10 (S0c e S4', commit `dfe1c5d`).** Ordem:
+  - **S0c Card "Quanto temos disponível?" + mapa de calor** no Painel da Gestão: Vago/Disponível por finalidade e tipo, valor e ticket; mapa Leaflet + `leaflet.heat` com o estoque atual. Dados da `vw_estoque_imoveis` (já liberada para a Gestão). **Pronto quando:** os números batem com o SQL, o mapa mostra Campinas com o calor nos bairros certos (conferir 3 imóveis), testado no localhost como Gestão, `npm run build` passa.
+  - **S4' Busca para corretor e Gestão** (`/dashboard/estoque`):
+    - migration `20261016150000_estoque_busca` (aplicada): RPCs `estoque_busca()` e `estoque_bairros()` `security definer`, que conferem o papel e só devolvem a ficha comercial; a busca e as margens rodam no navegador (~1.300 imóveis), sem índice de texto. Testado: corretor lê 1.308 pela RPC e 0 na tabela; marketing e ADM recebem 42501; anon sem `execute`;
+    - interpretador da frase em `src/lib/buscaImoveis.js` com testes de frases reais;
+    - tela com caixa de busca, chips, filtros, os três blocos de resultado, ordenação (6 opções, na URL) e a ficha; item "Estoque" no Dash para corretor e Gestão;
+    - **pronto quando:** 10 frases de teste viram os chips certos, os resultados batem com o SQL, testado no localhost como corretor e como Gestão, `npm run build` passa.
+    - [x] 16/10: busca tolera erros de português (correção pelo som + 1 letra, protegendo as palavras do estoque e dos bairros) e avisa o que corrigiu (PRD §5.14).
 - **S1 Banco:** migration do Schema §2.11 (tabela, views, RPC de carga), testada em transação. RLS: Gestão lê; corretor, ADM e anon recebem zero.
 - **S2 Carga (revista em 09/10, vem antes do resto):**
   - fluxo n8n `estoque_imoveis_diario` que lê o Imoview direto (sem Edge Function) e grava pela RPC. Criado desligado; o Eduardo liga as credenciais Imoview e Supabase, roda uma vez e ativa às 5h30;
   - a 1ª execução também mostra os nomes exatos dos campos de endereço; a RPC é ajustada se preciso;
   - **pronto quando:** `estoque_cargas` mostra quantidade lida = quantidade da API nas duas finalidades.
+  - **15/10, feito:** reestruturado em blocos de 12 páginas via sub-fluxo `estoque_imoveis_bloco`, porque a carga numa execução só passava de 250 MB e travava. 1ª carga completa OK em 9 min: Aluguel 4.460/4.453, Venda 6.760/6.754. Falta ativar às 5h30.
 - **S2b Planilha de duplicados (pedido do Eduardo, 09/10):** `vw_estoque_duplicados` → `.xlsx` para o time (aba de grupos com certeza e "o que fazer" + aba de resumo por bairro/captador).
 - **S3 Painel:** maquete com o CSS do Hub → `/dashboard/estoque` (6 capítulos, lista de trabalho); testado no localhost como Gestão; publicar.
 - **S4 Busca por regras:**

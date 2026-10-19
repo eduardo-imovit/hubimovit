@@ -34,6 +34,8 @@ export const LABEL_FINALIDADE = { Venda: 'Venda', Aluguel: 'Locação' }
 // ---------------------------------------------------------------------------
 
 export const FILTROS_PADRAO = { periodo: 'mes', finalidade: 'todas', canal: 'todos', corretor: 'todos' }
+/** Painel da Gestão: + um corretor para comparar (o seletor só aparece para a Gestão). */
+export const FILTROS_PADRAO_GESTAO = { ...FILTROS_PADRAO, comparar: 'nenhum' }
 
 export const OPCOES_PERIODO = [
   { valor: 'mes', label: 'Mês atual' },
@@ -372,55 +374,84 @@ export function emAtendimento(base) {
   }
 }
 
-/** Funil da safra madura com inbound e outbound lado a lado (mesma regra de gargalo do capítulo de funil). */
-export function funilPorOrigem(base, hoje) {
-  const atual = safraMadura(base, hoje, { de: 242, ate: 60 })
-  const anterior = safraMadura(base, hoje, { de: 425, ate: 243 })
+/** Etapa mais avançada que o atendimento alcançou (pela fase atual; o CRM não guarda o histórico de fases). */
+const etapaAlcancada = (a) => {
+  if (a.is_negocio || (a.fase_ordem ?? 0) >= 7) return 'Negócio'
+  return ETAPAS_ATIVAS.find((e) => (a.fase_ordem ?? 0) >= e.de && (a.fase_ordem ?? 0) <= e.ate)?.label ?? 'Lead'
+}
+const ETAPAS_ALCANCADAS = [...ETAPAS_ATIVAS.map((e) => e.label), 'Negócio']
+
+/**
+ * Funil do período (16/10: efetividade no período): leads que entraram no
+ * período, por funil, com a etapa mais avançada que alcançaram e a conversão de
+ * cada passagem, comparada com o período anterior. Gargalo = menor passagem a
+ * partir de Qualificado, com pelo menos 10 na etapa de origem.
+ */
+export function funilPorOrigem(base, periodo) {
+  const doPeriodo = (p) => base.filter((a) => dentro(a.data_entrada, p))
+  const atual = doPeriodo(periodo)
+  const anterior = doPeriodo(periodo.anterior)
   const grupos = FUNIS.map((f) => {
-    const etapas = funilDe(atual.linhas.filter((a) => a.funil === f.chave))
-    const etapasAnt = funilDe(anterior.linhas.filter((a) => a.funil === f.chave))
+    const linhas = atual.filter((a) => a.funil === f.chave)
+    const etapas = funilDe(linhas)
+    const etapasAnt = funilDe(anterior.filter((a) => a.funil === f.chave))
     const comDelta = etapas.map((e, i) => ({
       ...e,
       delta: e.passagem != null && etapasAnt[i].passagem != null && etapasAnt[i - 1]?.n >= 10 ? e.passagem - etapasAnt[i].passagem : null,
     }))
     const candidatas = comDelta.filter((e, i) => e.passagem != null && e.ordem >= 5 && comDelta[i - 1].n >= 10)
     const gargalo = candidatas.reduce((min, e) => (min == null || e.passagem < min.passagem ? e : min), null)
-    return { chave: f.chave, rotulo: f.label, cor: f.cor, etapas: comDelta, gargalo, conversao: pct(etapas[4].n, etapas[0].n) }
+    const alcancadas = ETAPAS_ALCANCADAS.map((label) => ({ label, n: linhas.filter((a) => etapaAlcancada(a) === label).length }))
+    return {
+      chave: f.chave,
+      rotulo: f.label,
+      cor: f.cor,
+      total: linhas.length,
+      ativos: linhas.filter((a) => a.is_ativo).length,
+      alcancadas,
+      etapas: comDelta,
+      gargalo,
+      proposta: etapas[3].n,
+      negocios: etapas[4].n,
+      conversao: pct(etapas[3].n, etapas[0].n),
+    }
   })
   const pior = grupos.filter((g) => g.gargalo).reduce((min, g) => (min == null || g.gargalo.passagem < min.gargalo.passagem ? g : min), null)
-  return { grupos, pior, janela: { inicio: atual.inicio, fim: atual.fim }, anterior: { inicio: anterior.inicio, fim: anterior.fim } }
+  return { grupos, pior }
+}
+
+/** Cores das etapas na linha do funil (tokens do design system), da entrada ao fim. */
+export const CORES_ETAPA = { Lead: '#B8B5B0', Qualificado: '#C9A96E', Visita: '#D4755A', Proposta: '#5C8A6B', 'Negócio': '#2D2D2D' }
+
+/** Passagens do funil (safra madura) de um recorte: [{ de, para, ordem, n, passaram, taxa }]. */
+function passagensDe(linhas) {
+  const etapas = funilDe(linhas)
+  return etapas.slice(1).map((e, i) => ({ de: etapas[i].label, para: e.label, ordem: e.ordem, n: etapas[i].n, passaram: e.n, taxa: e.passagem }))
 }
 
 /**
- * Maior perda por corretor: a passagem mais fraca do funil inteiro (safra
- * madura, a partir de Qualificado) e a taxa de cada corretor nela, contra a
- * da equipe dele. Abaixo de 5 leads na etapa anterior, só mostra o n.
+ * Onde perdemos mais (respeita todos os filtros). Compara a seleção com uma
+ * referência: com corretor filtrado, a média da equipe dele (sem nomes);
+ * sem corretor, o semestre anterior. `baseComparar` (só Gestão) é outro corretor.
+ * A maior perda é a passagem mais fraca a partir de Qualificado, com amostra mínima.
  */
-export function perdaPorCorretor(base, hoje, equipes) {
-  const { linhas } = safraMadura(base, hoje, { de: 242, ate: 60 })
-  const etapas = funilDe(linhas)
-  const candidatas = etapas.filter((e, i) => e.passagem != null && e.ordem >= 5 && etapas[i - 1].n >= 10)
-  const gargalo = candidatas.reduce((min, e) => (min == null || e.passagem < min.passagem ? e : min), null)
-  if (!gargalo) return null
-  const anterior = etapas[etapas.indexOf(gargalo) - 1]
-  const taxa = (l) => {
-    const n = l.filter((a) => chegou(a, anterior.ordem)).length
-    return { n, passaram: l.filter((a) => chegou(a, gargalo.ordem)).length, passagem: n > 0 ? pct(l.filter((a) => chegou(a, gargalo.ordem)).length, n) : null }
-  }
-  const daEquipe = (eq) => linhas.filter((a) => equipes.get(chaveNome(a.corretor))?.equipe === eq)
-  const porEquipe = Object.fromEntries(Object.keys(LABEL_EQUIPE).map((eq) => [eq, taxa(daEquipe(eq))]))
-  const corretores = [...new Set(linhas.map((a) => a.corretor))]
-    .map((nome) => ({ nome, info: equipes.get(chaveNome(nome)) }))
-    .filter((c) => c.info)
-    .map(({ nome, info }) => {
-      const t = taxa(linhas.filter((a) => a.corretor === nome))
-      const eq = porEquipe[info.equipe]
-      const comparavel = t.n >= 5 && eq.passagem != null
-      return { corretor: info.nome, equipe: info.equipe, ...t, equipeTaxa: eq.passagem, dif: comparavel ? t.passagem - eq.passagem : null }
-    })
-    .filter((c) => c.n > 0)
-    .sort((a, b) => (a.dif ?? 999) - (b.dif ?? 999))
-  return { de: anterior.label, para: gargalo.label, geral: gargalo.passagem, porEquipe, corretores }
+export function perdaComparada({ base, baseEquipe, baseComparar, hoje, corretor }) {
+  const janela = { de: 242, ate: 60 }
+  const sel = passagensDe(safraMadura(base, hoje, janela).linhas)
+  const ref = corretor
+    ? passagensDe(safraMadura(baseEquipe, hoje, janela).linhas)
+    : passagensDe(safraMadura(base, hoje, { de: 425, ate: 243 }).linhas)
+  const comp = baseComparar ? passagensDe(safraMadura(baseComparar, hoje, janela).linhas) : null
+  const minimo = corretor ? 5 : 10
+  const linhas = sel.map((p, i) => ({
+    ...p,
+    ref: ref[i].n >= minimo ? ref[i].taxa : null,
+    comp: comp ? comp[i] : null,
+    dif: p.n >= minimo && ref[i].n >= minimo ? p.taxa - ref[i].taxa : null,
+  }))
+  const candidatas = linhas.filter((p) => p.ordem >= 5 && p.n >= minimo)
+  const pior = candidatas.reduce((m, p) => (m == null || p.taxa < m.taxa ? p : m), null)
+  return { linhas, pior, minimo, rotuloRef: corretor ? 'Média da equipe' : 'Semestre anterior' }
 }
 
 /** Selo de comparação com a média da equipe (±10%). */
@@ -433,66 +464,107 @@ export function seloMedia(valor, media) {
 }
 
 /**
- * Atividades realizadas no período por corretor (sem "Anotações"), contra a
- * média da equipe (vendas ou locação). A média inclui quem fez zero.
+ * Atividades realizadas no período (sem "Anotações"): volume e variedade
+ * (por tipo), contra a média da equipe (vendas ou locação; a média inclui
+ * quem fez zero). Com corretor filtrado, devolve só ele contra a equipe, sem
+ * citar colegas.
  */
-export function atividadesVsEquipe(feitas, equipes, periodo, finalidade = 'todas') {
-  const validas = feitas.filter((a) => a.nometipo !== 'Anotações')
-  const contar = (janela) => {
+export function atividadesPainel(feitas, equipes, periodo, filtros) {
+  const validas = feitas.filter((a) => a.nometipo !== 'Anotações' && dentro(a.datahorainicio, periodo))
+  const anteriores = feitas.filter((a) => a.nometipo !== 'Anotações' && dentro(a.datahorainicio, periodo.anterior))
+  const porPessoa = new Map()
+  for (const a of validas) {
+    const k = chaveNome(a.nomeusuario)
+    if (!porPessoa.has(k)) porPessoa.set(k, new Map())
+    const m = porPessoa.get(k)
+    m.set(a.nometipo, (m.get(a.nometipo) ?? 0) + 1)
+  }
+  const totalDe = (k) => [...(porPessoa.get(k)?.values() ?? [])].reduce((s, n) => s + n, 0)
+  const antesDe = (k) => anteriores.filter((a) => chaveNome(a.nomeusuario) === k).length
+  const tiposDe = (chaves) => {
     const m = new Map()
-    for (const a of validas) {
-      if (!dentro(a.datahorainicio, janela)) continue
-      const k = chaveNome(a.nomeusuario)
-      m.set(k, (m.get(k) ?? 0) + 1)
-    }
+    for (const k of chaves) for (const [t, n] of porPessoa.get(k) ?? []) m.set(t, (m.get(t) ?? 0) + n)
     return m
   }
-  const agora = contar(periodo)
-  const antes = contar(periodo.anterior)
-  const so = finalidade === 'todas' ? null : EQUIPE_DA_FINALIDADE[finalidade]
-  const grupos = Object.keys(LABEL_EQUIPE)
-    .filter((eq) => !so || eq === so)
-    .map((eq) => {
-      const membros = [...equipes.entries()].filter(([, v]) => v.equipe === eq)
-      const total = membros.reduce((s, [k]) => s + (agora.get(k) ?? 0), 0)
-      const media = membros.length ? total / membros.length : 0
-      const linhas = membros
-        .map(([k, v]) => {
-          const n = agora.get(k) ?? 0
-          return { corretor: v.nome, n, anterior: antes.get(k) ?? 0, selo: seloMedia(n, media) }
-        })
-        .sort((a, b) => b.n - a.n)
-      return { equipe: eq, label: LABEL_EQUIPE[eq], media, total, linhas }
-    })
+  const resumoEquipe = (eq) => {
+    const membros = [...equipes.entries()].filter(([, v]) => v.equipe === eq)
+    const chaves = membros.map(([k]) => k)
+    const total = chaves.reduce((s, k) => s + totalDe(k), 0)
+    const media = chaves.length ? total / chaves.length : 0
+    const tipos = [...tiposDe(chaves).entries()].map(([tipo, n]) => ({ tipo, n, media: n / (chaves.length || 1) })).sort((a, b) => b.n - a.n)
+    const linhas = membros
+      .map(([k, v]) => {
+        const n = totalDe(k)
+        return { corretor: v.nome, n, anterior: antesDe(k), variedade: porPessoa.get(k)?.size ?? 0, selo: seloMedia(n, media) }
+      })
+      .sort((a, b) => b.n - a.n)
+    return { equipe: eq, label: LABEL_EQUIPE[eq], membros: chaves.length, total, media, tipos, linhas, anterior: chaves.reduce((s, k) => s + antesDe(k), 0) }
+  }
+
+  if (filtros.corretor !== 'todos') {
+    const k = chaveNome(filtros.corretor)
+    const info = equipes.get(k)
+    const eq = info ? resumoEquipe(info.equipe) : null
+    const meus = porPessoa.get(k) ?? new Map()
+    const total = totalDe(k)
+    const tiposNomes = new Set([...meus.keys(), ...(eq?.tipos.map((t) => t.tipo) ?? [])])
+    const tipos = [...tiposNomes]
+      .map((tipo) => ({ tipo, n: meus.get(tipo) ?? 0, media: eq?.tipos.find((t) => t.tipo === tipo)?.media ?? 0 }))
+      .sort((a, b) => b.n - a.n || b.media - a.media)
+    const selo = eq ? seloMedia(total, eq.media) : null
+    return {
+      modo: 'corretor',
+      corretor: filtros.corretor,
+      equipe: eq?.label ?? null,
+      total,
+      anterior: antesDe(k),
+      media: eq?.media ?? null,
+      variedade: meus.size,
+      variedadeEquipe: eq?.tipos.length ?? 0,
+      selo,
+      tipos,
+      abaixo: selo?.chave === 'abaixo' ? [filtros.corretor] : [],
+    }
+  }
+
+  const so = filtros.finalidade === 'todas' ? null : EQUIPE_DA_FINALIDADE[filtros.finalidade]
+  const grupos = Object.keys(LABEL_EQUIPE).filter((eq) => !so || eq === so).map(resumoEquipe)
   const todos = grupos.flatMap((g) => g.linhas)
   return {
+    modo: 'equipes',
     grupos,
-    total: todos.reduce((s, l) => s + l.n, 0),
-    totalAnterior: todos.reduce((s, l) => s + l.anterior, 0),
+    total: grupos.reduce((s, g) => s + g.total, 0),
+    anterior: grupos.reduce((s, g) => s + g.anterior, 0),
     abaixo: todos.filter((l) => l.selo?.chave === 'abaixo').map((l) => l.corretor),
   }
 }
 
-/** Frases da manchete v2: só atendimento, sem ritmo de entrada de leads. */
-export function mancheteAtendimento({ atendimento, origem, perda, atividades, pessoasCap }) {
+/** Frases da manchete v2: só atendimento, sem ritmo de entrada de leads; com corretor filtrado, não cita colegas. */
+export function mancheteAtendimento({ atendimento, perda, atividades, pessoasCap, corretor }) {
   const frases = []
   frases.push(
-    `${fmtNum(atendimento.total)} clientes em atendimento entre qualificado e proposta: ${fmtNum(atendimento.visita)} em visita e ${fmtNum(atendimento.proposta)} em proposta.`
+    `${corretor ? `${corretor} tem` : 'Temos'} ${fmtNum(atendimento.total)} clientes em atendimento entre qualificado e proposta: ${fmtNum(atendimento.visita)} em visita e ${fmtNum(atendimento.proposta)} em proposta.`
   )
-  if (origem.pior) {
-    const g = origem.pior
-    const i = g.etapas.findIndex((e) => e.ordem === g.gargalo.ordem)
-    frases.push(`A maior perda está no ${g.rotulo.toLowerCase()}, entre ${g.etapas[i - 1].label.toLowerCase()} e ${g.gargalo.label.toLowerCase()}: só ${fmtPct(g.gargalo.passagem, 0)} avançam.`)
-  } else if (perda) {
-    frases.push(`A maior perda está entre ${perda.de.toLowerCase()} e ${perda.para.toLowerCase()}: só ${fmtPct(perda.geral, 0)} avançam.`)
+  if (perda.pior) {
+    const ref = perda.pior.ref != null ? ` (${perda.rotuloRef.toLowerCase()}: ${fmtPct(perda.pior.ref, 0)})` : ''
+    frases.push(`A maior perda está entre ${perda.pior.de.toLowerCase()} e ${perda.pior.para.toLowerCase()}: só ${fmtPct(perda.pior.taxa, 0)} avançam${ref}.`)
   }
-  if (atividades.abaixo.length) {
+  if (atividades.modo === 'corretor') {
+    if (atividades.media) {
+      const dif = ((atividades.total - atividades.media) / atividades.media) * 100
+      const lado = Math.abs(dif) <= FAIXA_MEDIA * 100 ? 'na média da equipe' : `${fmtPct(Math.abs(dif), 0)} ${dif > 0 ? 'acima' : 'abaixo'} da média da equipe (${fmtNum(atividades.media, 0)})`
+      frases.push(`${fmtNum(atividades.total)} atividades realizadas no período, ${lado}.`)
+    }
+  } else if (atividades.abaixo.length) {
     const n = atividades.abaixo.length
     frases.push(`${n} ${n === 1 ? 'corretor está' : 'corretores estão'} abaixo da média de atividades da equipe: ${atividades.abaixo.join(', ')}.`)
   }
   if (pessoasCap.totais.semContato > 0) {
-    const top = [...pessoasCap.linhas].sort((a, b) => b.semContato - a.semContato)[0]
-    frases.push(`${pessoasCap.totais.semContato} leads ativos estão sem nenhum contato registrado; ${top.corretor} concentra ${top.semContato}.`)
+    if (corretor) frases.push(`${pessoasCap.totais.semContato} leads ativos sem nenhum contato registrado.`)
+    else {
+      const top = [...pessoasCap.linhas].sort((a, b) => b.semContato - a.semContato)[0]
+      frases.push(`${pessoasCap.totais.semContato} leads ativos estão sem nenhum contato registrado; ${top.corretor} concentra ${top.semContato}.`)
+    }
   }
   return frases
 }
@@ -538,6 +610,152 @@ export function conversaoSafra(base, hoje) {
 export function cicloMediano(base, hoje) {
   const desde = somarDias(hoje, -365)
   return mediana(base.filter((a) => a.is_negocio && a.data_encerramento >= desde && a.dias_ate_ganho >= 0).map((a) => a.dias_ate_ganho))
+}
+
+/** Corte de "desatualizado" da carteira, igual ao `vw_estoque_imoveis` (PRD §5.0c cap. 4). */
+// ---------------------------------------------------------------------------
+// Jornada do lead (PRD §5.12, aprovada em 19/10): etapas em linha, dias para
+// avançar e descartes com motivo. Fonte: vw_jornada_etapas / vw_jornada_descartes
+// (desde 06/10); finalidade, canal e corretor vêm da base já filtrada, pelo código.
+// ---------------------------------------------------------------------------
+
+export const ETAPAS_JORNADA = ['Pré-atendimento', 'Seleção de perfil', 'Seleção de imóveis', 'Lead qualificado', 'Visita', 'Proposta', 'Negócio']
+export const NA_ETAPA = ['no pré-atendimento', 'na seleção de perfil', 'na seleção de imóveis', 'no lead qualificado', 'na visita', 'na proposta', 'no negócio']
+export const MIN_PASSAGENS_TEMPO = 5
+// aviso "base em construção" nos capítulos da jornada: 30 dias a partir da publicação (19/10)
+export const AVISO_JORNADA_ATE = '2026-11-18'
+
+export function jornadaLead({ base, etapas, descartes, periodo, finalidades }) {
+  const finDe = new Map(base.map((a) => [a.codigo, a.finalidade]))
+  return finalidades.map((fin) => {
+    const daFin = (l) => finDe.get(l.codigo) === fin
+    // volume: leads que chegaram até a etapa no período (pela mais avançada; quem pulou etapa conta nelas)
+    const maxPos = new Map()
+    for (const p of etapas) if (daFin(p) && dentro(p.entrou_em, periodo)) maxPos.set(p.codigo, Math.max(maxPos.get(p.codigo) ?? 0, p.posicao))
+    const alcancados = [...maxPos.values()]
+    const n = ETAPAS_JORNADA.map((_, i) => alcancados.filter((m) => m >= i + 1).length)
+    // dias para avançar: passagens que saíram para uma etapa à frente dentro do período
+    const dias = ETAPAS_JORNADA.slice(0, 6).map((_, i) => {
+      const ds = etapas.filter((p) => daFin(p) && p.posicao === i + 1 && p.como_saiu === 'avancou' && dentro(p.saiu_em, periodo)).map((p) => p.dias)
+      return { media: ds.length >= MIN_PASSAGENS_TEMPO ? ds.reduce((s, d) => s + d, 0) / ds.length : null, n: ds.length }
+    })
+    const desc = ETAPAS_JORNADA.slice(0, 6).map((_, i) => descartes.filter((d) => daFin(d) && d.posicao === i + 1 && dentro(d.descartado_em, periodo)).length)
+    const medidos = dias.map((d, i) => ({ ...d, i })).filter((d) => d.media != null)
+    const lento = medidos.length ? medidos.reduce((m, d) => (d.media > m.media ? d : m)).i : null
+    const maiorDesc = desc.some((x) => x > 0) ? desc.indexOf(Math.max(...desc)) : null
+    return { finalidade: fin, n, dias, desc, lento, maiorDesc }
+  })
+}
+
+/** Motivos de descarte do período (todas as etapas ou só `posicao`). */
+export function motivosDescarte({ base, descartes, periodo, posicao = null }) {
+  const codigos = new Set(base.map((a) => a.codigo))
+  const linhas = descartes.filter((d) => codigos.has(d.codigo) && dentro(d.descartado_em, periodo) && (posicao == null || d.posicao === posicao))
+  const cont = new Map()
+  for (const d of linhas) cont.set(d.motivo, (cont.get(d.motivo) ?? 0) + 1)
+  return { total: linhas.length, motivos: [...cont].map(([motivo, n]) => ({ motivo, n })).sort((a, b) => b.n - a.n) }
+}
+
+export const DIAS_DESATUALIZADO = 45
+
+/**
+ * Carteira de imóveis em estoque por captador (PRD §5.0c cap. 4, 16/10).
+ * `imoveis`: linhas de `vw_estoque_imoveis` (só situações negociáveis).
+ * Imóvel com mais de um captador conta para cada um (decidido 16/10), então a soma por pessoa pode passar do total.
+ */
+export function carteiraPorCaptador(imoveis, finalidade) {
+  const lista = finalidade === 'todas' ? imoveis : imoveis.filter((i) => i.finalidade === finalidade)
+  // valores separados por finalidade: preço de venda e aluguel mensal não se somam
+  const novaConta = (extra) => ({ ...extra, n: 0, desatualizados: 0, valor: { Venda: 0, Aluguel: 0 }, valorDesat: { Venda: 0, Aluguel: 0 } })
+  const somar = (l, i) => {
+    const desat = i.desatualizado !== false
+    const v = Number(i.valor) || 0
+    l.n++
+    if (desat) l.desatualizados++
+    if (i.finalidade in l.valor) {
+      l.valor[i.finalidade] += v
+      if (desat) l.valorDesat[i.finalidade] += v
+    }
+  }
+  const porCaptador = new Map()
+  const geral = novaConta()
+  let semCaptador = novaConta()
+  for (const i of lista) {
+    somar(geral, i)
+    const caps = (i.captadores ?? []).filter(Boolean)
+    if (!caps.length) {
+      somar(semCaptador, i)
+      continue
+    }
+    for (const c of new Set(caps)) {
+      if (!porCaptador.has(c)) porCaptador.set(c, novaConta({ captador: c }))
+      somar(porCaptador.get(c), i)
+    }
+  }
+  const linhas = [...porCaptador.values()]
+    .map((l) => ({ ...l, atualizados: l.n - l.desatualizados, pctAtualizado: pct(l.n - l.desatualizados, l.n) }))
+    .sort((a, b) => b.desatualizados - a.desatualizados || b.n - a.n || a.captador.localeCompare(b.captador, 'pt-BR'))
+  semCaptador = { ...semCaptador, atualizados: semCaptador.n - semCaptador.desatualizados, pctAtualizado: pct(semCaptador.n - semCaptador.desatualizados, semCaptador.n) }
+  return {
+    total: geral.n,
+    desatualizados: geral.desatualizados,
+    atualizados: geral.n - geral.desatualizados,
+    pctAtualizado: pct(geral.n - geral.desatualizados, geral.n),
+    valor: geral.valor,
+    valorDesat: geral.valorDesat,
+    linhas,
+    semCaptador,
+    pior: linhas.find((l) => l.desatualizados > 0) ?? null,
+  }
+}
+
+/** Situação que conta como "disponível" no capítulo do estoque (PRD §5.14, revisão de 16/10). */
+export const SITUACAO_DISPONIVEL = 'Vago/Disponível'
+
+// coordenadas plausíveis para a região de Campinas (descarta 0/0 e erros de cadastro)
+const coordValida = (lat, lng) => lat > -24.5 && lat < -21.5 && lng > -48.5 && lng < -45.5
+
+/**
+ * Disponíveis (Vago/Disponível) por finalidade e tipo, e os pontos do mapa de calor
+ * (o mapa mostra o estoque inteiro de hoje, decisão de 16/10).
+ */
+export function estoqueDisponivel(imoveis, finalidade) {
+  const naFinalidade = finalidade === 'todas' ? imoveis : imoveis.filter((i) => i.finalidade === finalidade)
+  const disponiveis = naFinalidade.filter((i) => i.situacao === SITUACAO_DISPONIVEL)
+  const porFinalidade = {}
+  for (const f of ['Venda', 'Aluguel']) {
+    const l = disponiveis.filter((i) => i.finalidade === f)
+    const valores = l.map((i) => Number(i.valor)).filter((v) => v > 0)
+    porFinalidade[f] = { n: l.length, valor: valores.reduce((a, b) => a + b, 0), ticket: mediana(valores) }
+  }
+  const tipos = new Map()
+  for (const i of disponiveis) {
+    const t = i.tipo || 'Sem tipo'
+    const l = tipos.get(t) ?? { tipo: t, n: 0, Venda: 0, Aluguel: 0 }
+    l.n++
+    if (i.finalidade in l) l[i.finalidade]++
+    tipos.set(t, l)
+  }
+  const pontos = []
+  let semCoordenada = 0
+  for (const i of naFinalidade) {
+    const lat = Number(i.latitude)
+    const lng = Number(i.longitude)
+    if (coordValida(lat, lng)) pontos.push({ lat, lng, bairro: i.bairro || 'Sem bairro', disponivel: i.situacao === SITUACAO_DISPONIVEL })
+    else semCoordenada++
+  }
+  const porBairro = new Map()
+  for (const i of naFinalidade) {
+    const b = i.bairro || 'Sem bairro'
+    porBairro.set(b, (porBairro.get(b) ?? 0) + 1)
+  }
+  return {
+    total: disponiveis.length,
+    porFinalidade,
+    bairrosTop: [...porBairro.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([bairro, n]) => ({ bairro, n })),
+    tipos: [...tipos.values()].sort((a, b) => b.n - a.n || a.tipo.localeCompare(b.tipo, 'pt-BR')),
+    mapa: { pontos, semCoordenada, total: naFinalidade.length },
+  }
 }
 
 export { INICIO_HISTORICO_CONFIAVEL }

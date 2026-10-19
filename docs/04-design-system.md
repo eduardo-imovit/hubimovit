@@ -72,7 +72,7 @@
 ### Trilha de campanha (`.km32`, `src/components/home/TrilhaKm32.jsx`) — 06/10
 - **Bloco:** fundo grafite, com o mesmo tratamento da manchete dos painéis; título em serif "Km N de 42"; rótulo pequeno em caixa alta (coral) com o nome da campanha.
 - **Trilha:** trilho cinza, preenchimento e ponto do realizado em **coral** (`--coral`), paradas como anéis no último dia de cada mês (mesma régua do tempo; o título da parada mostra a meta acumulada), e a chegada com bandeira quadriculada. O marcador **"hoje"** é uma linha tracejada clara com o rótulo "HOJE".
-- **Números:** 4 colunas (valor, ticket, próxima parada, em proposta); número grande em serif e legenda pequena. A próxima parada usa a cor de atenção quando o realizado está abaixo do esperado até hoje, sempre com texto.
+- **Números:** 4 colunas (valor, ticket, próxima parada, em proposta); número grande em serif e legenda pequena. O "faltam" da próxima parada fica sempre em coral (destaque); abaixo do esperado até hoje, a legenda diz "abaixo do esperado" na cor de atenção.
 - **Abas:** pílula segmentada (Venda | Locação), com a ativa em coral.
 - **Acessibilidade:** a trilha tem `role="img"` com `aria-label` descrevendo o avanço em texto. A animação de entrada respeita `prefers-reduced-motion`. Números em pt-BR (vírgula decimal).
 - **Formatos:** venda em "R$ x,y MM"; locação em "R$ x,y mil"; ticket no mesmo formato da finalidade.

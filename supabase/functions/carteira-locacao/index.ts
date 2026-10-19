@@ -10,7 +10,7 @@
 // e grava tudo pela RPC carregar_carteira_locacao (converte, mascara CPF/CNPJ, foto do dia).
 //
 // Quem chama: o painel Dash ▸ Adm locação, ao abrir (se a última leitura tem mais de
-// 12 h) ou pelo botão "Atualizar". Só a Gestão. A API devolve no máximo 50 por
+// 12 h) ou pelo botão "Atualizar". Gestão e ADM (15/10). A API devolve no máximo 50 por
 // página; a leitura só é gravada se vier inteira (as cobranças em aberto são
 // substituídas a cada carga). O filtro de vencimento da API é solto: o banco filtra.
 //
@@ -49,9 +49,9 @@ async function exigirGestao(req: Request) {
   const { data: { user }, error } = await comoChamador.auth.getUser()
   if (error || !user) throw new HttpError(401, 'Token inválido ou expirado')
   const { data: perfil } = await supabase.from('perfis').select('role, suspenso_em').eq('id', user.id).single()
-  // Só a Gestão por enquanto (decisão de 07/10; a RLS das tabelas usa is_gestao()).
-  if (!perfil || perfil.role !== 'gestao' || perfil.suspenso_em) {
-    throw new HttpError(403, 'Só a Gestão atualiza a carteira de locação')
+  // Gestão e ADM (liberado para o ADM em 15/10; a RLS das tabelas usa is_adm_ou_gestao()).
+  if (!perfil || !['gestao', 'adm'].includes(perfil.role) || perfil.suspenso_em) {
+    throw new HttpError(403, 'Só a Gestão e o ADM atualizam a carteira de locação')
   }
 }
 

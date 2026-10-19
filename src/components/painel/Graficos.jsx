@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { Fragment, lazy, Suspense, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   Bar,
   BarChart,
@@ -14,8 +15,12 @@ import {
   YAxis,
   ZAxis,
 } from 'recharts'
-import { CORES, FUNIS, LABEL_FINALIDADE, LABEL_EQUIPE, simularGanho } from '../../lib/painelGestao'
+import { CORES, CORES_ETAPA, ETAPAS_JORNADA, fmtDecimal, FUNIS, LABEL_FINALIDADE, simularGanho } from '../../lib/painelGestao'
 import { fmtMoeda, fmtNum, fmtPct } from '../../lib/paineis'
+import { fmtMoedaCurta } from '../../lib/admLocacao'
+
+// o mapa (Leaflet) só baixa quando o capítulo do estoque aparece
+const MapaCalor = lazy(() => import('./MapaCalor'))
 
 const EIXO = { fontSize: 11, fill: 'var(--grafite-soft)' }
 const GRADE = 'var(--champagne)'
@@ -149,79 +154,111 @@ export function FunilCascata({ grupos }) {
 }
 
 // ---------------------------------------------------------------------------
-// v2 (PRD §5.0c): clientes ativos por etapa, perda por corretor, atividades × equipe
+// v2 (PRD §5.0c): funil em linha, onde perdemos (comparado), atividades
 // ---------------------------------------------------------------------------
 
-/** Clientes ativos hoje em cada etapa, inbound e outbound lado a lado. */
-export function EtapasAtivas({ etapas }) {
-  const max = Math.max(...etapas.flatMap((e) => FUNIS.map((f) => e.porFunil[f.chave])), 1)
+/** Uma linha por funil (inbound, outbound) com as etapas em cores e a legenda com os valores ao lado. */
+export function FunilLinhas({ grupos }) {
+  const maior = Math.max(...grupos.map((g) => g.total), 1)
   return (
     <div className="pg-grafico">
-      <div className="pg-grafico-titulo">Clientes em atendimento agora, por etapa</div>
-      <div className="pg-legenda">
-        {FUNIS.map((f) => (
-          <span key={f.chave}>
-            <span className="pg-ponto" style={{ background: f.cor }} aria-hidden="true" /> {f.label}
-          </span>
-        ))}
-      </div>
-      <div className="pg-hbarras">
-        {etapas.map((e) => (
-          <div key={e.label} className="pg-etapa-ativa">
-            <span className="pg-hbarra-rotulo">{e.label}</span>
-            <div className="pg-etapa-barras">
-              {FUNIS.map((f) => (
-                <div key={f.chave} className="pg-etapa-barra-linha" title={f.label}>
-                  <div className="pg-funil-trilho pg-funil-trilho--fino">
-                    <div className="pg-funil-barra" style={{ width: `${Math.max(1, (e.porFunil[f.chave] / max) * 100)}%`, background: f.cor }} />
-                  </div>
-                  <span className="pg-funil-n">
-                    {fmtNum(e.porFunil[f.chave])}
-                  </span>
-                </div>
-              ))}
-            </div>
+      <div className="pg-grafico-titulo">Leads que entraram no período, pela etapa mais avançada que alcançaram</div>
+      {grupos.map((g) => (
+        <div key={g.chave} className="pg-funil-linha2">
+          <div className="pg-funil-linha2-nome">
+            <strong>{g.rotulo}</strong>
+            <span>{fmtNum(g.total)}</span>
           </div>
-        ))}
-      </div>
+          <div className="pg-funil-linha2-corpo">
+            <div className="pg-funil-linha2-trilho" style={{ width: `${Math.max(4, (g.total / maior) * 100)}%` }}>
+              {g.alcancadas.map((e) =>
+                e.n > 0 ? (
+                  <div key={e.label} className="pg-funil-linha2-seg" style={{ flexGrow: e.n, background: CORES_ETAPA[e.label] }} title={`${e.label}: ${e.n}`} />
+                ) : null
+              )}
+            </div>
+            {g.total > 0 && (
+              <div className="pg-funil-linha2-conv">
+                Conversão:{' '}
+                {g.etapas.slice(1).map((e, j) => (
+                  <span key={e.ordem} className={g.gargalo?.ordem === e.ordem ? 'is-gargalo' : undefined}>
+                    {g.etapas[j].label} → {e.label} {fmtPct(e.passagem, 0)}
+                    {e.delta != null && Math.abs(e.delta) >= 1 && ` (${e.delta > 0 ? '+' : ''}${Math.round(e.delta)} p.p.)`}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+          <ul className="pg-funil-linha2-legenda">
+            {g.alcancadas.map((e) => (
+              <li key={e.label}>
+                <span className="pg-ponto" style={{ background: CORES_ETAPA[e.label] }} aria-hidden="true" />
+                {e.label}
+                <strong>{fmtNum(e.n)}</strong>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </div>
   )
 }
 
-/** Taxa de cada corretor na passagem mais fraca, contra a da equipe. */
-export function PerdaCorretores({ perda, selecionado }) {
+const fmtTaxa = (p) => (p == null || p.taxa == null ? '—' : fmtPct(p.taxa, 0))
+
+/** Passagens do funil do recorte contra a referência (equipe ou semestre anterior) e, para a Gestão, outro corretor. */
+export function PerdaComparada({ perda, rotuloSel, comparar, opcoesComparar, onComparar }) {
   return (
     <div className="pg-grafico">
-      <div className="pg-grafico-titulo">
-        {perda.de} → {perda.para}: quanto cada corretor faz avançar
+      <div className="pg-grafico-titulo pg-titulo-com-acao">
+        <span>Quanto avança em cada passagem</span>
+        {onComparar && (
+          <label className="pg-campo pg-campo--inline">
+            <span>Comparar com</span>
+            <select value={comparar} onChange={(e) => onComparar(e.target.value)}>
+              <option value="nenhum">Ninguém</option>
+              {opcoesComparar.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
       <div className="pg-tabela-rolagem">
         <table className="data-table pg-tabela-compacta">
           <thead>
             <tr>
-              <th>Corretor</th>
-              <th className="num">Avançaram</th>
-              <th className="num">Taxa</th>
-              <th className="num">Equipe</th>
+              <th>Passagem</th>
+              <th className="num">{rotuloSel}</th>
+              <th className="num">{perda.rotuloRef}</th>
+              {comparar !== 'nenhum' && <th className="num">{comparar}</th>}
               <th className="num">Diferença</th>
             </tr>
           </thead>
           <tbody>
-            {perda.corretores.map((c) => (
-              <tr key={c.corretor} className={selecionado === c.corretor ? 'is-selecionado' : undefined}>
+            {perda.linhas.map((p) => (
+              <tr key={p.ordem} className={perda.pior?.ordem === p.ordem ? 'is-pior' : undefined}>
                 <td>
-                  {c.corretor}
-                  <div className="is-muted pg-sub">{LABEL_EQUIPE[c.equipe]}</div>
+                  {p.de} → {p.para}
+                  {perda.pior?.ordem === p.ordem && <span className="badge badge-danger pg-funil-badge">maior perda</span>}
                 </td>
-                <td className="num">{fmtNum(c.passaram)} de {fmtNum(c.n)}</td>
-                <td className="num">{c.passagem == null ? '—' : fmtPct(c.passagem, 0)}</td>
-                <td className="num">{c.equipeTaxa == null ? '—' : fmtPct(c.equipeTaxa, 0)}</td>
                 <td className="num">
-                  {c.dif == null ? (
+                  {fmtTaxa(p)}
+                  <div className="is-muted pg-sub">{fmtNum(p.passaram)} de {fmtNum(p.n)}</div>
+                </td>
+                <td className="num">{p.ref == null ? '—' : fmtPct(p.ref, 0)}</td>
+                {comparar !== 'nenhum' && (
+                  <td className="num">
+                    {fmtTaxa(p.comp)}
+                    {p.comp && <div className="is-muted pg-sub">{fmtNum(p.comp.passaram)} de {fmtNum(p.comp.n)}</div>}
+                  </td>
+                )}
+                <td className="num">
+                  {p.dif == null ? (
                     <span className="is-muted">amostra pequena</span>
                   ) : (
-                    <span className={c.dif <= -5 ? 'pg-delta-ruim' : c.dif >= 5 ? 'pg-delta-bom' : undefined}>
-                      {c.dif > 0 ? '+' : ''}{fmtNum(c.dif, 0)} p.p.
+                    <span className={p.dif <= -5 ? 'pg-delta-ruim' : p.dif >= 5 ? 'pg-delta-bom' : undefined}>
+                      {p.dif > 0 ? '+' : ''}{fmtNum(p.dif, 0)} p.p.
                     </span>
                   )}
                 </td>
@@ -234,17 +271,76 @@ export function PerdaCorretores({ perda, selecionado }) {
   )
 }
 
-/** Atividades realizadas por corretor, com a média da equipe como referência e o selo. */
-export function AtividadesEquipe({ grupos, selecionado, onSelecionar }) {
+/** Barras por tipo de atividade, com a média da equipe marcada. */
+function TiposAtividade({ tipos, rotuloN, rotuloMedia }) {
+  const max = Math.max(...tipos.map((t) => Math.max(t.n, t.media)), 1)
+  if (!tipos.length) return <p className="pg-nota">Nenhuma atividade realizada no período.</p>
   return (
-    <div className={`pg-duas ${grupos.length === 1 ? 'pg-duas--uma' : ''}`}>
-      {grupos.map((g) => {
+    <div className="pg-hbarras">
+      {tipos.map((t) => (
+        <div key={t.tipo} className="pg-tipo-ativ">
+          <span className="pg-hbarra-rotulo">{t.tipo}</span>
+          <div className="pg-funil-trilho pg-atividade-trilho">
+            <div className="pg-funil-barra" style={{ width: `${Math.max(1, (t.n / max) * 100)}%`, background: CORES.contexto }} />
+            {rotuloMedia && <div className="pg-atividade-media" style={{ left: `${(t.media / max) * 100}%` }} aria-hidden="true" />}
+          </div>
+          <span className="pg-funil-n">
+            {fmtNum(t.n)}
+            {rotuloMedia && <span className="is-muted"> · {rotuloMedia} {fmtNum(t.media, t.media < 10 ? 1 : 0)}</span>}
+          </span>
+        </div>
+      ))}
+      <div className="pg-nota">{rotuloN}</div>
+    </div>
+  )
+}
+
+/** Atividades: volume e variedade contra a média da equipe. Com corretor filtrado, só ele (sem colegas nomeados). */
+export function AtividadesPainel({ dados, selecionado, onSelecionar }) {
+  if (dados.modo === 'corretor') {
+    return (
+      <div className="pg-duas">
+        <div className="pg-grafico">
+          <div className="pg-grafico-titulo">Total de atividades</div>
+          <div className="pg-ativ-resumo">
+            <div>
+              <div className="pg-ativ-numero">{fmtNum(dados.total)}</div>
+              <div className="pg-ativ-contexto">
+                {dados.media == null ? 'sem equipe no cadastro de colaboradores' : `média da equipe de ${dados.equipe.toLowerCase()}: ${fmtNum(dados.media, 0)}`}
+              </div>
+              {dados.selo && <span className={`badge ${dados.selo.badge}`}>{dados.selo.label}</span>}
+            </div>
+            <div>
+              <div className="pg-ativ-numero">{fmtNum(dados.variedade)}</div>
+              <div className="pg-ativ-contexto">tipos de atividade (a equipe usou {fmtNum(dados.variedadeEquipe)})</div>
+            </div>
+            <div>
+              <div className="pg-ativ-numero">{fmtNum(dados.anterior)}</div>
+              <div className="pg-ativ-contexto">no período anterior</div>
+            </div>
+          </div>
+        </div>
+        <div className="pg-grafico">
+          <div className="pg-grafico-titulo">Por tipo de atividade</div>
+          <TiposAtividade tipos={dados.tipos} rotuloMedia="média da equipe" rotuloN="A linha escura é a média de um corretor da equipe naquele tipo." />
+        </div>
+      </div>
+    )
+  }
+  return (
+    <div className={`pg-duas ${dados.grupos.length === 1 ? 'pg-duas--uma' : ''}`}>
+      {dados.grupos.map((g) => {
         const max = Math.max(...g.linhas.map((l) => l.n), g.media, 1)
         return (
           <div key={g.equipe} className="pg-grafico">
             <div className="pg-grafico-titulo">
-              Equipe de {g.label.toLowerCase()} <span className="pg-grafico-ref">· média {fmtNum(g.media, 0)} por corretor</span>
+              Equipe de {g.label.toLowerCase()}{' '}
+              <span className="pg-grafico-ref">
+                · {fmtNum(g.total)} atividades · média {fmtNum(g.media, 0)} por corretor · {fmtNum(g.tipos.length)} tipos
+              </span>
             </div>
+            <TiposAtividade tipos={g.tipos} rotuloMedia="por corretor" rotuloN="Total da equipe por tipo; a linha escura é a média por corretor." />
+            <div className="pg-subtitulo">Por corretor</div>
             <div className="pg-hbarras">
               {g.linhas.map((l) => (
                 <button
@@ -252,7 +348,7 @@ export function AtividadesEquipe({ grupos, selecionado, onSelecionar }) {
                   type="button"
                   className={`pg-atividade ${selecionado === l.corretor ? 'is-selecionado' : ''}`}
                   onClick={() => onSelecionar(l.corretor)}
-                  title={`Período anterior: ${l.anterior}`}
+                  title={`${l.variedade} tipos · período anterior: ${l.anterior}`}
                 >
                   <span className="pg-hbarra-rotulo">{l.corretor}</span>
                   <div className="pg-funil-trilho pg-atividade-trilho">
@@ -290,6 +386,89 @@ export function Descartes({ dados }) {
             </div>
             <span className="pg-funil-n">
               {fmtNum(e.n)} <span className="is-muted">({fmtPct((e.n / (dados.total || 1)) * 100, 0)})</span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Jornada do lead (PRD §5.12, maquete v4): número grande por etapa, dias na seta, descartados embaixo
+export function JornadaLinha({ dados, etapaSel, onEtapa }) {
+  return (
+    <div className="jl-grupos">
+      {dados.map((g) => (
+        <div key={g.finalidade}>
+          {dados.length > 1 && (
+            <div className="pg-funil-titulo">
+              <span className={`pg-ponto pg-ponto--${g.finalidade}`} aria-hidden="true" />
+              {LABEL_FINALIDADE[g.finalidade]}
+            </div>
+          )}
+          <div className="jl" role="list" aria-label={`Jornada do lead · ${LABEL_FINALIDADE[g.finalidade]}`}>
+            {ETAPAS_JORNADA.map((nome, i) => {
+              const tem = i < 6
+              const d = g.dias[i]
+              return (
+                <Fragment key={nome}>
+                  <div className={`jl-etapa${tem ? '' : ' jl-etapa--fim'}`} role="listitem">
+                    <div className="jl-n">{fmtNum(g.n[i])}</div>
+                    <div className="jl-nome">
+                      {nome}
+                      {tem && <span className="jl-desc-inline"> · {fmtNum(g.desc[i])} descartados</span>}
+                    </div>
+                  </div>
+                  {tem && (
+                    <div className={`jl-passo${d.media == null ? ' is-acum' : i === g.lento ? ' is-lento' : ''}`} title={`${d.n} ${d.n === 1 ? 'passagem' : 'passagens'}`}>
+                      <span className="jl-dias">{d.media == null ? 'acum.' : `${fmtDecimal(d.media)} d`}</span>
+                      <span className="jl-seta" aria-hidden="true">→</span>
+                    </div>
+                  )}
+                </Fragment>
+              )
+            })}
+            {ETAPAS_JORNADA.map((nome, i) => (
+              <Fragment key={`d-${nome}`}>
+                <div className="jl-desc">
+                  {i < 6 && g.desc[i] > 0 && (
+                    <button
+                      type="button"
+                      className={`jl-desc-n${i === g.maiorDesc ? ' is-maior' : ''}${etapaSel === i + 1 ? ' is-sel' : ''}`}
+                      aria-pressed={etapaSel === i + 1}
+                      aria-label={`${g.desc[i]} descartados em ${nome}: ver os motivos`}
+                      onClick={() => onEtapa(etapaSel === i + 1 ? null : i + 1)}
+                    >
+                      −{fmtNum(g.desc[i])}
+                    </button>
+                  )}
+                  {i < 6 && g.desc[i] === 0 && <span className="jl-desc-zero">0</span>}
+                </div>
+                {i < 6 && <div />}
+              </Fragment>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function MotivosDescarte({ dados, titulo }) {
+  if (!dados.total) return <div className="pg-vazio">Nenhum descarte com motivo registrado neste recorte.</div>
+  const max = dados.motivos[0].n
+  return (
+    <div className="pg-grafico">
+      <div className="pg-grafico-titulo">{titulo}</div>
+      <div className="pg-hbarras">
+        {dados.motivos.slice(0, 8).map((m, i) => (
+          <div key={m.motivo} className="pg-hbarra pg-hbarra--larga">
+            <span className="pg-hbarra-rotulo" title={m.motivo}>{m.motivo}</span>
+            <div className="pg-funil-trilho">
+              <div className="pg-funil-barra" style={{ width: `${Math.max(2, (m.n / max) * 100)}%`, background: i === 0 ? 'var(--coral)' : CORES.contexto }} />
+            </div>
+            <span className="pg-funil-n">
+              {fmtNum(m.n)} <span className="is-muted">({fmtPct((m.n / dados.total) * 100, 0)})</span>
             </span>
           </div>
         ))}
@@ -489,6 +668,186 @@ export function SaudeDados({ fontes }) {
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// 4. Carteira de imóveis por captador (atualizados × desatualizados)
+// ---------------------------------------------------------------------------
+
+const seloCarteira = (p) => (p == null ? null : p >= 80 ? 'badge-success' : p >= 50 ? 'badge-warning' : 'badge-danger')
+
+/** Valor desatualizado da linha: venda em R$, locação em R$/mês (nunca somados). Em "todas", a venda manda. */
+function valorDesatLinha(l, finalidade) {
+  if (finalidade === 'Aluguel' || (finalidade === 'todas' && !l.valorDesat.Venda && l.valorDesat.Aluguel)) {
+    return l.valorDesat.Aluguel ? `${fmtMoedaCurta(l.valorDesat.Aluguel)}/mês` : '—'
+  }
+  return l.valorDesat.Venda ? fmtMoedaCurta(l.valorDesat.Venda) : '—'
+}
+
+function tituloValores(l) {
+  const partes = []
+  if (l.valor.Venda) partes.push(`venda: ${fmtMoedaCurta(l.valorDesat.Venda)} desatualizados de ${fmtMoedaCurta(l.valor.Venda)}`)
+  if (l.valor.Aluguel) partes.push(`locação: ${fmtMoedaCurta(l.valorDesat.Aluguel)}/mês desatualizados de ${fmtMoedaCurta(l.valor.Aluguel)}/mês`)
+  return partes.length ? ` · ${partes.join(' · ')}` : ''
+}
+
+function LinhaCarteira({ l, max, finalidade, selecionado, onSelecionar, rotulo }) {
+  const conteudo = (
+    <>
+      <span className="pg-hbarra-rotulo">{rotulo ?? l.captador}</span>
+      <div className="pg-funil-trilho">
+        <div className="pg-carteira-barra" style={{ width: `${Math.max(1, (l.n / max) * 100)}%` }}>
+          {l.atualizados > 0 && <div style={{ flex: l.atualizados, background: 'var(--success)' }} />}
+          {l.desatualizados > 0 && <div style={{ flex: l.desatualizados, background: 'var(--danger)' }} />}
+        </div>
+      </div>
+      <span className="pg-funil-n">{fmtNum(l.n)}</span>
+      <span className="pg-carteira-valor">{valorDesatLinha(l, finalidade)}</span>
+      <span className={`badge ${seloCarteira(l.pctAtualizado) ?? ''}`}>{l.pctAtualizado == null ? '—' : `${fmtPct(l.pctAtualizado, 0)} atualizados`}</span>
+    </>
+  )
+  const titulo = `${fmtNum(l.atualizados)} atualizados · ${fmtNum(l.desatualizados)} desatualizados${tituloValores(l)}`
+  if (!onSelecionar) return <div className="pg-atividade pg-carteira pg-carteira-linha" title={titulo}>{conteudo}</div>
+  return (
+    <button type="button" className={`pg-atividade pg-carteira ${selecionado ? 'is-selecionado' : ''}`} onClick={onSelecionar} title={titulo}>
+      {conteudo}
+    </button>
+  )
+}
+
+export function CarteiraCaptadores({ dados, finalidade, selecionado, podeSelecionar, onSelecionar }) {
+  const max = Math.max(...dados.linhas.map((l) => l.n), dados.semCaptador.n, 1)
+  const mostraVenda = finalidade !== 'Aluguel' && dados.valor.Venda > 0
+  const mostraAluguel = finalidade !== 'Venda' && dados.valor.Aluguel > 0
+  return (
+    <div className="pg-grafico">
+      <div className="pg-ativ-resumo pg-carteira-resumo">
+        <div>
+          <div className="pg-ativ-numero">{fmtNum(dados.total)}</div>
+          <div className="pg-ativ-contexto">imóveis em estoque</div>
+        </div>
+        <div>
+          <div className="pg-ativ-numero">{fmtNum(dados.atualizados)}</div>
+          <div className="pg-ativ-contexto">atualizados ({fmtPct(dados.pctAtualizado, 0)})</div>
+        </div>
+        <div>
+          <div className="pg-ativ-numero">{fmtNum(dados.desatualizados)}</div>
+          <div className="pg-ativ-contexto">desatualizados há mais de 45 dias</div>
+        </div>
+        {mostraVenda && (
+          <div>
+            <div className="pg-ativ-numero">{fmtMoedaCurta(dados.valorDesat.Venda)}</div>
+            <div className="pg-ativ-contexto">em venda desatualizados, de {fmtMoedaCurta(dados.valor.Venda)}</div>
+          </div>
+        )}
+        {mostraAluguel && (
+          <div>
+            <div className="pg-ativ-numero">{fmtMoedaCurta(dados.valorDesat.Aluguel)}/mês</div>
+            <div className="pg-ativ-contexto">em locação desatualizados, de {fmtMoedaCurta(dados.valor.Aluguel)}/mês</div>
+          </div>
+        )}
+      </div>
+      <div className="pg-subtitulo">
+        Por captador{' '}
+        <span className="pg-grafico-ref">
+          · <span className="pg-ponto" style={{ background: 'var(--success)' }} aria-hidden="true" /> atualizados{' '}
+          <span className="pg-ponto" style={{ background: 'var(--danger)' }} aria-hidden="true" /> desatualizados · R$ = valor desatualizado{finalidade === 'todas' ? ' (venda; locação em R$/mês)' : ''}
+        </span>
+      </div>
+      <div className="pg-hbarras">
+        {dados.linhas.map((l) => (
+          <LinhaCarteira
+            key={l.captador}
+            l={l}
+            max={max}
+            finalidade={finalidade}
+            selecionado={selecionado === l.captador}
+            onSelecionar={podeSelecionar(l.captador) ? () => onSelecionar(l.captador) : null}
+          />
+        ))}
+        {dados.semCaptador.n > 0 && <LinhaCarteira l={dados.semCaptador} max={max} finalidade={finalidade} rotulo="Sem captador no Imoview" />}
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// 4. Quanto temos disponível? (Vago/Disponível por tipo + mapa de calor do estoque)
+// ---------------------------------------------------------------------------
+
+// abre a busca do Estoque (/dashboard/estoque) já filtrada pelo tipo e pela finalidade
+function linkBusca(tipo, finalidade) {
+  const p = new URLSearchParams({ tipos: tipo })
+  if (finalidade !== 'todas') p.set('finalidade', finalidade)
+  return `/dashboard/estoque?${p}`
+}
+
+export function EstoqueDisponivel({ dados, finalidade }) {
+  const mostra = ['Venda', 'Aluguel'].filter((f) => finalidade === 'todas' || finalidade === f)
+  const max = Math.max(...dados.tipos.map((t) => t.n), 1)
+  const { mapa } = dados
+  return (
+    <div className="pg-grafico">
+      <div className="pg-ativ-resumo pg-carteira-resumo">
+        <div>
+          <div className="pg-ativ-numero">{fmtNum(dados.total)}</div>
+          <div className="pg-ativ-contexto">imóveis vagos/disponíveis</div>
+        </div>
+        {mostra.map((f) => {
+          const d = dados.porFinalidade[f]
+          const mes = f === 'Aluguel' ? '/mês' : ''
+          return (
+            <div key={f}>
+              <div className="pg-ativ-numero">{fmtNum(d.n)}</div>
+              <div className="pg-ativ-contexto">
+                em {LABEL_FINALIDADE[f].toLowerCase()} · {fmtMoedaCurta(d.valor)}{mes} no total · mediana {d.ticket == null ? '—' : `${fmtMoedaCurta(d.ticket)}${mes}`}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="pg-subtitulo">
+        Por tipo{' '}
+        {mostra.length > 1 && (
+          <span className="pg-grafico-ref">
+            · <span className="pg-ponto" style={{ background: CORES.Venda }} aria-hidden="true" /> venda{' '}
+            <span className="pg-ponto" style={{ background: CORES.Aluguel }} aria-hidden="true" /> locação
+          </span>
+        )}
+      </div>
+      <div className="pg-hbarras">
+        {dados.tipos.map((t) => (
+          <div key={t.tipo} className="pg-tipo-ativ" title={mostra.map((f) => `${LABEL_FINALIDADE[f]}: ${fmtNum(t[f])}`).join(' · ')}>
+            <Link className="pg-hbarra-rotulo" to={linkBusca(t.tipo, finalidade)} title={`Buscar ${t.tipo} disponíveis no Estoque`}>
+              {t.tipo}
+            </Link>
+            <div className="pg-funil-trilho">
+              <div className="pg-carteira-barra" style={{ width: `${Math.max(1, (t.n / max) * 100)}%` }}>
+                {mostra.map((f) => t[f] > 0 && <div key={f} style={{ flex: t[f], background: CORES[f] }} />)}
+              </div>
+            </div>
+            <span className="pg-funil-n">
+              {fmtNum(t.n)}
+              {mostra.length > 1 && <span className="is-muted"> ({fmtNum(t.Venda)} venda · {fmtNum(t.Aluguel)} loc.)</span>}
+            </span>
+          </div>
+        ))}
+        {!dados.tipos.length && <p className="pg-nota">Nenhum imóvel vago/disponível neste recorte.</p>}
+      </div>
+
+      <div className="pg-subtitulo">
+        Onde está o estoque{' '}
+        <span className="pg-grafico-ref">
+          · {fmtNum(mapa.pontos.length)} de {fmtNum(mapa.total)} imóveis em estoque no mapa
+          {mapa.semCoordenada > 0 && ` (${fmtNum(mapa.semCoordenada)} sem localização no Imoview)`}
+        </span>
+      </div>
+      <Suspense fallback={<div className="pg-mapa-caixa hub-loading">Carregando o mapa…</div>}>
+        <MapaCalor pontos={mapa.pontos} />
+      </Suspense>
     </div>
   )
 }

@@ -8,29 +8,51 @@ import { PAPEL_LABEL, pode } from '../../lib/acessos'
 import { AREAS_PROPOSTAS, paginasVisiveis } from '../../lib/propostasNav'
 
 /**
- * Dash: cada item aparece conforme o nível (acessos.js). Corretor: Meus números,
- * Performance e Kanban (só os dele). Painel da Gestão: só Gestão e Marketing.
+ * Navegação por trabalho (decisão do Eduardo, 15/10): Painéis, Atendimento,
+ * Locação, Venda e Ferramentas. Cada item aparece conforme o nível (acessos.js).
+ * Um menu sem nenhum item visível não aparece.
  */
-function buildLinksDash(perfil) {
+function buildMenus(perfil) {
   const ehCorretor = perfil?.role === 'corretor'
-  const children = []
-  if (pode(perfil, 'dashComercial')) children.push({ to: '/dashboard/comercial', label: ehCorretor ? 'Meus números' : 'Comercial' })
-  if (pode(perfil, 'dash')) children.push({ to: '/dashboard/gestao', label: 'Painel da Gestão' })
-  if (pode(perfil, 'dashPerformance')) children.push({ to: '/dashboard/performance', label: 'Painel de Performance' })
-  if (pode(perfil, 'dashAdmLocacao')) children.push({ to: '/dashboard/adm-locacao', label: 'Adm locação' })
+  const menus = []
+
+  const paineis = []
+  if (pode(perfil, 'dashComercial')) paineis.push({ to: '/dashboard/comercial', label: ehCorretor ? 'Meus números' : 'Comercial' })
+  if (pode(perfil, 'dash')) paineis.push({ to: '/dashboard/gestao', label: 'Painel da Gestão' })
+  if (pode(perfil, 'dashPerformance')) paineis.push({ to: '/dashboard/performance', label: 'Painel de Performance' })
+  if (pode(perfil, 'dashEstoque')) paineis.push({ to: '/dashboard/estoque', label: 'Estoque' })
+  if (pode(perfil, 'dashAdmLocacao')) paineis.push({ to: '/dashboard/adm-locacao', label: 'Adm locação' })
+  menus.push({ label: 'Painéis', children: paineis })
+
+  const atendimento = []
   if (pode(perfil, 'kanban')) {
-    children.push({
-      label: 'Kanban',
-      children: [
-        { to: '/kanban', label: 'Quadro' },
-        { to: '/kanban/dados', label: 'Dados de Atendimento' },
-        { to: '/kanban/atividades', label: 'Relatório de Atividades' },
-      ],
-    })
+    atendimento.push({ to: '/kanban', label: 'Kanban' })
+    if (pode(perfil, 'dadosAtendimento')) atendimento.push({ to: '/kanban/dados', label: 'Dados de atendimento' })
+    atendimento.push({ to: '/kanban/atividades', label: 'Relatório de atividades' })
   }
-  if (children.length === 0) return []
-  return [{ to: children[0].to ?? '/kanban', label: 'Dash', children }]
+  if (pode(perfil, 'formularios')) {
+    atendimento.push({ to: '/captacoes', label: 'Captações' }, { to: '/feedback-visita', label: 'Feedback de visita' })
+  }
+  menus.push({ label: 'Atendimento', children: atendimento })
+
+  // Locação e Venda: as áreas de lib/propostasNav, cada uma vira um menu
+  for (const area of AREAS_PROPOSTAS) {
+    if (pode(perfil, area.acesso)) menus.push({ label: area.label, children: paginasVisiveis(area, perfil) })
+  }
+
+  const ferramentas = []
+  if (pode(perfil, 'formularios')) ferramentas.push({ to: '/materiais', label: 'Materiais para clientes' })
+  // quem vê Locação ▸ Cadastros já tem os links lá; o corretor manda por aqui
+  if (pode(perfil, 'formularios') && !pode(perfil, 'esteira')) ferramentas.push({ to: '/ferramentas/cadastros', label: 'Links de cadastro' })
+  if (pode(perfil, 'tv')) ferramentas.push({ to: '/tv-display', label: 'TV Display' })
+  menus.push({ label: 'Ferramentas', children: ferramentas })
+
+  return menus.filter((m) => m.children.length > 0)
 }
+
+/** O menu fica ativo quando a página atual é um dos seus itens (ou subpágina). */
+const menuAtivo = (menu, pathname) =>
+  menu.children.some((c) => c.to && (pathname === c.to || (c.to !== '/kanban' && pathname.startsWith(`${c.to}/`))))
 
 /** Item de dropdown: link direto (sem children) ou submenu-flyout (com children). */
 function ItemMenu({ item }) {
@@ -62,12 +84,7 @@ export default function Navbar() {
   // Celular e telas médias (≤ 1100px): os links viram um painel aberto pelo botão ☰
   const [aberto, setAberto] = useState(false)
   useEffect(() => { setAberto(false) }, [pathname])
-  const emPropostas = pathname === '/propostas' || pathname.startsWith('/admin/')
-  const linksDash = buildLinksDash(perfil)
-  // Propostas ▾ → Locação ▸ / Venda ▸ (processos separados, ver lib/propostasNav)
-  const areasPropostas = AREAS_PROPOSTAS
-    .filter((a) => pode(perfil, a.acesso))
-    .map((a) => ({ label: a.label, children: paginasVisiveis(a, perfil) }))
+  const menus = buildMenus(perfil)
   const email = session?.user?.email ?? ''
   const nomeExibido = perfil?.nome || email
   const iniciais = (perfil?.nome || email).split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase()
@@ -99,50 +116,18 @@ export default function Navbar() {
           Home
         </NavLink>
 
-        {pode(perfil, 'tv') && (
-          <NavLink to="/tv-display" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
-            TV Display
-          </NavLink>
-        )}
-
-        {linksDash.map((link) => (
-          <div className="navbar-item" key={link.to}>
-            <NavLink to={link.to} end className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
-              {link.label} <span className="navbar-caret">▾</span>
+        {menus.map((menu) => (
+          <div className="navbar-item" key={menu.label}>
+            <NavLink to={menu.children[0].to} className={`navbar-link${menuAtivo(menu, pathname) ? ' is-active' : ''}`}>
+              {menu.label} <span className="navbar-caret">▾</span>
             </NavLink>
             <div className="navbar-dropdown">
-              {link.children.map((child) => (
+              {menu.children.map((child) => (
                 <ItemMenu key={child.to ?? child.label} item={child} />
               ))}
             </div>
           </div>
         ))}
-
-        {areasPropostas.length > 0 && (
-          <div className="navbar-item">
-            <NavLink to="/propostas" className={`navbar-link${emPropostas ? ' is-active' : ''}`}>
-              Propostas <span className="navbar-caret">▾</span>
-            </NavLink>
-            <div className="navbar-dropdown">
-              {areasPropostas.map((area) => (
-                <ItemMenu key={area.label} item={area} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {pode(perfil, 'formularios') && (
-          <div className="navbar-item">
-            <NavLink to="/captacoes" className={({ isActive }) => `navbar-link${isActive || ['/feedback-visita', '/materiais'].includes(pathname) ? ' is-active' : ''}`}>
-              Ferramentas <span className="navbar-caret">▾</span>
-            </NavLink>
-            <div className="navbar-dropdown">
-              <NavLink to="/captacoes" end className={({ isActive }) => (isActive ? 'is-active' : '')}>Captações</NavLink>
-              <NavLink to="/feedback-visita" end className={({ isActive }) => (isActive ? 'is-active' : '')}>Feedback de visita</NavLink>
-              <NavLink to="/materiais" end className={({ isActive }) => (isActive ? 'is-active' : '')}>Materiais para clientes</NavLink>
-            </div>
-          </div>
-        )}
 
         {pode(perfil, 'configuracoes') && (
           <NavLink to="/configuracoes" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
