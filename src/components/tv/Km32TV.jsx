@@ -41,6 +41,12 @@ export function Km32TV({ dados }) {
                   <div className="kpi-tv-sub">
                     de {moeda(chave, l.metaMes.valor)} · meta de {l.metaMes.mes} · {pctTexto(Math.min(1, l.valorMes / l.metaMes.valor))}
                   </div>
+                  {chave === 'Aluguel' && (
+                    <div className="kpi-tv-sub">
+                      {f.negocios} {f.negocios === 1 ? 'contrato iniciado' : 'contratos iniciados'} · {f.ativos} {f.ativos === 1 ? 'ativo' : 'ativos'}
+                      {f.em_ativacao > 0 && ` · ${f.em_ativacao} em ativação`}
+                    </div>
+                  )}
                 </div>
                 <div className="km32-tv-lado">
                   {l.batida ? (
