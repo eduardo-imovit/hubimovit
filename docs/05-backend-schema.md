@@ -155,6 +155,12 @@ Princípio: o n8n **só insere**. Nada de *upsert* nem de *update* em dado comer
 
 **APLICADO em 01/10** (migration `20261001160000_crm_jornada`): `crm_leituras`, `crm_atendimento_jornada` (RLS: só quem tem nível; corretor só o dele; sem escrita pela API) e `registrar_atendimentos_crm(jsonb)` (execução só `service_role`). Teste antes (transação desfeita, 4 leituras simuladas): entrada, primeira_leitura, mudanca_etapa, lead novo que já andou (entrada + mudança), encerramento, reabertura, leitura repetida sem linha nova e item sem fase ignorado; a Gestão não executa nem grava, e o anon lê 0. Nesta etapa a RPC **não** escreve em `dashboard_atendimentos_crm`; isso fica para a virada, depois dos 3 dias em paralelo.
 
+**Foto atual (migration `20261019160000_jornada_payload_atual`, APLICADA em 19/10):**
+- quando a leitura não traz mudança de fase nem de situação, a RPC atualiza o `payload` da **última linha** do código (só se mudou). Não cria linha nova, e tipo, fase, situação e `data_evento` não mudam;
+- motivo: o status das propostas (`imoveisproposta[].negociacoes[]`) e a última interação mudam dentro da mesma fase. Antes, a foto ficava congelada no dia da mudança de fase (6182 Cancelado e 6383 Reservado no CRM seguiam "Em análise" no Km 32);
+- efeito colateral bom: descartes antigos lidos de novo (encerrados de 60 dias na diária; todos no domingo) ganham `interacoes` no payload, e a `vw_atendimentos_base` passa a ter a data do descarte deles;
+- testado numa transação abortada antes de aplicar: payload atualizado, 0 linhas novas e contadores zerados.
+
 **Revisão do desenho (01/10, conversa com o Eduardo).** Para não guardar ~2.800 linhas por dia, o n8n não grava a foto inteira. O fluxo `crm_jornada_diaria` (n8n `4tzh8UFpxciJOYiY`, criado **desligado**) lê todos os atendimentos e chama a RPC `registrar_atendimentos_crm(itens jsonb)` (security definer, só `service_role`). A RPC:
 - grava em **`crm_atendimento_jornada`** (append-only) 1 linha quando o código aparece pela primeira vez e 1 linha a cada mudança de fase ou situação. Campos: `codigo`, `fase_crm`, `situacao`, `data_evento`, `tipo` (`entrada` | `primeira_leitura` | `mudanca_etapa` | `encerramento`), `origem_data` (`crm` | `captura`), `finalidade`, `corretor`, `midia`, `campanha`, `funil`, `detectado_em`, `payload`;
 - mantém `dashboard_atendimentos_crm` como estado atual, para Kanban, TV e views continuarem iguais e o `crm_atendimentos` antigo poder ser desligado depois;
