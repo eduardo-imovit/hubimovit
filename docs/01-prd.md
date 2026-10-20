@@ -286,6 +286,11 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - No quadro da locação (Home e TV) aparece embaixo "N contratos iniciados · X ativos" (e "· Y em ativação" quando houver). O rodapé diz a regra.
 - Conferido com o Eduardo em 19/10: **3 contratos, R$ 39.450** (1824, 1823 e 1826, todos ativos). Antes eram 2 negócios do CRM, R$ 17.800. Primeiro testamos "contrato gerado" (data de inclusão, R$ 25.000), mas a direção quer os iniciados.
 
+**Ajuste de 20/10 (Eduardo): os dois quadros ficam no mês.**
+- **1º quadro:** realizado no mês, meta do mês e quanto isso representa da meta ("46,8% da meta do mês · faltam R$ 4,5 MM"; batida: "meta de outubro batida · N%"). O % não é mais limitado a 100%.
+- **2º quadro:** esperado até hoje **no mês** = meta do mês ÷ dias do mês dentro da campanha × dias passados do mês, comparado com o **realizado no mês** (antes era a meta da campanha ÷ 87 dias × dias passados, contra o realizado total). Embaixo: "15 de 26 dias de outubro × R$ 321,8 mil" e o valor acima/abaixo. Em outubro dá o mesmo número que antes (a campanha começa em 06/10); muda a partir de novembro, quando o mês recomeça a conta.
+- A trilha (Km) continua na régua da campanha inteira. A TV usa a mesma régua (`lib/campanhaKm32.js`).
+
 **Na TV Display (16/10, Eduardo):** painel "Km 32" no carrossel do rodapé, entre Plantão e Comercial, só com a campanha no ar. Venda e Locação aparecem lado a lado (a TV não tem aba). Cada uma mostra a trilha com o Km e a marca de hoje, o realizado no mês × meta do mês, um selo acima (verde) ou abaixo (coral) do esperado até hoje e o valor em proposta. A régua é a mesma da Home (`lib/campanhaKm32.js`), e os números são relidos a cada 5 min. As barrinhas do indicador do rodapé passam a ser clicáveis: o clique vai direto ao painel e recomeça a contagem de 15 s.
 
 Também mostra as paradas no último dia de cada mês (meta acumulada proporcional aos dias) e o marcador "hoje".
