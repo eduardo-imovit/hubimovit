@@ -8,7 +8,7 @@
 - **Divergência repo × banco.** O banco tem 67 migrations registradas; o repo tem 28 (`supabase/migrations/`, a partir de 21/08). Tudo o que veio antes (tabelas do dashboard, views `vw_*`, `perfis`, `colaboradores_raw`, `plantao`, `avisos`…) **não está versionado no repo**. As versões também não batem (ex.: repo `20260923190000_niveis_acesso_perfil` × banco `20260923180414`), porque o MCP grava o horário em que aplicou. Este documento é, hoje, a única descrição completa do schema.
 - **Projeto compartilhado.** O mesmo Supabase atende outras automações do n8n (blog, newsletter, repique, campanha de proprietários, base de conhecimento). Elas estão listadas na seção 2.4 só para ninguém apagar por engano.
 - **🔴 Exposição:** `repique_control` e `repique_ponteiro` estão **sem RLS**, e o papel `anon` tem SELECT, INSERT, UPDATE, DELETE e TRUNCATE nelas. Como a anon key é pública (vai no front), qualquer pessoa na internet pode ler ou zerar essas tabelas.
-- **🟠 Exposição:** as 9 views `vw_*` rodam com os direitos do dono (sem `security_invoker`) e têm SELECT para `anon`: dados comerciais (corretores, conversão, carteira) legíveis sem login.
+- ~~🟠 Exposição: as 9 views `vw_*` sem `security_invoker` e com SELECT para `anon`~~ → **resolvido**. As 9 foram corrigidas em 28/09 (`20260928180000_seguranca_equipe_registro`), e as 3 do Estoque em 22/10 (`20261022120000_anon_fora_views_estoque_e_padrao`). A auditoria de 22/10 mostrou as 21 views com `security_invoker` e sem SELECT para `anon`. Desde 22/10, o padrão do schema `public` não dá mais grant para `anon` em tabela, view ou sequência nova (ver §6).
 
 ## 1. Diagrama de entidades (núcleo do Hub)
 ```
@@ -415,7 +415,7 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | blog_posts | anon: só `status = 'publicado'` | — |
 | pilares | público | — |
 | **repique_control, repique_ponteiro** | **RLS desligada: anon lê e escreve** | 🔴 |
-| **vw_*** (9 views) | **anon lê (views sem security_invoker)** | 🟠 |
+| vw_* (21 views, auditoria de 22/10) | só `authenticated`, com `security_invoker` (seguem a RLS das tabelas); anon sem acesso | — |
 
 ⚠ `leads_wpp_gtm` (telefone e nome de lead) e `atividades` são legíveis por qualquer usuário logado, inclusive "Sem nível". Rever se isso é intencional.
 
@@ -460,7 +460,9 @@ Edge Functions: `esteira-locacao` (eventos `nova_proposta, editar_proposta, vali
 - **Equipe × logado:** dado interno usa `is_team()` (tem perfil e não está suspenso) ou papéis; nunca `true` para `authenticated`, porque cliente do portal também é `authenticated`.
 - **Gatilhos SECURITY DEFINER:** nunca decidir permissão por `current_user` (é sempre o dono da função); usar `auth.role()`/`auth.uid()`.
 - **Mudança pelo SQL Editor vira migration no repo no mesmo dia.**
-- Tabela nova: RLS ligada na mesma migration, policies explícitas e grants revistos (o Supabase dá tudo para anon por padrão).
+- Tabela nova: RLS ligada na mesma migration, policies explícitas e grants revistos.
+- **Padrão sem anon (desde 22/10, `20261022120000`):** tabela, view e sequência novas criadas pelo `postgres` **não** ganham grant para `anon`. Se algo precisar mesmo de leitura sem login, use um `grant select ... to anon` explícito, com o motivo no comentário da migration. Funções ficaram fora: o EXECUTE vem do PUBLIC, então continue com `revoke execute ... from public, anon` função a função.
+- Auditoria rápida de views abertas: `select relname, has_table_privilege('anon', oid, 'SELECT') from pg_class where relnamespace = 'public'::regnamespace and relkind in ('v','m')`.
 - View nova: `with (security_invoker = true)`.
 - Função `security definer`: `set search_path = public` e `revoke execute ... from anon` quando não for pública.
 - Testar a migration inteira dentro de `BEGIN … ROLLBACK` em produção antes de aplicar (não há ambiente de teste).
