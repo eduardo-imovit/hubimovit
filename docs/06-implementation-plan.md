@@ -276,7 +276,7 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
   - [ ] commit + push na `main` + `main:teste`;
   - [ ] conferir com a ADM na 1ª semana (atenção, reajustes vencidos, seguros).
 
-## Fase 18 — Estoque de imóveis: painel + busca (RF27, PRD §5.14) — proposta (08/10)
+## Fase 18 — Estoque de imóveis: painel + busca (RF27, PRD §5.14) — **aprovada como construída em 23/10**; falta a S5 (adoção)
 - **S0 Captador (E4) — feito em 16/10:** `App_RetornarDetalhesImovel` traz o captador (10 de 10). Migration `20261016120000_estoque_captadores` + sub-fluxo n8n `estoque_captadores_bloco` (100 por bloco), chamado depois da carga diária só para os pendentes. 1ª leitura: ~1.300 imóveis.
 - **S0b Card da carteira na Gestão (pedido de 16/10):** capítulo 4 do Painel da Gestão (PRD §5.0c), por captador, atualizados × desatualizados, mais o valor desatualizado (venda em R$, locação em R$/mês). **Pronto quando:** os números batem com o banco, testado no localhost como Gestão, `npm run build` passa.
 - **Revisão de 16/10 (PRD §5.14, "Revisão de 16/10") — aprovada, feita e publicada em 16/10 (S0c e S4', commit `dfe1c5d`).** Ordem:
@@ -295,12 +295,13 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
   - **15/10, feito:** reestruturado em blocos de 12 páginas via sub-fluxo `estoque_imoveis_bloco`, porque a carga numa execução só passava de 250 MB e travava. 1ª carga completa OK em 9 min: Aluguel 4.460/4.453, Venda 6.760/6.754. Falta ativar às 5h30.
 - **S2b Planilha de duplicados (pedido do Eduardo, 09/10):** `vw_estoque_duplicados` → `.xlsx` para o time (aba de grupos com certeza e "o que fazer" + aba de resumo por bairro/captador).
 - **S3 Painel:** maquete com o CSS do Hub → `/dashboard/estoque` (6 capítulos, lista de trabalho); testado no localhost como Gestão; publicar.
-- **S4 Busca por regras:**
-  - RPC `buscar_imoveis` com testes (exatos, cada margem, "o que mais restringe", nenhum campo proibido na resposta);
-  - maquete do cartão → `/imoveis/buscar` com chips;
-  - publicar para a Gestão.
-- **S5 Validação (Eduardo + time):** 2 semanas de uso; ajustar margens e ordenação.
-- **Depois:** liberar para o corretor (S6: acesso + `papel_atual()` na RPC) e texto livre com o Claude (S7, B3).
+- ~~**S4 Busca por regras:** RPC `buscar_imoveis`, `/imoveis/buscar`, só Gestão.~~ **Substituída pela S4'** (revisão de 16/10). Não construir a `buscar_imoveis`.
+- **S5 Adoção (reescrita em 23/10):** a busca está no ar desde 16/10 para corretor e Gestão, mas a adesão do time ainda é fraca, e a implantação é gradual, sem forçar.
+  - **Pronto quando:** um número mínimo de corretores (a definir pelo Eduardo) usou a busca para atender um cliente real, e o Eduardo ouviu o retorno deles e ajustou margens e ordenação.
+  - Sem data fixa; conferir a adesão uma vez por mês.
+  - Ideia, não aprovada: registrar quantas buscas cada pessoa faz, para medir a adesão sem perguntar.
+- ~~**S6:** liberar para o corretor.~~ **Feito dentro da S4'** (16/10).
+- **Depois:** texto livre com o Claude (S7, B3), só depois da S5.
 
 ## Fase 19 — Cadastro Locador PF no Hub (RF28, PRD §5.15) — aprovado (09/10)
 - **S1 Banco:** migration §2.12 (tabela + RLS), testada em transação. RLS: gestão/adm leem; anon zero.

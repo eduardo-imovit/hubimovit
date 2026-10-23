@@ -602,7 +602,7 @@ Cada número abre a lista dos imóveis. O código leva ao imóvel no Imoview.
 
 **Perguntas.**
 - **E4 Captador (resolvido em 16/10):** a consulta pública por imóvel dá 403 e não traz o captador (08/10). A consulta com login (`Imovel/App_RetornarDetalhesImovel`) traz `captadores[]` (nome, principal, percentual): testada em 10 imóveis, 10 de 10 OK. O n8n lê o detalhe só dos imóveis em estoque sem captador ou alterados depois da última leitura.
-- **E6 Condomínio para o corretor:** nome do condomínio e valor da taxa entram; o endereço do condomínio não. Confirmar.
+- **E6 Condomínio para o corretor (confirmado pelo Eduardo em 23/10):** nome do condomínio e valor da taxa entram; o endereço completo não. Motivo: corretores que saíram da Imovit já usaram esses dados para levar imóveis para concorrentes. Proteção da captação: não liberar número, complemento ou CEP para o corretor sem nova decisão.
 
 #### Revisão de 16/10 (pedido do Eduardo) — **APROVADA em 16/10; feita no localhost, aguarda publicação**
 Três pedidos novos, que mudam parte das decisões de 08/10 (E1, B2, B3 e "Corretor (futuro)"):
