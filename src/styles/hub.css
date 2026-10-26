@@ -408,8 +408,6 @@
   align-items: stretch;
   background: var(--grafite);
   border-top: 1px solid rgba(255,255,255,.08);
-  /* Rodapé maior na TV (23/10): amplia tudo na mesma proporção; o banner (flex: 1) cede a altura */
-  zoom: 1.5;
 }
 .tv-footer-col { min-width: 0; }
 .tv-footer-col--clima {
