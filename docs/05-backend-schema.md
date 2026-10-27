@@ -7,7 +7,7 @@
 ## 0. Avisos de estado (24/09)
 - **Divergência repo × banco.** O banco tem 67 migrations registradas; o repo tem 28 (`supabase/migrations/`, a partir de 21/08). Tudo o que veio antes (tabelas do dashboard, views `vw_*`, `perfis`, `colaboradores_raw`, `plantao`, `avisos`…) **não está versionado no repo**. As versões também não batem (ex.: repo `20260923190000_niveis_acesso_perfil` × banco `20260923180414`), porque o MCP grava o horário em que aplicou. Este documento é, hoje, a única descrição completa do schema.
 - **Projeto compartilhado.** O mesmo Supabase atende outras automações do n8n (blog, newsletter, repique, campanha de proprietários, base de conhecimento). Elas estão listadas na seção 2.4 só para ninguém apagar por engano.
-- **🔴 Exposição:** `repique_control` e `repique_ponteiro` estão **sem RLS**, e o papel `anon` tem SELECT, INSERT, UPDATE, DELETE e TRUNCATE nelas. Como a anon key é pública (vai no front), qualquer pessoa na internet pode ler ou zerar essas tabelas.
+- ~~🔴 Exposição: `repique_control` e `repique_ponteiro` sem RLS~~ → **resolvido** (auditoria de 26/10, `pg_class`): as 64 tabelas do `public` estão com RLS ligado. As duas do repique têm 0 políticas, então o `anon` não lê nem escreve (só a `service_role` do n8n). **Pendente (defesa em profundidade):** cerca de 39 tabelas antigas ainda têm GRANT para `anon` (o padrão de 22/10 só vale para objetos novos). Falta listar as políticas que valem para `public`/`anon` e dar `revoke` nas tabelas do Hub.
 - ~~🟠 Exposição: as 9 views `vw_*` sem `security_invoker` e com SELECT para `anon`~~ → **resolvido**. As 9 foram corrigidas em 28/09 (`20260928180000_seguranca_equipe_registro`), e as 3 do Estoque em 22/10 (`20261022120000_anon_fora_views_estoque_e_padrao`). A auditoria de 22/10 mostrou as 21 views com `security_invoker` e sem SELECT para `anon`. Desde 22/10, o padrão do schema `public` não dá mais grant para `anon` em tabela, view ou sequência nova (ver §6).
 
 ## 1. Diagrama de entidades (núcleo do Hub)
@@ -354,6 +354,9 @@ Generaliza a §2.12: em vez de 1 tabela por formulário, **1 tabela `cadastros`*
   4. senão, nula (data desconhecida).
   - Antes, 2.493 descartes antigos ficavam com 06/10 (dia da carga) e outubro somava 2.635 descartes. Depois: 145 em outubro e 2.490 sem data. Negócios não mudaram (89; 3 em outubro).
   - Em 19/10, nenhum painel nem a `kpis_tv` usa `data_encerramento` dos descartes (só a dos negócios), então não muda nada na tela. A data vale para a análise de perdas (Fase 16).
+- **Canais depois da limpeza de mídias do CRM — migration `20261027120000_vw_base_midias_crm_limpas`, **APLICADA em 27/10** pelo Eduardo no SQL Editor (antes: conferido que o banco tinha a versão de 19/10):** o Eduardo juntou as mídias no Imoview (67 → 19). As novas `Meta Ads` e `Lançamentos` caíam em "Outros" e entram em **"Campanhas pagas"**, para onde iam as mídias que elas absorveram (mantém o CPL de `performance_leads_pagos` comparável). Os nomes antigos continuam no `case`, porque o histórico segue gravado com eles. Única mudança: a linha de "Campanhas pagas".
+  - ⚠ O mapa de canais é **por nome**: renomear mídia no CRM exige atualizar este `case` antes ou junto.
+- **Furos do mapa de canais — migration `20261027130000_vw_base_furos_canal`, **APLICADA em 27/10** pelo Eduardo:** "Outros" foi de 111 para 57 (54 atendimentos; total antes = 3.034). Caíam em "Outros" sem ser. Site ganha `wpp_pag_imovel`, `site-wpp`, `site pagina imovel`, `site_imovel`; WhatsApp ganha `wpp_nao_identificado`, `severino`, `severino_desconhecido`, `chatbot imoview`; Indicacao ganha `indicação banco pine`. Continuam "Outros" de propósito: telefone, placas/faixas, stand, visita espontânea, tik tok, ca5083, vagas.
 
 ### 2.16 Onboarding de colaboradores (RF32, PRD §5.18) — migration `20261019200000_onboarding_colaboradores`, **APLICADA em 19/10**; Edge Function `onboarding` v1 publicada (`verify_jwt` desligado: a função confere o login sozinha)
 A escrita é feita só pela Edge Function `onboarding` (service role). A leitura direta é **só `is_gestao()`**. O anon não lê nem escreve: o colaborador só acessa pelo token, via função. Mesmo padrão da §2.13 (Distratos).
@@ -414,7 +417,7 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | dashboard_atendimentos_crm, atividades, atividades_notas, colaboradores_raw, leads_wpp_gtm, metas, metas_atividades_tipo, campanhas_metas | **qualquer authenticated** (inclui `user` e `tvaccess`) | — |
 | blog_posts | anon: só `status = 'publicado'` | — |
 | pilares | público | — |
-| **repique_control, repique_ponteiro** | **RLS desligada: anon lê e escreve** | 🔴 |
+| repique_control, repique_ponteiro | RLS ligado, 0 políticas: só `service_role` (conferido em 26/10) | — |
 | vw_* (21 views, auditoria de 22/10) | só `authenticated`, com `security_invoker` (seguem a RLS das tabelas); anon sem acesso | — |
 
 ⚠ `leads_wpp_gtm` (telefone e nome de lead) e `atividades` são legíveis por qualquer usuário logado, inclusive "Sem nível". Rever se isso é intencional.
