@@ -7,6 +7,7 @@ import PlantaoAdmin from '../components/settings/PlantaoAdmin'
 import FotografoAdmin from '../components/settings/FotografoAdmin'
 import DatasComemorativasAdmin from '../components/settings/DatasComemorativasAdmin'
 import UsuariosAdmin from '../components/settings/UsuariosAdmin'
+import OnboardingAdmin from '../components/settings/OnboardingAdmin'
 import { usePerfil } from '../hooks/usePerfil'
 import { pode } from '../lib/acessos'
 
@@ -17,6 +18,7 @@ const ABAS = [
   { id: 'fotografo', label: 'Agenda do Fotógrafo' },
   { id: 'datas', label: 'Datas Comemorativas' },
   { id: 'usuarios', label: 'Usuários & Acessos', somenteGestao: true },
+  { id: 'onboarding', label: 'Onboarding', somenteGestao: true }, // PRD §5.18; RLS: is_gestao()
 ]
 
 export default function Configuracoes() {
@@ -25,7 +27,10 @@ export default function Configuracoes() {
   // ?aba=plantao abre direto na aba (links das pendências da Home)
   const [params] = useSearchParams()
   const abaUrl = params.get('aba')
-  const [aba, setAba] = useState(abasVisiveis.some((a) => a.id === abaUrl) ? abaUrl : 'avisos')
+  // A aba da URL vale mesmo antes do perfil carregar (as abas só da Gestão
+  // aparecem depois); enquanto não puder ver, mostra Avisos.
+  const [abaEscolhida, setAba] = useState(ABAS.some((a) => a.id === abaUrl) ? abaUrl : 'avisos')
+  const aba = abasVisiveis.some((a) => a.id === abaEscolhida) ? abaEscolhida : 'avisos'
 
   return (
     <div>
@@ -67,6 +72,7 @@ export default function Configuracoes() {
       {aba === 'fotografo' && <FotografoAdmin />}
       {aba === 'datas' && <DatasComemorativasAdmin />}
       {aba === 'usuarios' && <UsuariosAdmin />}
+      {aba === 'onboarding' && <OnboardingAdmin />}
     </div>
   )
 }

@@ -33,6 +33,7 @@ import Processos from './pages/admin/Processos'
 import CadastrosAdmin from './pages/admin/Cadastros'
 import Distratos from './pages/admin/Distratos'
 import DistratoPublico from './pages/publico/DistratoPublico'
+import OnboardingPublico from './pages/publico/OnboardingPublico'
 import PortalLogin from './pages/portal/PortalLogin'
 import PortalStatus from './pages/portal/PortalStatus'
 import PortalVendaLogin from './pages/portal/PortalVendaLogin'
@@ -93,6 +94,8 @@ export default function App() {
         <Route path="/cadastro-locador" element={<Redirecionar para="/cadastro/locador-pf" />} />
         {/* público (locatário, sem login): aviso de desocupação pelo link do contrato (RF29) */}
         <Route path="/distrato/:token" element={<DistratoPublico />} />
+        {/* público (colaborador novo, sem login): dados para o onboarding (RF32) */}
+        <Route path="/onboarding/:token" element={<OnboardingPublico />} />
         <Route path="/ferramentas/cadastros" element={<ProtectedRoute papeis={ACESSO.formularios}><CadastrosLinks /></ProtectedRoute>} />
         {/* público (leads): Apresentação Imovit, personalizada pelo código do corretor */}
         <Route path="/apresentacao" element={<ApresentacaoImovit />} />

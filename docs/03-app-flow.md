@@ -186,6 +186,28 @@ Outros níveis não veem o item, e a rota redireciona para a Home.
 - Link já enviado: só o comprovante.
 - Erro de envio: mantém o que foi preenchido e mostra "Tentar de novo".
 
+### Onboarding de colaboradores (RF32, PRD §5.18) — aprovado, 19/10
+**Gestão (Configurações ▸ Onboarding):**
+1. "Novo colaborador" → recebe o link e escolhe copiar ou abrir no WhatsApp com mensagem pronta.
+2. A lista mostra nome, equipe, status e o checklist x/10. "Dados recebidos" aparece em destaque.
+3. **Ficha** (abre da lista):
+   - os dados enviados, cada um com botão "Copiar", para criar o e-mail e o usuário no Imoview. O CPF aparece mascarado, com "mostrar";
+   - **Aprovar**: campos "E-mail @imovit" e "Código no Imoview". Se o código ou o e-mail já forem de outra pessoa, mostra o nome dela e não aprova;
+   - **Enviar acesso**: abre o WhatsApp com o e-mail @imovit, o link do Hub e "crie sua conta com este e-mail";
+   - **Checklist** com 10 etapas. As automáticas aparecem com selo "automático". "Nível Corretor" tem o botão "Definir nível" quando o login existe. "Fila de repique" mostra a instrução: fluxo, nó "Calcular fila", lista `filaLocacao`/`filaVendas` e código a acrescentar.
+4. Cancelar: some da lista ativa, mas fica em "Cancelados".
+
+**Colaborador (`/onboarding/<token>`, pensado primeiro para celular):**
+1. Boas-vindas da Imovit e um formulário único: nome completo, WhatsApp, CPF, CRECI (número + UF), equipe (Locação/Venda) e endereço (o CEP preenche rua, bairro e cidade).
+2. Aceite de uso dos dados → "Enviar".
+3. Tela final: "Recebemos seus dados. A Gestão vai criar seu e-mail e te chamar no WhatsApp."
+
+**Estados:**
+- Link vencido ou cancelado: "Este link expirou. Fale com a Gestão".
+- Link já enviado: só a tela final.
+- CPF ou CEP inválido: erro no campo, sem perder o resto.
+- Erro de envio: mantém o preenchido e mostra "Tentar de novo".
+
 ## 4. Estados de tela
 | Tela | Vazio | Carregando | Erro | Sem permissão |
 |---|---|---|---|---|

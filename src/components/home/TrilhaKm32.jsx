@@ -36,7 +36,7 @@ export function TrilhaKm32() {
   const progresso = l?.progresso ?? 0
   const paradas = dados ? paradasDa(dados.inicio, dados.fim) : []
   const abaAtual = ABAS.find((a) => a.chave === aba)
-  const { tempo = 0, esperado, diferenca, noRitmo, diasCampanha, diasPassados, porDia, metaMes, valorMes, batida } = l ?? {}
+  const { tempo = 0, esperado, diferenca, noRitmo, metaMes, valorMes, pctMes, faltaMes, batida } = l ?? {}
 
   const leitura = dados?.ultima_leitura ? new Date(dados.ultima_leitura) : null
   const atrasado = leitura && (dataLocal(dados.hoje) - new Date(leitura.getFullYear(), leitura.getMonth(), leitura.getDate())) / DIA_MS > 1
@@ -84,8 +84,13 @@ export function TrilhaKm32() {
         <div className="km32-numeros">
           <div title={`Na campanha: ${moeda(aba, f.valor)} de ${moeda(aba, f.meta_valor)} (${pctTexto(progresso)})`}>
             <span className="km32-n">{moeda(aba, valorMes)}</span>
+            <span className="km32-l">realizado em {metaMes.mes} · meta do mês {moeda(aba, metaMes.valor)}</span>
             <span className="km32-l">
-              de {moeda(aba, metaMes.valor)} · meta de {metaMes.mes} · {pctTexto(Math.min(1, valorMes / metaMes.valor))}
+              {faltaMes > 0 ? (
+                <strong>{pctTexto(pctMes)} da meta do mês · faltam {moeda(aba, faltaMes)}</strong>
+              ) : (
+                <strong>meta de {metaMes.mes} batida · {pctTexto(pctMes)}</strong>
+              )}
             </span>
             {locacao && (
               <span className="km32-l">
@@ -94,7 +99,7 @@ export function TrilhaKm32() {
               </span>
             )}
           </div>
-          <div title={`Meta da campanha ÷ ${diasCampanha} dias = ${moeda(aba, porDia)} por dia, somados até hoje`}>
+          <div title={`Meta de ${metaMes.mes} (${moeda(aba, metaMes.valor)}) ÷ ${metaMes.dias} dias = ${moeda(aba, metaMes.porDia)} por dia, somados até hoje e comparados com o realizado no mês`}>
             {batida ? (
               <>
                 <span className="km32-n">Meta batida</span>
@@ -104,7 +109,7 @@ export function TrilhaKm32() {
               <>
                 <span className={`km32-n${!noRitmo && diferenca < 0 ? ' is-falta' : ''}`}>{moeda(aba, esperado)}</span>
                 <span className="km32-l">
-                  esperado até hoje · {diasPassados} de {diasCampanha} dias × {moeda(aba, porDia)}
+                  esperado até hoje · {metaMes.diasPassados} de {metaMes.dias} dias de {metaMes.mes} × {moeda(aba, metaMes.porDia)}
                 </span>
                 <span className="km32-l">
                   {noRitmo ? (

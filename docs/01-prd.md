@@ -286,6 +286,11 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - No quadro da locação (Home e TV) aparece embaixo "N contratos iniciados · X ativos" (e "· Y em ativação" quando houver). O rodapé diz a regra.
 - Conferido com o Eduardo em 19/10: **3 contratos, R$ 39.450** (1824, 1823 e 1826, todos ativos). Antes eram 2 negócios do CRM, R$ 17.800. Primeiro testamos "contrato gerado" (data de inclusão, R$ 25.000), mas a direção quer os iniciados.
 
+**Ajuste de 20/10 (Eduardo): os dois quadros ficam no mês.**
+- **1º quadro:** realizado no mês, meta do mês e quanto isso representa da meta ("46,8% da meta do mês · faltam R$ 4,5 MM"; batida: "meta de outubro batida · N%"). O % não é mais limitado a 100%.
+- **2º quadro:** esperado até hoje **no mês** = meta do mês ÷ dias do mês dentro da campanha × dias passados do mês, comparado com o **realizado no mês** (antes era a meta da campanha ÷ 87 dias × dias passados, contra o realizado total). Embaixo: "15 de 26 dias de outubro × R$ 321,8 mil" e o valor acima/abaixo. Em outubro dá o mesmo número que antes (a campanha começa em 06/10); muda a partir de novembro, quando o mês recomeça a conta.
+- A trilha (Km) continua na régua da campanha inteira. A TV usa a mesma régua (`lib/campanhaKm32.js`).
+
 **Na TV Display (16/10, Eduardo):** painel "Km 32" no carrossel do rodapé, entre Plantão e Comercial, só com a campanha no ar. Venda e Locação aparecem lado a lado (a TV não tem aba). Cada uma mostra a trilha com o Km e a marca de hoje, o realizado no mês × meta do mês, um selo acima (verde) ou abaixo (coral) do esperado até hoje e o valor em proposta. A régua é a mesma da Home (`lib/campanhaKm32.js`), e os números são relidos a cada 5 min. As barrinhas do indicador do rodapé passam a ser clicáveis: o clique vai direto ao painel e recomeça a contagem de 15 s.
 
 Também mostra as paradas no último dia de cada mês (meta acumulada proporcional aos dias) e o marcador "hoje".
@@ -597,7 +602,7 @@ Cada número abre a lista dos imóveis. O código leva ao imóvel no Imoview.
 
 **Perguntas.**
 - **E4 Captador (resolvido em 16/10):** a consulta pública por imóvel dá 403 e não traz o captador (08/10). A consulta com login (`Imovel/App_RetornarDetalhesImovel`) traz `captadores[]` (nome, principal, percentual): testada em 10 imóveis, 10 de 10 OK. O n8n lê o detalhe só dos imóveis em estoque sem captador ou alterados depois da última leitura.
-- **E6 Condomínio para o corretor:** nome do condomínio e valor da taxa entram; o endereço do condomínio não. Confirmar.
+- **E6 Condomínio para o corretor (confirmado pelo Eduardo em 23/10):** nome do condomínio e valor da taxa entram; o endereço completo não. Motivo: corretores que saíram da Imovit já usaram esses dados para levar imóveis para concorrentes. Proteção da captação: não liberar número, complemento ou CEP para o corretor sem nova decisão.
 
 #### Revisão de 16/10 (pedido do Eduardo) — **APROVADA em 16/10; feita no localhost, aguarda publicação**
 Três pedidos novos, que mudam parte das decisões de 08/10 (E1, B2, B3 e "Corretor (futuro)"):
@@ -768,7 +773,7 @@ Trazer os demais Google Forms de cadastro para o Hub sem replicar o custo do Loc
 
 **Critérios de pronto:** um Locador PJ de teste aparece na tabela e na lista com o filtro, e os 2 e-mails chegam ao destino do tipo; `/cadastro-locador` antigo continua funcionando; `npm run build` ok; histórico visível na lista com origem "planilha".
 
-### 5.18 Onboarding de colaboradores (pedido do Eduardo, 19/10) — **APROVADO em 19/10**; schema §2.16, plano Fase 23
+### 5.18 Onboarding de colaboradores (pedido do Eduardo, 19/10) — **NO AR em 19/10** (commit 0cfd8d2; plano Fase 23)
 **Problema.** A entrada da Giovana (corretora de locação, 19/10) foi feita à mão:
 - o cadastro entrou em `colaboradores_raw` por um `INSERT` no SQL;
 - o CPF circulou no chat;

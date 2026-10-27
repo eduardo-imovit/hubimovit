@@ -45,7 +45,9 @@ export function metaDoMes(inicio, fim, hoje, meta) {
   const h = dataLocal(hoje)
   const de = new Date(Math.max(a, new Date(h.getFullYear(), h.getMonth(), 1)))
   const ate = new Date(Math.min(b, new Date(h.getFullYear(), h.getMonth() + 1, 0)))
-  return { valor: (meta / diasEntre(a, b)) * diasEntre(de, ate), mes: MESES_LONGOS[h.getMonth()] }
+  const dias = diasEntre(de, ate)
+  const valor = (meta / diasEntre(a, b)) * dias
+  return { valor, mes: MESES_LONGOS[h.getMonth()], dias, diasPassados: Math.min(dias, diasEntre(de, h)), porDia: valor / dias }
 }
 
 /**
@@ -69,26 +71,29 @@ export function paradasDa(inicio, fim) {
 export const campanhaNoAr = (dados) => !!dados && dados.hoje >= dados.inicio && dados.hoje <= dados.fim
 
 /**
- * Leitura de uma finalidade: progresso, tempo, meta do mês, esperado até hoje
- * (meta ÷ dias da campanha × dias passados) e a diferença para ele.
+ * Leitura de uma finalidade: progresso e tempo da campanha (trilha), meta do
+ * mês e o esperado até hoje no mês (20/10: meta do mês ÷ dias do mês na
+ * campanha × dias passados do mês), comparado com o realizado no mês.
  */
 export function leituraFinalidade(dados, f) {
   const progresso = Math.min(1, f.valor / f.meta_valor)
   const tempo = fracaoAte(dados.inicio, dados.fim, dataLocal(dados.hoje))
-  const esperado = f.meta_valor * tempo
-  const diferenca = f.valor - esperado
-  const diasCampanha = diasEntre(dataLocal(dados.inicio), dataLocal(dados.fim))
+  const metaMes = metaDoMes(dados.inicio, dados.fim, dados.hoje, f.meta_valor)
+  const valorMes = f.valor_mes ?? f.valor
+  const esperado = metaMes.porDia * metaMes.diasPassados
+  const diferenca = valorMes - esperado
   return {
     progresso,
     tempo,
+    metaMes,
+    valorMes,
+    pctMes: valorMes / metaMes.valor,
+    faltaMes: Math.max(0, metaMes.valor - valorMes),
     esperado,
     diferenca,
-    noRitmo: Math.abs(diferenca) < f.meta_valor * 0.01,
-    diasCampanha,
+    noRitmo: Math.abs(diferenca) < metaMes.valor * 0.01,
+    diasCampanha: diasEntre(dataLocal(dados.inicio), dataLocal(dados.fim)),
     diasPassados: diasEntre(dataLocal(dados.inicio), dataLocal(dados.hoje)),
-    porDia: f.meta_valor / diasCampanha,
-    metaMes: metaDoMes(dados.inicio, dados.fim, dados.hoje, f.meta_valor),
-    valorMes: f.valor_mes ?? f.valor,
     batida: f.valor >= f.meta_valor,
   }
 }
