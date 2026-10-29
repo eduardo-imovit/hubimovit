@@ -490,6 +490,10 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | Nome | Tipo | O que faz | Chamado por |
 |---|---|---|---|
 | `handle_new_user` | trigger em auth.users | cria perfil `user` para `@imovit.com.br` | Auth |
+| `saude_leituras` | função definer (só service_role) | confere as 6 leituras automáticas (§2.18) | Edge `alerta-leituras` |
+| `meus_codigos_crm` | função definer | leads cujo dono **atual** é o corretor logado (§2.17) | RLS da jornada, `atividades`, `leads_wpp_gtm` |
+| Edge `carteira-locacao` | Edge Function | lê contratos, cobranças e **pagamentos** do Imoview e grava pela RPC `carregar_carteira_locacao` (§2.10) | painel Adm locação ("Atualizar") e `pg_cron` 6h45 |
+| Edge `alerta-leituras` | Edge Function | e-mail para eduardo@ quando alguma leitura falha (§2.18) | `pg_cron` 7h15 |
 | `proteger_campos_perfil` | trigger | impede mudar o próprio role, e-mail e suspensão | update em perfis |
 | `decidir_solicitacao_acesso` | RPC definer | aprova/recusa pedido (só gestao) | Configurações |
 | `upsert_proposta_locacao`, `criar_proposta_locacao` | RPC definer | cria ou reinicia a proposta | Edge Function |
