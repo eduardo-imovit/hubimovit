@@ -42,6 +42,15 @@ class HttpError extends Error {
   }
 }
 
+// Agendador diário (pg_cron no banco, 29/10): chama com o cabeçalho x-agendador = secret
+// AGENDADOR_CHAVE. Sem isso a receita (pagas) só era lida quando alguém abria o painel e
+// clicava em "Atualizar" (a regra das 12 h olha a foto que o n8n grava às 6h30).
+function chamadaDoAgendador(req: Request) {
+  const chave = Deno.env.get('AGENDADOR_CHAVE') ?? ''
+  const enviada = req.headers.get('x-agendador') ?? ''
+  return chave.length >= 32 && enviada === chave
+}
+
 async function exigirGestao(req: Request) {
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) throw new HttpError(401, 'Requisição sem token de autenticação')
@@ -105,10 +114,12 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return jsonResponse({ erro: 'Use POST' }, 405)
 
   try {
-    await exigirGestao(req)
+    const doAgendador = chamadaDoAgendador(req)
+    if (!doAgendador) await exigirGestao(req)
     if (!imoviewKey) throw new Error('IMOVIEW_API_KEY precisa estar definida nas secrets da function')
     const corpo = await req.json().catch(() => ({}))
-    const forcar = corpo?.forcar === true
+    // o agendador sempre lê de novo (é ele que garante a receita do dia)
+    const forcar = doAgendador || corpo?.forcar === true
 
     const { data: ultima } = await supabase.from('contratos_locacao_fotos').select('lido_em').order('lido_em', { ascending: false }).limit(1)
     const lidoEm = ultima?.[0]?.lido_em ?? null
@@ -149,7 +160,7 @@ Deno.serve(async (req) => {
     const { data, error } = await supabase.rpc('carregar_carteira_locacao', { contratos, cobrancas, pagas: pagasEnxutas })
     if (error) throw error
 
-    console.log(`[carteira-locacao] ${contratos.length} contratos, ${cobrancas.length} em aberto, ${pagasEnxutas.length} pagas (${completo ? '13 meses' : 'mês anterior'})`)
+    console.log(`[carteira-locacao] ${contratos.length} contratos, ${cobrancas.length} em aberto, ${pagasEnxutas.length} pagas (${completo ? '13 meses' : 'mês anterior'})${doAgendador ? ' · agendador' : ''}`)
     return jsonResponse({ atualizado: true, completo, resultado: data })
   } catch (error) {
     if (error instanceof HttpError) return jsonResponse({ erro: error.message }, error.status)

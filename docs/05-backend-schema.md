@@ -251,6 +251,11 @@ Escrita só pela RPC `carregar_carteira_locacao` (service role: n8n `carteira_lo
   - `vw_carteira_locacao_mensal` (novos pela data de início, encerrados pela data de rescisão, como no CRM; ativos no fim do mês, em que o rescindido sem data sai na data de fim; aluguel dos novos; desde 2014; migration `20261008000000_carteira_mensal_regra_crm`);
   - `vw_recebimentos_locacao_mensal` (pelo mês do pagamento);
   - `vw_proprietarios_locacao` (pelo percentual de cada locador).
+- **Agendador da receita — migration `20261029140000_agendador_carteira_locacao`, APLICADA em 29/10:**
+  - `pg_cron` às 09h45 UTC (6h45 em São Paulo) chama a Edge Function `carteira-locacao` por `pg_net`, com `x-agendador` (secret `AGENDADOR_CHAVE` da função = `carteira_agendador_chave` no Vault) e a anon key do Vault (`supabase_anon_key`);
+  - antes disso os pagamentos só eram lidos com o botão "Atualizar" (o n8n das 6h30 grava só contratos e cobranças, e a regra das 12 h da função olhava a foto dele). Última leitura até então: 19/10;
+  - teste em 29/10: status 200, 51 pagamentos de 20 a 28/10 gravados;
+  - resposta de cada chamada em `net._http_response`.
 - `imoveis_locados` e `proprietarios_locacao` **não são usadas**. Achado: `proprietarios_locacao` tem grant total para `anon` (sem policy) → Fase 1.
 
 ### 2.11 Estoque de imóveis (RF27, PRD §5.14) — **tabelas, carga e views APLICADAS em 09/10** (migration `20261009120000_estoque_imoveis`); `buscar_imoveis` ainda é proposta
