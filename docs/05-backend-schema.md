@@ -447,6 +447,16 @@ A escrita é feita só pela Edge Function `onboarding` (service role). A leitura
   5. pausar o `crm_atendimentos` por alguns dias e então desligar.
 - ⚠ O mapa mídia → canal continua **por nome** (§2.15). Com a jornada, a mídia é a do CRM de hoje (nomes já limpos em 27/10). O `case` mantém os nomes antigos para o histórico.
 
+### 2.18 Alerta de leitura que falhou — migration `20261029150000_alerta_leituras`, **APLICADA em 29/10**; Edge Function `alerta-leituras` publicada
+- **`saude_leituras()`** (security definer, só `service_role`): uma linha por leitura com `fonte`, `ultima`, `ok` e `o_que_fazer`. Tolerâncias:
+  - CRM (`crm_leituras.dia`), carteira (`contratos_locacao_fotos.lido_em`) e receita (`net._http_response` 200 com `"atualizado":true`): hoje;
+  - atividades: desde ontem;
+  - Meta e Google: hoje − 2.
+- **`pg_cron` "alerta-leituras"** às 10h15 UTC (7h15 SP), todos os dias. Chama a função com os segredos do agendador da carteira (Vault).
+- A função manda e-mail pelo Brevo **só para eduardo@** e **só quando há falha**; `{ "teste": true }` envia sempre. Teste em 29/10: e-mail recebido.
+- ⚠ `net._http_response` guarda ~6 h: a checagem da receita depende de rodar até ~12h45 (SP).
+- Reaproveitada no aviso do topo do e-mail diário da Diretoria (v1, PRD §5.19).
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 
