@@ -457,6 +457,14 @@ A escrita é feita só pela Edge Function `onboarding` (service role). A leitura
 - ⚠ `net._http_response` guarda ~6 h: a checagem da receita depende de rodar até ~12h45 (SP).
 - Reaproveitada no aviso do topo do e-mail diário da Diretoria (v1, PRD §5.19).
 
+### 2.19 E-mail diário da Diretoria, v1 (PRD §5.19) — migration `20261029160000_boletim_diretoria`, **APLICADA em 29/10**; Edge Function "boletim-diretoria" (**endereço `rapid-worker`**) publicada
+- **`boletim_diretoria(p_hoje)`** (definer, só `service_role`): placar do mês até ontem × mês anterior até o mesmo dia (investido Meta+Google, leads, negócios, administração + intermediação recebidas), em atendimento agora, ontem (na segunda: sexta a domingo), atenção (esquecidos 🔴 e perto do dinheiro) e `saude_leituras()`. Sem ruído e sem captação.
+- **Esquecido 🔴:** ativo além do prazo na etapa (locação 3, venda 7; dias desde o último evento de etapa `entrada`/`mudanca_etapa`/`reabertura`), sem atividade realizada no prazo e sem atividade agendada.
+- **`boletim_diretoria_fotos`** (dia, dados): o que foi enviado; base da variação "vs ontem". Só `service_role`.
+- **`pg_cron` "boletim-diretoria"** `30 10 * * 1-5` (7h30 SP, seg–sex) chama `/functions/v1/rapid-worker`.
+- Conferido em 29/10 com a prévia: leads 200, em atendimento 182, perto do dinheiro 34 e receita R$ 141 mil batem. **Esquecidos 143 × 142 da página de Atendimento: falta alinhar a regra de borda com o SQL do Pareto.**
+- E-mail `{ "teste": true }` recebido por eduardo@ em 29/10.
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 
@@ -493,6 +501,8 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | `saude_leituras` | função definer (só service_role) | confere as 6 leituras automáticas (§2.18) | Edge `alerta-leituras` |
 | `meus_codigos_crm` | função definer | leads cujo dono **atual** é o corretor logado (§2.17) | RLS da jornada, `atividades`, `leads_wpp_gtm` |
 | Edge `carteira-locacao` | Edge Function | lê contratos, cobranças e **pagamentos** do Imoview e grava pela RPC `carregar_carteira_locacao` (§2.10) | painel Adm locação ("Atualizar") e `pg_cron` 6h45 |
+| `boletim_diretoria` | função definer (só service_role) | números do e-mail diário (§2.19) | Edge "boletim-diretoria" |
+| Edge "boletim-diretoria" (slug `rapid-worker`) | Edge Function | e-mail diário da Diretoria seg–sex 7h30 (§2.19) | `pg_cron` |
 | Edge `alerta-leituras` | Edge Function | e-mail para eduardo@ quando alguma leitura falha (§2.18) | `pg_cron` 7h15 |
 | `proteger_campos_perfil` | trigger | impede mudar o próprio role, e-mail e suspensão | update em perfis |
 | `decidir_solicitacao_acesso` | RPC definer | aprova/recusa pedido (só gestao) | Configurações |

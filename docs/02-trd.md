@@ -9,8 +9,8 @@
 | Gráficos | recharts | |
 | Exportação | html2pdf.js (PDF de performance), jszip (`.zip` da esteira) | |
 | Banco / Auth / Storage | Supabase `vlsrmtryzwddqkwqugfr` (plano Free) | Projeto compartilhado com outras automações do n8n |
-| Funções | Supabase Edge Functions (Deno): `esteira-locacao`, `gestao-colaboradores`, `spotify-auth`, `proposta-venda`, `captacao`, `cadastro-locador`, `distrato`, `onboarding`, `carteira-locacao`, **`alerta-leituras`** (29/10) | |
-| Agendador | `pg_cron` + `pg_net` no banco (29/10): `carteira-locacao-receita` 6h45 SP e `alerta-leituras` 7h15 SP, com segredos no Vault (`carteira_agendador_chave`, `supabase_anon_key`) | Schema §2.10 e §2.18 |
+| Funções | Supabase Edge Functions (Deno): `esteira-locacao`, `gestao-colaboradores`, `spotify-auth`, `proposta-venda`, `captacao`, `cadastro-locador`, `distrato`, `onboarding`, `carteira-locacao`, **`alerta-leituras`** (29/10), **"boletim-diretoria"** (29/10; endereço `rapid-worker`) | |
+| Agendador | `pg_cron` + `pg_net` no banco (29/10): `carteira-locacao-receita` 6h45 SP e `alerta-leituras` 7h15 SP e `boletim-diretoria` 7h30 SP seg–sex, com segredos no Vault (`carteira_agendador_chave`, `supabase_anon_key`) | Schema §2.10 e §2.18 |
 | Ingestão de dados | n8n (`n8n.srv1552977.hstgr.cloud`) grava no Supabase com service role | |
 | E-mail | Brevo (API) | |
 | Hospedagem | Vercel, `https://hub.imovit.com.br` (repo `eduardo-imovit/hubimovit`, branch `main`) | Deploy automático a cada push |

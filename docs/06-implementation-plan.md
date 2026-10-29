@@ -458,3 +458,4 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 | 2026-10-29 | PRD §5.19 (Relatório da Diretoria e dashboards finais) | Reclamação da Diretoria: dados divergem e a navegação perde o fio. Eduardo aprovou a espinha de 6 páginas, o relatório + e-mail diário, safra × fluxo sem filtro e o "parado" 3/7 dias com 🟢🟡🔴. **Sem fase no plano ainda**: depende da Fase 24 S3 e do detalhe página por página; ordem com o Brooks |
 | 2026-10-29 | Agendador da receita da carteira (prioridade 2 do Pareto) | Pagamentos só eram lidos pelo botão "Atualizar"; `pg_cron` diário chama a `carteira-locacao` (Schema §2.10) |
 | 2026-10-29 | Alerta de leitura que falhou (prioridade 3 do Pareto) | E-mail às 7h15 para eduardo@ só com falha (Schema §2.18); base do aviso do e-mail diário v1 |
+| 2026-10-29 | E-mail diário da Diretoria v1 (PRD §5.19) | Aprovado pelo Eduardo; seg–sex 7h30; segunda cobre sexta a domingo (para a sexta não ficar sem e-mail); Schema §2.19 |
