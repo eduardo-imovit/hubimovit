@@ -416,8 +416,8 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
   - **E1 = S1:** Q3 e o uso da coluna `id`.
   - **E2 = S2:** `meus_codigos_crm()`, view v2 ao lado, comparação número a número e teste da RLS simulando um corretor (dono atual × anterior).
   - **E3 = S3:**
-    - 3a, banco: view oficial, `vw_jornada_etapas`, `kpis_tv` e policies (jornada, `atividades`, `leads_wpp_gtm`) por `meus_codigos_crm()`;
-    - 3b, telas: `useAtendimentos` lendo a view (**adiantado e feito em 28/10**, pedido do Eduardo depois da reunião: Kanban = painéis; fase 8 → coluna Lead qualificado no adaptador); colunas do Kanban por `fase_ordem` (a fase 8 entra em Lead qualificado); selo de saúde por `crm_leituras`;
+    - 3a (**APLICADA em 29/10**, migration `20261029130000`), banco: view oficial, `vw_jornada_etapas`, `kpis_tv` e policies (jornada, `atividades`, `leads_wpp_gtm`) por `meus_codigos_crm()`;
+    - 3b (**feita em 28–29/10**; selo de saúde por `crm_leituras` e chave do Kanban por `codigo` em 29/10), telas: `useAtendimentos` lendo a view (**adiantado e feito em 28/10**, pedido do Eduardo depois da reunião: Kanban = painéis; fase 8 → coluna Lead qualificado no adaptador); colunas do Kanban por `fase_ordem` (a fase 8 entra em Lead qualificado); selo de saúde por `crm_leituras`;
     - 3c: localhost → `teste` → `main` e conferir o deploy de produção.
   - **E4 Gabarito final:** a mesma pergunta em Kanban, painéis, Km 32 e CRM.
   - **E5 = S4:** pausar 7 dias, depois desligar; a tabela vira arquivo morto com a escrita bloqueada.

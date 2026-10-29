@@ -409,7 +409,16 @@ A escrita é feita só pela Edge Function `onboarding` (service role). A leitura
 - Efeito conhecido: a passagem 7 → 8 divide o tempo em "Lead qualificado" em duas linhas na `vw_jornada_etapas`.
 - Ainda sem a fase 8: `FASES_FUNIL` do Kanban (`src/lib/atendimentos.js`). Hoje não importa, porque o Kanban lê a tabela antiga, que não tem a 8; entra na Fase 24, S3.
 
-### 2.17 Jornada vira a fonte única dos atendimentos (Fase 24, achados A1/A5/A7) — **PROPOSTA (28/10), não aplicada**
+### 2.17 Jornada vira a fonte única dos atendimentos (Fase 24, achados A1/A5/A7) — migration `20261029130000_fonte_unica_jornada`, **APLICADA em 29/10**
+- **Aplicado:**
+  - `meus_codigos_crm()` (security definer): códigos cuja **última** linha na jornada é do corretor logado;
+  - policies "equipe le; corretor so os seus" de `crm_atendimento_jornada`, `atividades` e `leads_wpp_gtm` por essa função (o dono atual vê o lead e o histórico; o anterior, nada);
+  - `vw_atendimentos_base` com a lista de leads da jornada;
+  - `vw_jornada_etapas` com a data de entrada pelo payload;
+  - `kpis_tv` com `crm_atualizado_ate` = `max(crm_leituras.dia)`.
+- **Teste antes de aplicar (BEGIN … ROLLBACK):** total 5.194, ativos 218; corretor simulado (Patrícia Macedo) vê 564 = os dela e 0 de outros; TV com a data de hoje.
+- `dashboard_atendimentos_crm` fica só como **reserva** (data de entrada, data de fechamento e `id` dos leads antigos). Nenhuma tela a lê.
+- Texto da proposta (28/10):
 - **Problema (auditoria de 27/10, `07-mapa-de-dados.md` §6.1):** `vw_atendimentos_base` tira *quais leads existem* (código, entrada, corretor, mídia, finalidade, data do negócio) de `dashboard_atendimentos_crm` e *em que fase estão* de `crm_atendimento_jornada`. O fluxo antigo só busca "o que mudou desde ontem" e não recupera o que perdeu:
   - **14 clientes ativos** estão só na jornada e somem de painéis e Kanban (A7);
   - **47 leads** têm a fase errada no Kanban e em Dados de Atendimento, que leem a tabela antiga direto (A1). Dos 8 conferidos no CRM, a jornada acertou os 8.
