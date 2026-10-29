@@ -28,7 +28,9 @@ Todo número passa por 5 etapas. Um erro pode nascer em qualquer uma delas.
 | `dashboard_meta_ads` | n8n `meta_ads` | diário (reinsere 14 dias) | Trigger `meta_ads_upsert` evita duplicar desde 23/09. Dado de antes de 23/09 calculado dessa tabela estava inflado |
 | `dashboard_google_ads` | n8n | diário | |
 | `imoveis_estoque` + `estoque_cargas` | n8n (Imoview) | carga em lotes | |
-| `contratos_locacao`, `_cobrancas`, `_recebimentos` | n8n `carteira_locacao_diaria` + Edge `carteira-locacao` | 6h30 | |
+| `contratos_locacao`, `_cobrancas` | n8n `carteira_locacao_diaria` + Edge `carteira-locacao` | 6h30 e 6h45 | |
+| `contratos_locacao_recebimentos` (receita) | **só** Edge `carteira-locacao` (o n8n manda `pagas: 0`) | 6h45, `pg_cron` desde 29/10 | Antes, só pelo botão "Atualizar" (parou em 19/10) |
+| — (vigia) | Edge `alerta-leituras` + `saude_leituras()` | 7h15, `pg_cron` | E-mail para eduardo@ só quando uma leitura falha |
 | `colaboradores_raw` | aprovação do Onboarding (Hub) | manual | **Não** é sincronizada pelo n8n. Os painéis cruzam atendimento × colaborador **pelo nome** |
 | `metas_campanhas`, `campanhas`, `campanha_metas` (+3 de metas) | manual | — | 5–6 tabelas de metas com formatos diferentes |
 | `propostas_locacao`, `propostas_venda`, `documentos_enviados`, `captacoes`, `feedbacks_visita`, `distratos`, `cadastros`, `onboarding_colaboradores` | o próprio Hub (telas e Edge Functions) | em tempo real | |

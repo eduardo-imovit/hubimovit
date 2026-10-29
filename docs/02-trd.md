@@ -9,7 +9,8 @@
 | Gráficos | recharts | |
 | Exportação | html2pdf.js (PDF de performance), jszip (`.zip` da esteira) | |
 | Banco / Auth / Storage | Supabase `vlsrmtryzwddqkwqugfr` (plano Free) | Projeto compartilhado com outras automações do n8n |
-| Funções | Supabase Edge Functions (Deno): `esteira-locacao`, `gestao-colaboradores`, `spotify-auth` | |
+| Funções | Supabase Edge Functions (Deno): `esteira-locacao`, `gestao-colaboradores`, `spotify-auth`, `proposta-venda`, `captacao`, `cadastro-locador`, `distrato`, `onboarding`, `carteira-locacao`, **`alerta-leituras`** (29/10) | |
+| Agendador | `pg_cron` + `pg_net` no banco (29/10): `carteira-locacao-receita` 6h45 SP e `alerta-leituras` 7h15 SP, com segredos no Vault (`carteira_agendador_chave`, `supabase_anon_key`) | Schema §2.10 e §2.18 |
 | Ingestão de dados | n8n (`n8n.srv1552977.hstgr.cloud`) grava no Supabase com service role | |
 | E-mail | Brevo (API) | |
 | Hospedagem | Vercel, `https://hub.imovit.com.br` (repo `eduardo-imovit/hubimovit`, branch `main`) | Deploy automático a cada push |
@@ -73,7 +74,7 @@
 ## 6. Ambientes e deploy
 - Só existe produção. Para rodar local: `npm run dev`, com `.env` contendo `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_WEATHER_API_KEY`, `VITE_SPOTIFY_CLIENT_ID` e `VITE_SPOTIFY_PLAYLIST_ID`.
 - As mesmas variáveis `VITE_*` precisam estar cadastradas na Vercel. Sem elas, a tela fica branca.
-- Secrets das Edge Functions: `APP_URL`, `BREVO_API_KEY`, `IMOVIEW_API_KEY`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` (além das padrão do Supabase). Editar Secrets no painel republica a função, por isso os números de versão "pulam".
+- Secrets das Edge Functions: `APP_URL`, `AGENDADOR_CHAVE` (29/10, = Vault `carteira_agendador_chave`), `BREVO_API_KEY`, `IMOVIEW_API_KEY`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` (além das padrão do Supabase). Editar Secrets no painel republica a função, por isso os números de versão "pulam".
 - **Ordem de deploy** quando o front depende de algo novo no banco: migration → Edge Function → push do front.
 - Migrations e funções são aplicadas pelo conector MCP do Supabase (o CLI local não está logado). O push é feito pelo Eduardo, no VS Code.
 

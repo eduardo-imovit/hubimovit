@@ -866,6 +866,104 @@ O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colabo
 - O checklist marca sozinho login e nível.
 - `npm run build` ok.
 
+### 5.19 Relatório da Diretoria e dashboards finais (pedido da Diretoria, 28–29/10) — **APROVADO (29/10) como direção; detalhe página por página a seguir**
+**Problema.** O diretor não confia nos dados (divergem do CRM) e perde o fio do raciocínio navegando entre páginas. Causa: duas fontes de atendimento (achados A1/A7, Fase 24) e painéis sem ligação entre si nem com as listas (0 links nos 4 painéis; os filtros da URL se perdem ao trocar de página pelo menu).
+
+**Estrutura (a espinha do dinheiro).** Mídia → Lead → Atendimento → Visita → Proposta → Contrato → Carteira. Seis páginas:
+- **Relatório da Diretoria**: resumo, entregue primeiro (é o que a Diretoria pediu);
+- **Aquisição**: ex-Performance (§5.0b);
+- **Atendimento**: junta Gestão v2 (§5.0c), jornada (§5.12), Dados de atendimento e Comercial/Meus números (o corretor vê esta página filtrada nele; "Ver como" do §5.11). Dados de atendimento deixa de ser página;
+- **Fechamento**: propostas e esteira;
+- **Carteira**: ex-Adm locação (§5.13);
+- **Estoque**: ao lado da espinha (§5.14); recebe o capítulo "A carteira está atualizada?" do §5.0c.
+
+**Gargalo que orienta a ordem (dados de 28/10).** Safra jul–set/26, locação: Seleção de imóveis → Qualificado 45%, **Qualificado → Visita 35%**, lead → negócio 4,2% (12 de 288). Venda: Qualificado → Visita 29% (base pequena, 2 negócios). Pressuposto: o descartado fica na fase em que caiu.
+
+**Relatório da Diretoria (página no Hub) — detalhe aprovado em 29/10 (P1–P3, R1–R5).** Uma visão geral **na ordem do funil** (pedido do Eduardo): placar no topo e cinco atos, do investimento à receita. Cada ato tem título-conclusão gerado pelos dados, poucos números com comparação e link para a página detalhada.
+
+- **Período e comparação.** Mês atual (padrão) → mês anterior **até o mesmo dia**; mês passado → o mês antes dele; 30/60/90 dias e personalizado → período anterior do mesmo tamanho.
+- **Placar (P1).** Uma linha com 5 números, cada um com ▲▼ e a comparação: **Investido · Leads · Em atendimento · Negócios · Receita**.
+- **Ato 1 — Investimento e campanhas → Aquisição.** Investido por plataforma (Meta, Google); **no máximo 5 campanhas** (P2) com gasto, conversões na plataforma e custo por conversão. Aviso fixo: "a ligação campanha → lead do CRM ainda não é rastreada". Ex.: "R$ 5 mil investidos, 60% no Google; a campanha X levou metade da verba."
+- **Ato 2 — Leads → Aquisição.** Leads válidos (fluxo) por finalidade e canal; % vindo de mídia paga; **custo real por lead pago** = investimento Meta + Google ÷ leads "Campanhas pagas" no CRM (R4). Se o período pegar antes de 23/09, aviso de dias duplicados no Meta (custo inflado). Ex.: "196 leads, 28% pagos, a R$ 92 cada."
+- **Ato 3 — Funil → Atendimento.** Etapas em linha com quantos chegaram a cada uma no período (fluxo). Embaixo de cada etapa: **dias desde a entrada até chegar nela** (P3; funciona mesmo quando o corretor pula etapas; "acumulando" com menos de 5 casos) e a conversão por passagem (safra, com selo de maturidade). **Gargalo calculado** = passagem com a menor taxa, em destaque (R5). Ao lado: em atendimento agora e 🔴 esquecidos. Ex.: "Na locação o lead chega à Seleção de imóveis em 1 dia, mas só 35% dos qualificados chegam à visita."
+- **Ato 4 — Fechamento → Fechamento.** Negócios no período (fluxo), locação e venda; propostas em andamento (com o valor na locação); conversão lead → negócio e dias até o negócio (safra madura). Venda em **quantidade** de negócios, com a lacuna escrita na tela (R2).
+- **Ato 5 — Receita e carteira → Carteira.** **Receita total** = administração + intermediação recebidas, **sempre com a divisão** embaixo (R1): administração = recorrente; intermediação = pontual, com o nº de contratos. A frase diz de qual das duas veio a variação. Contratos ativos e saldo novos × encerrados; administração contratada (MRR); administração em risco (aviso de desocupação + fim do prazo em até 90 dias); inadimplência. Ex. (set/26): "Setembro rendeu R$ 115 mil, 30% acima de agosto; a alta veio da intermediação (6 contratos); a administração subiu 12%."
+- **Rodapé.** Fonte e hora de leitura de cada ato. Leitura atrasada → tarja "dados de dd/mm" **no próprio ato**.
+- **Cliques.** Placar e atos abrem a lista por trás do número (recebimentos sem dados pessoais; leads; negócios e propostas) ou a página detalhada já filtrada.
+
+**Dados conferidos em 29/10 (base do detalhe).**
+- Receita (recebimentos, por mês de pagamento): administração R$ 55–69 mil/mês (mai–set), intermediação R$ 12–63 mil/mês com 3–6 contratos. **A última leitura dos pagos era de 19/10.**
+- Investimento: R$ 4,5–6 mil/mês desde ago (out até 28/10: Google R$ 3,2 mil, Meta R$ 1,8 mil); 54 de 196 leads de out vieram de mídia paga.
+- **Nenhum** lead pago no CRM (jul–out, 156) tem campanha preenchida.
+- Jornada desde 06/10: Pré-atendimento → Seleção de imóveis 1,3 dia (locação, 69 casos); Seleção de imóveis → Qualificado 2,2 dias (18); venda Pré → Qualificado direto 7,4 dias (25). Visita → Proposta com 2 casos. Pular etapa é comum.
+
+**Página de Atendimento — detalhe aprovado em 29/10.** Só **clientes**: atendimentos de mídia "Captação" (`is_interno`, proprietário cadastrando imóvel) ficam fora de todas as contas, com **aviso fixo** da diferença para o CRM (decisão do Eduardo: evidenciar sempre). Conferido em 29/10: CRM 62 locação / 156 venda = Hub 56 / 126 + 5 / 31 captações (± 1 de horário da leitura). Sem faixa de Aquisição no topo (decidido 29/10): a mídia fica na página Aquisição e no Relatório.
+
+- **0 Manchete.** **Em atendimento agora = todos os ativos** (não só Qualificado a Proposta, como no §5.0c), para bater com o CRM: 182 (locação 56 · venda 126) em 29/10. Aviso: "O CRM mostra N: M são captações e ficam fora desta conta." Ao lado: 🔴 esquecidos (vs ontem), conversão na passagem gargalo (vs período anterior), negócios no período (vs mês anterior até o mesmo dia). Frase ex.: "182 clientes em atendimento, 143 sem nenhuma ação no prazo. O maior acúmulo está em Qualificado (103)." Cada número abre a sua lista; o gargalo leva ao capítulo 1.
+- **1 Onde trava?** Seletor Locação | Venda. **5 etapas**: Lead (Pré-atendimento + Seleção de perfil + Seleção de imóveis) → Qualificado → Visita → Proposta → Negócio. Em cada etapa: quantos chegaram (fluxo), dias desde a entrada (mediana; "acumulando" com n < 5) e descartados (clique → capítulo 2). Na seta: conversão da passagem (safra, com selo de maturidade). **Gargalo = menor taxa entre as passagens com base ≥ 20 leads**, seta em coral. Com a safra jul–set: locação Lead → Qualificado 29% (288 → 84 → 29 → 16 → 12); venda Qualificado → Visita 29%.
+- **2 Por quê?** Motivos de descarte lidos das interações do CRM ("ATENDIMENTO DESCARTADO MOTIVO: …"), agrupados:
+  - 🔴 **Perdemos o contato**: não responde contato; +30 dias sem interação;
+  - 🟠 **Cliente sem perfil**: sem condições; desistiu; região fora do escopo; curiosidade;
+  - ⚪ **Não é perda**: repique/transferência de corretor; teste do marketing; alteração de etapa; corretor se passando por cliente; erro. **Sai das contas do funil**, como o ruído.
+  Desde 06/10: 112 / 45 / 41. Clicar numa etapa do capítulo 1 filtra os motivos; clicar num motivo abre a lista. O link para o Estoque saiu ("não encontrou imóvel" quase não aparece).
+- **3 Com quem?** Tabela por corretor: ativos, 🔴 esquecidos (n e %), atividades realizadas no período (sem anotações), conversão no gargalo vs média da equipe. **Ordenada pelo número de esquecidos.** Frase ex. (29/10): "9 de 13 corretores com mais de 2/3 da carteira esquecida: é processo, não pessoa." Clicar no corretor filtra a página; com corretor filtrado, valem as regras do §5.0c (só a média da equipe, sem nomes; "Comparar com" só para a Gestão).
+- **4 O que fazer hoje?** Lista de trabalho dos 🔴 em 3 blocos, do mais perto do dinheiro:
+  - 🔥 **Perto do dinheiro**: Proposta + Visita (29/10: 8 + 26);
+  - 🔴 **Qualificados** (83; 39 nunca tiveram atividade);
+  - ⚪ **Início do funil** (26).
+  Colunas: código (abre o Imoview), corretor, etapa, dias na etapa, última atividade (ou "nunca"). **Dentro do bloco: quem passou do prazo há menos tempo primeiro** (mais chance de recuperar). O corretor vê só a dele. O Hub não escreve no CRM; a lista muda na leitura do dia seguinte. O e-mail diário leva o número do bloco 🔥. Substitui o mapa de pessoas e a página Dados de atendimento.
+
+**E-mail diário (7h30, Brevo; pedido da Diretoria).** Boletim, não o relatório inteiro:
+- **Ontem:** leads novos (L/V), mudanças de etapa, propostas novas, negócios.
+- **No mês:** receita e negócios, vs mês anterior **até o mesmo dia**.
+- **Atenção:** 🔴 esquecidos (qtd e variação vs ontem), propostas paradas, avisos de rescisão.
+- Link "abrir o relatório completo" (Hub, mês atual). Todo número tem link para a lista no Hub.
+- Se a leitura do CRM do dia falhar, o e-mail sai com aviso no topo ("CRM sem leitura hoje, números de dd/mm"). Dia sem novidade: e-mail curto.
+- **Detalhe aprovado em 29/10:**
+  - **Destinatários:** daniel@imovit.com.br, gabriel@imovit.com.br, eduardo@imovit.com.br (o mesmo e-mail para os três).
+  - **Quando:** segunda a sexta, **7h30** (depois da receita às 6h45 e do alerta de leitura às 7h15; combinado com o Asimov em 29/10). Na segunda, o bloco "ontem" cobre sábado e domingo.
+  - **Assunto:** "Imovit dd/mm · N negócios ontem · N perto do dinheiro esquecidos".
+  - **Blocos:** Placar (Investido · Leads · Em atendimento · Negócios · Receita; mês até ontem vs mês anterior até o mesmo dia) → Ontem (leads novos L/V, mudanças de etapa, propostas novas, negócios) → Atenção (🔥 perto do dinheiro esquecidos com variação vs ontem; 🔴 esquecidos no total; avisos de rescisão novos) → link "Abrir o relatório completo" → rodapé com a hora de cada leitura.
+  - Cada número com link para a lista no Hub.
+
+**Regras de todas as páginas.**
+- Todo número é clicável e abre a lista por trás dele, com os mesmos filtros; o código abre no Imoview. É o gabarito da Diretoria (não há relatório pronto no Imoview): conferência por amostra de códigos.
+- Barra de filtros fixa (período, finalidade, canal, corretor) que acompanha a navegação.
+- Cada métrica tem uma página dona; nas outras aparece o mesmo componente lendo a mesma fonte, nunca uma segunda conta.
+- Título de capítulo/ato = conclusão gerada pelos dados.
+- Rodapé com fonte, hora da leitura, nº de registros e estado dos vigias.
+
+**Períodos.** Mês atual (padrão), mês passado, 30/60/90 dias, personalizado.
+
+**Safra × fluxo (decisão do Eduardo, 29/10; sem filtro de troca).**
+- Cartão de **quantidade** (leads, propostas, negócios) = **fluxo** do período ("no período").
+- Cartão de **taxa** (conversão) = **safra** que entrou no período, com **selo de maturidade** (% ainda em andamento; ex.: "safra imatura: a taxa vai subir").
+- A jornada só tem fluxo desde 06/10: comparação de fluxo com o período anterior mostra "acumulando" até haver os dois períodos.
+
+**Parado (decisão do Eduardo, 29/10; resolve J1 do §5.12).** Prazo na etapa, contado da última mudança de etapa na jornada: **locação 3 dias, venda 7 dias**.
+- 🟢 **Andando**: mudou de etapa dentro do prazo.
+- 🟡 **Parado, mas trabalhado**: passou do prazo, mas teve atividade realizada ou interação no CRM no prazo, ou tem atividade agendada.
+- 🔴 **Esquecido**: passou do prazo sem nada disso. Só o 🔴 vai para o topo da lista de trabalho.
+- Leads sem mudança de etapa desde 06/10 aparecem como "23+ dias" (data de chegada na etapa desconhecida).
+- Teste de 29/10 (só atividades): locação 53 ativos → 15 🟢, 0 🟡, 38 🔴; venda 114 → 13 🟢, 7 🟡, 94 🔴. Limite: mede o que foi **registrado** no Imoview, não o que foi feito (atendimento só por WhatsApp aparece como 🔴).
+
+**Requisitos de dado novos.**
+- **Última interação diária.** A jornada só grava quando o lead muda de etapa/situação; as interações do payload ficam congeladas naquele momento. O robô passa a guardar, a cada leitura diária, a **data da última interação** dos leads ativos. Achado de 29/10: a resposta do CRM já traz o campo `datahoraultimainteracao`; basta gravá-lo a cada leitura. Até lá, o 🟡 considera só atividades e a tela avisa "interações do CRM ainda não consideradas".
+- **Recebimentos pagos lidos todo dia (R3).** Hoje só a Edge Function `carteira-locacao` lê as contas pagas, ao abrir o Adm locação (última leitura: 19/10). O relatório e o e-mail precisam da leitura diária antes do envio. **Sem isso, não há e-mail diário.**
+- **Atribuição campanha → lead (lacuna).** O CRM não traz a campanha dos leads pagos. Caminho a investigar: `leads_wpp_gtm`. Até lá, campanhas são avaliadas pela conversão na plataforma.
+- **Meta sem duplicados antes de 23/09** para períodos de 60/90 dias (ou aviso na tela).
+
+**Depende de.** Fase 24 S3 (fonte única). Nada desta seção vai ao ar lendo a tabela antiga.
+
+**Pronto quando.**
+- Cada número do relatório e do e-mail é igual à contagem da lista que ele abre.
+- Uma amostra de 5 códigos por ato confere no Imoview.
+- O e-mail não sai com dado velho sem aviso.
+- `npm run build` ok.
+
+**Perguntas em aberto.**
+- Detalhe página por página: **Relatório ✅ (29/10)** → **e-mail diário ✅ (29/10)** → **Atendimento ✅ (29/10)** → Aquisição → Fechamento → Carteira → Estoque; `03-app-flow.md` e a fase no plano depois do detalhe.
+
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.
 
