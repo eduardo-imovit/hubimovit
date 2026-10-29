@@ -385,6 +385,44 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
   - desligamento (fluxo inverso);
   - outras funções além de corretor (P4).
 
+## Fase 24 — Uma fonte só para os atendimentos (Schema §2.17, achados A1/A7) — **aprovada (28/10)**
+- **Por quê:** a mesma pergunta tem duas respostas no Hub. Kanban (tabela antiga) e painéis (jornada) divergem, e 14 leads ativos não aparecem em lugar nenhum além do Km 32.
+- **S1 Conferir a jornada (só leitura, o Eduardo roda):** queries da Fonte 4 em `07-mapa-de-dados.md` §6.1b. Elas respondem:
+  - a jornada tem data de entrada para todos?
+  - corretor, mídia e finalidade batem com a tabela antiga? Quando não batem, quem está certo no CRM?
+  - de onde tirar a data do negócio?
+- **S1b Ponto cego da jornada (achado em 28/10):** o 5735 está ativo no CRM e a leitura de domingo não o devolve. **FEITA em 28/10:** a fase **8 = Agendamento** (doc da API) não estava nas consultas do "Montar consultas". Nó v2 no ar (fases 1–8) e migration `20261028120000` aplicada (Agendamento = "Lead qualificado"). Texto original do passo: Corrigir no n8n (o Eduardo cola) e decidir a etapa do Hub em que ela aparece (proposta: Lead qualificado) **antes da S3**. Verificar também a fase 1 (nenhum ativo na jornada).
+- **S2 View nova ao lado:** migration com `vw_atendimentos_base_v2` (mesmas colunas e ordem). Comparar com a atual: total, por mês de entrada, por fase, por canal, negócios por mês.
+  - Diferença esperada: os 14 ativos, os 47 de fase e o histórico de `primeira_leitura`. Qualquer outra precisa de explicação.
+- **S3 Trocar:**
+  - `create or replace view vw_atendimentos_base` com o corpo da v2 (testar em `BEGIN … ROLLBACK`);
+  - Kanban e Dados de Atendimento passam a ler a view;
+  - o selo "Saúde dos dados" passa a olhar `crm_leituras`;
+  - conferir os painéis no ar (desktop e celular) e o gabarito do CRM.
+- **S4 Aposentar:** o Eduardo pausa o `crm_atendimentos` no n8n por 7 dias. Se nada quebrar, desligar. A tabela fica como arquivo morto.
+- **Pronto quando:** Kanban, painéis e Km 32 dão o mesmo número para a mesma pergunta, os 14 leads aparecem e nenhuma tela lê `dashboard_atendimentos_crm`.
+- **Inventário no banco (E0, 28/10)**, objetos que citam `dashboard_atendimentos_crm`:
+  - `kpis_tv` (função, fora do repo);
+  - `vw_atendimentos_base` e `vw_jornada_etapas` (views);
+  - policies **"equipe le; corretor so os seus"** de `atividades` e `leads_wpp_gtm` (RLS).
+  - Correção: `meu_nome_crm()` e `nome_corretor_crm()` **não** leem a tabela antiga (leem `perfis` e `colaboradores_raw`). As views de 14/09 não aparecem.
+- ⚠ **Achado de segurança (RLS do corretor):**
+  - **Hoje:** atividades e leads do WhatsApp (nome e telefone do cliente) aparecem para o corretor se o código estiver na tabela antiga, que tem a própria RLS por corretor. Como a tabela antiga não atualiza leads antigos, num lead **transferido** o corretor anterior pode continuar vendo o telefone e o novo não ver (a Q3 mede com `corretor_diferente`).
+  - **Ao parar o fluxo antigo:** os leads novos ficariam sem atividades e telefone para o corretor.
+  - **Armadilha:** trocar por `codigo in (select codigo from crm_atendimento_jornada)` não serve. A policy da jornada é por linha (corretor *daquele* evento), então o corretor anterior continua vendo as linhas antigas. Pelo mesmo motivo, uma view `security_invoker` com `distinct on` na jornada mostraria ao corretor anterior a última linha *visível para ele* como se o lead ainda fosse dele.
+  - **Solução (E2):** uma função `security definer` `meus_codigos_crm()` (códigos cuja **última** linha na jornada tem o corretor = `meu_nome_crm()`). As policies da jornada, de `atividades` e de `leads_wpp_gtm` passam a usá-la: o dono atual vê o lead e o histórico inteiro, o anterior não vê nada. Testar simulando um corretor (`set local role authenticated` + `request.jwt.claims`).
+- **Etapas:**
+  - **E0 Inventário:** feito no banco (acima); faltam o corpo da `kpis_tv` e os fluxos do n8n.
+  - **E1 = S1:** Q3 e o uso da coluna `id`.
+  - **E2 = S2:** `meus_codigos_crm()`, view v2 ao lado, comparação número a número e teste da RLS simulando um corretor (dono atual × anterior).
+  - **E3 = S3:**
+    - 3a, banco: view oficial, `vw_jornada_etapas`, `kpis_tv` e policies (jornada, `atividades`, `leads_wpp_gtm`) por `meus_codigos_crm()`;
+    - 3b, telas: `useAtendimentos` lendo a view (**adiantado e feito em 28/10**, pedido do Eduardo depois da reunião: Kanban = painéis; fase 8 → coluna Lead qualificado no adaptador); colunas do Kanban por `fase_ordem` (a fase 8 entra em Lead qualificado); selo de saúde por `crm_leituras`;
+    - 3c: localhost → `teste` → `main` e conferir o deploy de produção.
+  - **E4 Gabarito final:** a mesma pergunta em Kanban, painéis, Km 32 e CRM.
+  - **E5 = S4:** pausar 7 dias, depois desligar; a tabela vira arquivo morto com a escrita bloqueada.
+  - **E6 Fechamento:** docs (A1/A5/A7) e vault ✅. Depois, opcional: sentinela "visto por último em".
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).
@@ -416,3 +454,5 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 | 2026-10-14 | Fase 20 (distratos) | Pedido do Eduardo: procedimento de desocupação + motivo + pesquisa de satisfação pelo Hub; o ADM gera o link por contrato; o envio é o aviso oficial; 1ª entrega só com registro + lista |
 | 2026-10-14 | Fase 21 (central de cadastros) | Eduardo: 6 cadastros do Google num motor único (1 página + 1 tabela + 1 função + 1 lista); piloto Locador PJ; destino de e-mail por tipo; histórico das 2 planilhas importado; pode construir |
 | 2026-10-19 | Fase 23 (onboarding de colaboradores) | Entrada da Giovana feita à mão (INSERT + checklist no Obsidian); Eduardo: a pessoa passa os dados por link, ele cria e-mail e Imoview, aprova no Hub → `colaboradores_raw`; checklist com CRM e fila de repique |
+| 2026-10-28 | Fase 24 (fonte única dos atendimentos) | Auditoria de 27/10: duas fontes para o mesmo lead (A1/A7); Eduardo aprovou a jornada como fonte única, trocando ao lado e comparando antes |
+| 2026-10-29 | PRD §5.19 (Relatório da Diretoria e dashboards finais) | Reclamação da Diretoria: dados divergem e a navegação perde o fio. Eduardo aprovou a espinha de 6 páginas, o relatório + e-mail diário, safra × fluxo sem filtro e o "parado" 3/7 dias com 🟢🟡🔴. **Sem fase no plano ainda**: depende da Fase 24 S3 e do detalhe página por página; ordem com o Brooks |

@@ -50,8 +50,8 @@ Levantado seguindo os imports de cada página (script em §8). "Lê" = `select`,
 ### Operação
 | Tela | Rota | Lê |
 |---|---|---|
-| Kanban | `/kanban` | `dashboard_atendimentos_crm` (tabela antiga), `colaboradores_raw`, `perfis`. Filtro padrão: entradas dos últimos 7 dias (`src/lib/atendimentos.js:28`) |
-| Dados de Atendimento | `/kanban/dados` | `dashboard_atendimentos_crm`, `atividades`, `colaboradores_raw`, `perfis` |
+| Kanban | `/kanban` | **`vw_atendimentos_base`** (desde 28/10, adaptador em `src/hooks/useAtendimentos.js`; antes, a tabela antiga), `colaboradores_raw`, `perfis`. Fase 8 (Agendamento) → coluna Lead qualificado. Filtro padrão: entradas dos últimos 7 dias (`src/lib/atendimentos.js:28`) |
+| Dados de Atendimento | `/kanban/dados` | **`vw_atendimentos_base`** (desde 28/10, mesmo adaptador; `data_fechamento` = `data_encerramento` da view, que tem a data dos descartes), `atividades`, `colaboradores_raw`, `perfis` |
 | Relatório de Atividades | `/kanban/atividades` | `atividades`, `colaboradores_raw`, `perfis` |
 | Home | `/` | rpc `campanha_resumo` (Km 32), `vw_atendimentos_base`, `vw_tempo_resposta`, `metas_campanhas`, `propostas_locacao`, `documentos_enviados`, `solicitacoes_acesso` + conteúdo de Configurações |
 | TV | `/tv-display` | rpc `campanha_resumo` (relê a cada 5 min), rpc `kpis_tv`, conteúdo de Configurações |
@@ -177,6 +177,117 @@ Gabarito: abrir os 10 códigos no CRM e conferir corretor, mídia, finalidade, f
 | P1 Chegou? | ✅ Jornada: 1 leitura/dia às ~6h02, `ignorados` = 0 nos 15 dias. Falha conhecida em 16/10 (erro passageiro do Imoview; o retry está ligado desde 19/10). As mudanças daquele dia foram pegas em 17/10, datadas com 1 dia de atraso. Domingo lê tudo (~5.100) e os dias úteis leem ativos + encerrados de 60 dias (~950). Os 1.984 "novos" de 18/10 são atendimentos antigos vistos pela 1ª vez (primeira_leitura), não leads novos. Tabela antiga: última entrada 26/10, 3.034 linhas (= total da view). **Vigia a criar:** alerta se não houver leitura no dia (o selo não olha `crm_leituras`, A2) | 27/10 |
 | P2 Chegou inteiro? | ⚠️ Tabela antiga 3.034 × jornada 5.158. `so_na_antiga` = 0; **`so_na_jornada` = 2.124**: 1.982 descartados e 126 negócios em `primeira_leitura` (histórico que o fluxo antigo nunca trouxe, porque só busca "o que mudou desde ontem") + **16 em atendimento**. Destes, 2 entraram em 27/10 (só horário: 6497, a proposta do dia, e 6498, o 1º lead "Meta Ads") e **14 são clientes ativos invisíveis em painéis e Kanban**: 5655 (Rachel, Proposta), 6396 (Patrícia, Visita, entrada 14/10), 1313 (Ricardo, interação 26/10), 9 da Maria Inês (entradas 2024–25, interações até out/26), 2883 (Daniel). Aparecem no Km 32 (que lê a jornada). **Causa:** o fluxo antigo não recupera o que perdeu. **Correção:** a view base passar a tirar a lista de leads da jornada (Fonte 4, A1/A7). Os 126 negócios por ano de entrada: 2024 = 43 (antes do piso, inofensivo), 2025 = 82, 2026 = 1. Efeito: a **conversão fica subestimada** (negócios sem data de fechamento conhecida não entram em "negócios no mês"). Dos 82 de 2025, só **1** é de out/2025 (os outros 81 são de jan–set, antes do piso). Dentro do piso faltam **2 negócios** (1 de out/2025 + 1 de 2026): impacto pequeno na conversão. Os 81 explicam o piso de histórico (R7): a tabela antiga não tem os negócios de antes de out/2025 | 27/10 |
 | P3 Chegou certo? | ⚠️ **47 leads com fase/situação diferente** entre a tabela antiga e a jornada, e em **todos** a jornada está à frente: 33 avançaram no funil, **7 em Proposta**, **4 Negócios realizados** e 4 reabertos (descartado → em atendimento). **Gabarito no CRM: 8 de 8 batem com a jornada** (6008, 6294, 6310, 5791 e 6427 em 27/10; 6241, 6383 e 6441 em 23/10). Conclusão: a jornada é confiável. Kanban e Dados de Atendimento (que leem a fase da tabela antiga) mostram esses 47 errado. **Explica a divergência de propostas de 23/10 (A1 confirmado).** Os painéis estão certos nesses casos. Não conferido na amostra: corretor, mídia e finalidade (ficam com R1/R2) | 27/10 |
+
+### 6.1b Fonte 4: a jornada sozinha dá conta? (Fase 24, S1)
+
+**Q1 Que datas o payload guarda?** Lista os campos com "data" no nome e em quantos leads aparecem.
+```sql
+with u as (select distinct on (codigo) codigo, payload from crm_atendimento_jornada
+           where payload is not null order by codigo, id desc)
+select k as campo, count(*) as leads
+from u, jsonb_object_keys(u.payload) k
+where k ilike '%data%' group by k order by leads desc;
+```
+
+**Q2 Cobertura:** quantos leads da jornada têm payload e data de entrada legível.
+```sql
+with c as (select distinct codigo from crm_atendimento_jornada),
+     u as (select distinct on (codigo) codigo, payload from crm_atendimento_jornada
+           where payload is not null order by codigo, id desc)
+select count(*) as leads,
+       count(u.codigo) as com_payload,
+       count(*) filter (where u.payload->>'datahoraentradalead' ~ '^\d{2}/\d{2}/\d{4}') as com_data_entrada
+from c left join u using (codigo);
+```
+Esperado: `com_data_entrada` = `leads`. Se faltar, ver quais são (`primeira_leitura` antigos?) e se a tabela antiga cobre.
+
+**Resultado Q1 + Q2 (28/10):**
+- 5.166 leads na jornada, todos com payload.
+- **5.163 têm os campos do Imoview**, incluindo `datahoraentradalead`. O campo `datafechamento` existe, mas **vem vazio em todos, até nos negócios** (já registrado no handoff em 06/10; a Q4 confirmou). A data do negócio fica na interação "NEGÓCIO REALIZADO … datahora" em `payload.interacoes` (mesmo padrão da data do descarte). Por isso a Q4b não precisa ser rodada.
+- **3 têm outro formato** (só a chave `data_fechamento`, com underline) e por isso ficam sem data de entrada. Investigar com a Q2b.
+```sql
+with u as (select distinct on (codigo) codigo, id, tipo, situacao, data_evento, detectado_em, payload
+           from crm_atendimento_jornada where payload is not null order by codigo, id desc)
+select codigo, id, tipo, situacao, data_evento, detectado_em, payload
+from u where not payload ? 'datahoraentradalead';
+```
+**Resultado Q2b (28/10):** 3528, 5735 e 6178, todos "Em atendimento", com payload `{"origem":"dashboard_atendimentos_crm","data_fechamento":null}`, gravado na carga inicial (06/10 17:19). O payload nunca foi trocado, apesar da leitura completa de domingo, então **o Imoview não devolve mais esses códigos** (excluídos, mesclados ou fora das consultas?). Eduardo confere no CRM. Na view nova: data de entrada da tabela antiga como reserva.
+- **Conferido no CRM (28/10):** 3528 e 6178 **descartados**; **5735 em atendimento**. ⚠ **A jornada também tem ponto cego:** um lead ativo que a leitura completa de domingo não devolve. Hipótese: a combinação fase × situação × finalidade dele não está entre as consultas do nó "Montar consultas". **Bloqueia a S3** (trocar a fonte com o buraco aberto congela leads como o 5735). Q2c, as combinações que a jornada conhece:
+```sql
+with u as (select distinct on (codigo) codigo, finalidade, fase_crm, funil, situacao
+           from crm_atendimento_jornada
+           where payload ? 'datahoraentradalead'
+           order by codigo, id desc)
+select finalidade, funil, fase_crm, count(*) as leads
+from u where situacao = 'Em atendimento'
+group by 1, 2, 3 order by 1, 2, 3;
+```
+**Resultado Q2c + CRM (28/10): causa achada.** O 5735 (Venda, Simon, mídia "Site da imobiliária") está na fase **Agendamento**. A jornada só conhece as fases ativas 2, 3, 4, 5 e 7: **o "Montar consultas" não pergunta pela fase Agendamento**, então todo lead nela é invisível para a jornada. Origem: a decisão da Fase 12 (29/09) de um funil de 7 etapas "sem Agendamento" virou também a lista do que coletar. **Regra: coletar tudo, esconder na tela.** A fase 1 (Pré-atendimento) também não tem nenhum ativo: verificar. Q2d (código e piso de leads por fase na tabela antiga):
+```sql
+select fase, fase_nome, count(*) as leads
+from dashboard_atendimentos_crm
+where btrim(situacao) = 'Em atendimento'
+group by 1, 2 order by 1;
+```
+Correção: incluir Agendamento no "Montar consultas" (o Eduardo cola no n8n) e, na view, agrupá-lo em "Lead qualificado" (**aprovado pelo Eduardo em 28/10**).
+
+**Resultado Q2d (28/10):** a tabela antiga também só tem as fases ativas 1, 2, 3, 4, 5 e 7 (fase_nome quase sempre nulo). **Os dois robôs são cegos para o Agendamento.** Em 29/09 o handoff registrou que "Agendamento não existe como fase" no Imoview, então **a fase foi criada depois**. O robô pergunta por uma lista fixa de fases (a resposta do Imoview não traz o código da fase, que vem da própria consulta). Código do Agendamento ainda desconhecido (provável 8). Próximo: o Eduardo conta os leads em Agendamento no CRM (gabarito) e copia o código do nó "Montar consultas"; a versão nova inclui a fase e um **sentinela** (soma das fases conhecidas × total do Imoview, com aviso quando divergir).
+- **Gabarito do CRM (28/10):** 5 leads em Agendamento / Em atendimento (2 venda, 3 locação). A fase é **antiga e pouco usada** (já existia em 29/09; foi anotada errado como inexistente).
+- **Código do nó confirmado:** listas fixas `finalidade [1, 2]`, `fase [1..7]`, `situacao [1, 2, 3]` (`docs/n8n/BACKUP_original_ate_28-10__montar_consultas.js`). Qualquer valor fora delas é invisível.
+- **Descoberta do código:** versão temporária com as fases 8–10 (`..._montar_consultas_descoberta.js`), uma rodada manual, depois a Q2e:
+```sql
+select fase_crm, finalidade, situacao, count(*) as leads, string_agg(codigo::text, ', ' order by codigo) as codigos
+from (select distinct on (codigo) codigo, fase_crm, finalidade, btrim(situacao) as situacao
+      from crm_atendimento_jornada order by codigo, id desc) u
+where fase_crm > 7
+group by 1, 2, 3 order by 1, 2, 3;
+```
+- **Sentinela (revisto):** a API não tem contagem total confirmada. Alternativa no banco: marcar quando cada lead foi visto pela última vez (o update de payload hoje não grava data) e alertar quando um lead "Em atendimento" não aparece na leitura de domingo. É assim que os 3 fósseis teriam sido pegos. Fica para depois da correção.
+
+**Q3 Concordância** com a tabela antiga nos leads que estão nas duas.
+```sql
+with u as (select distinct on (codigo) codigo, btrim(corretor) as corretor, lower(btrim(midia)) as midia, btrim(finalidade) as finalidade
+           from crm_atendimento_jornada order by codigo, id desc),
+     e as (select distinct on (codigo) codigo, to_date(substr(payload->>'datahoraentradalead', 1, 10), 'DD/MM/YYYY') as entrada
+           from crm_atendimento_jornada where payload->>'datahoraentradalead' ~ '^\d{2}/\d{2}/\d{4}' order by codigo, id desc)
+select count(*) as nas_duas,
+       count(*) filter (where e.entrada is distinct from a.data_de_entrada::date) as entrada_diferente,
+       count(*) filter (where u.corretor is distinct from btrim(a.corretor)) as corretor_diferente,
+       count(*) filter (where u.midia is distinct from lower(btrim(a.midia))) as midia_diferente,
+       count(*) filter (where u.finalidade is distinct from btrim(a.finalidade)) as finalidade_diferente
+from dashboard_atendimentos_crm a join u using (codigo) left join e using (codigo);
+```
+Diferença não é erro automático. Corretor trocado e mídias mescladas em 27/10 mudam no CRM, e a jornada tem a foto mais nova. Conferir uma amostra no CRM.
+
+**Q4 Data do negócio** (revista em 28/10 com o achado da Q1): tabela antiga × payload × jornada, incluindo negócios que só a jornada conhece.
+```sql
+with u as (select distinct on (codigo) codigo, situacao, tipo, data_evento,
+                  payload->>'datafechamento' as fech_payload
+           from crm_atendimento_jornada order by codigo, id desc)
+select u.codigo, a.data_fechamento::date as na_tabela, u.fech_payload as no_payload,
+       u.data_evento as na_jornada, u.tipo
+from u left join dashboard_atendimentos_crm a using (codigo)
+where u.situacao = 'Negócio realizado'
+order by a.data_fechamento desc nulls first
+limit 25;
+```
+**Resultado Q4 (28/10):** as 25 linhas vieram todas do grupo "só na jornada, `primeira_leitura`, `datafechamento` = texto vazio" (efeito do `nulls first` + `limit`). A comparação não apareceu. **Lição: para contar grupos, agrupar, não amostrar.** Q4b:
+```sql
+with u as (select distinct on (codigo) codigo, situacao,
+                  nullif(payload->>'datafechamento', '') as fech
+           from crm_atendimento_jornada order by codigo, id desc)
+select a.codigo is not null          as na_tabela_antiga,
+       a.data_fechamento is not null as tabela_tem_data,
+       u.fech is not null            as payload_tem_data,
+       count(*)                      as negocios,
+       count(*) filter (where u.fech ~ '^\d{2}/\d{2}/\d{4}'
+                          and to_date(substr(u.fech, 1, 10), 'DD/MM/YYYY') = a.data_fechamento::date) as datas_iguais,
+       min(u.fech) as exemplo_payload
+from u left join dashboard_atendimentos_crm a using (codigo)
+where u.situacao = 'Negócio realizado'
+group by 1, 2, 3 order by 1, 2, 3;
+```
+Junto com a Q1, define a regra da data do negócio na view nova (Schema §2.17).
 
 ### 6.2 Fichas dos números
 _(preenchidas depois das fontes e regras)_

@@ -107,7 +107,7 @@ Triggers: `trg_propostas_locacao_expira` (bloqueia avanço quando expirada), `tr
 ### 2.4 Dados comerciais e de mídia (escrita: n8n com service role)
 | Tabela | Origem | Nota |
 |---|---|---|
-| `dashboard_atendimentos_crm` | Imoview | codigo unique; corretor, datas de entrada/fechamento, fase/fase_nome, funil, campanha, midia, situacao, finalidade. Base do Kanban e das `vw_*` |
+| `dashboard_atendimentos_crm` | Imoview | codigo unique; corretor, datas de entrada/fechamento, fase/fase_nome, funil, campanha, midia, situacao, finalidade. Hoje: lista de leads da `vw_atendimentos_base` (a fase vem da jornada desde 15/10, §2.15) e fonte direta do Kanban e de Dados de Atendimento. **Vai virar arquivo morto (§2.17, Fase 24)**; não desligar o fluxo `crm_atendimentos` antes disso |
 | `atividades` / `atividades_notas` | Imoview | upsert por trigger (`fn_upsert_atividades*`) |
 | `dashboard_meta_ads` | Meta | 1 linha por dia+campanha+anúncio; trigger `meta_ads_upsert` transforma insert repetido em update (23/09). Mai–ago/26 regravados a partir da Graph API em 24/09, todos no nível campanha (`anuncio = 'N/A'`). Coluna `campaign_id` (migration `20260924120000_meta_ads_campaign_id`, aplicada em 24/09): a trigger casa por id quando ele vem preenchido (renomear só troca o nome) e por nome quando não vem; índices únicos parciais (data, campaign_id, anuncio) com id e (data, campanha, anuncio) sem id |
 | `dashboard_google_ads` | Google Ads | sem duplicados |
@@ -402,6 +402,36 @@ A escrita é feita só pela Edge Function `onboarding` (service role). A leitura
 - `cancelar` (JWT gestão).
 
 **Em aberto (PRD P3):** prazo para apagar CPF e endereço depois do desligamento.
+
+### 2.16b Fase 8 (Agendamento) nas views do funil — migration `20261028120000_fase_8_agendamento`, **APLICADA em 28/10** pelo Eduardo no SQL Editor (antes: teste em `BEGIN … ROLLBACK`; depois: 5735 e 6483 com `fase_ordem` 4 na view base)
+- O Imoview tem **8 = Agendamento** (doc da API). Desde 28/10 a jornada lê a fase 8 (nó "Montar consultas" v2, `docs/n8n/crm_jornada_diaria_v3__montar_consultas_v2.js`). Em 28/10: 5 ativos (6462, 6465, 6483 aluguel; 5735, 6127 venda) e 25 descartados.
+- `vw_atendimentos_base`, `vw_jornada_etapas` e `vw_jornada_descartes` ganham `when 8 then 4`: no Hub, Agendamento = etapa **"Lead qualificado"** (decisão do Eduardo, 28/10). O código cru 8 fica em `fase_crm` e na coluna `fase`.
+- Efeito conhecido: a passagem 7 → 8 divide o tempo em "Lead qualificado" em duas linhas na `vw_jornada_etapas`.
+- Ainda sem a fase 8: `FASES_FUNIL` do Kanban (`src/lib/atendimentos.js`). Hoje não importa, porque o Kanban lê a tabela antiga, que não tem a 8; entra na Fase 24, S3.
+
+### 2.17 Jornada vira a fonte única dos atendimentos (Fase 24, achados A1/A5/A7) — **PROPOSTA (28/10), não aplicada**
+- **Problema (auditoria de 27/10, `07-mapa-de-dados.md` §6.1):** `vw_atendimentos_base` tira *quais leads existem* (código, entrada, corretor, mídia, finalidade, data do negócio) de `dashboard_atendimentos_crm` e *em que fase estão* de `crm_atendimento_jornada`. O fluxo antigo só busca "o que mudou desde ontem" e não recupera o que perdeu:
+  - **14 clientes ativos** estão só na jornada e somem de painéis e Kanban (A7);
+  - **47 leads** têm a fase errada no Kanban e em Dados de Atendimento, que leem a tabela antiga direto (A1). Dos 8 conferidos no CRM, a jornada acertou os 8.
+- **Decisão (Eduardo, 28/10):** a jornada passa a ser a **fonte única**. A tabela antiga vira arquivo morto (não é apagada).
+- **De onde vem cada coluna na view nova:**
+
+  | Coluna | Hoje | Proposta |
+  |---|---|---|
+  | lista de leads | tabela antiga | `distinct codigo` da jornada |
+  | fase, situação | jornada (desde 15/10) | jornada (igual). **Agendamento** (fase criada no Imoview depois de 29/09, código a confirmar) entra na etapa "Lead qualificado" do Hub (Eduardo, 28/10) |
+  | corretor, mídia, finalidade, funil, campanha | tabela antiga | última linha da jornada (a foto mais recente do CRM) |
+  | data de entrada | tabela antiga | `payload->>'datahoraentradalead'` da última linha com payload — **a confirmar (Fase 24, S1)** |
+  | data do negócio | `data_fechamento` da tabela | interação "NEGÓCIO REALIZADO … datahora" em `payload.interacoes` (o campo `datafechamento` do payload vem sempre vazio); reserva: `data_fechamento` da tabela antiga, depois `data_evento` quando não for `primeira_leitura` |
+  | `id` | `dashboard_atendimentos_crm.id` | a confirmar quem usa; se ninguém, `codigo` |
+
+- **Como trocar sem risco:**
+  1. criar `vw_atendimentos_base_v2` ao lado da atual;
+  2. comparar as duas número a número;
+  3. `create or replace` da oficial com as mesmas colunas e a mesma ordem (as `vw_*` dependentes e a `kpis_tv` seguem iguais);
+  4. Kanban e Dados de Atendimento passam a ler a view;
+  5. pausar o `crm_atendimentos` por alguns dias e então desligar.
+- ⚠ O mapa mídia → canal continua **por nome** (§2.15). Com a jornada, a mídia é a do CRM de hoje (nomes já limpos em 27/10). O `case` mantém os nomes antigos para o histórico.
 
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
