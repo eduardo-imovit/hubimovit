@@ -14,7 +14,7 @@ const FASE_LEAD_QUALIFICADO = 7
  */
 function paraFormatoDasTelas(v) {
   return {
-    id: v.id ?? v.codigo,
+    id: v.codigo, // chave única na tela: lead só da jornada não tem id da tabela antiga
     codigo: v.codigo,
     corretor: v.corretor,
     data_de_entrada: v.data_entrada,
@@ -49,6 +49,11 @@ export function useAtendimentos() {
       supabase
         .from('vw_atendimentos_base')
         .select('id, codigo, corretor, data_entrada, data_encerramento, fase, funil, campanha, midia_raw, situacao, finalidade')
+        // mesma regra dos painéis (filtrarBase): sem ruído (mídia não informada/teste) e sem captação interna
+        // — decisão do Eduardo em 29/10, para o Kanban e os painéis darem o mesmo número
+        // "is not true" mantém os nulos (mídia vazia), como o !a.is_ruido dos painéis
+        .not('is_ruido', 'is', true)
+        .not('is_interno', 'is', true)
         .order('data_entrada', { ascending: false })
         // desempate: a busca vem em páginas de 1.000; sem ordem única, uma linha pode repetir ou sumir entre páginas
         .order('codigo', { ascending: false })

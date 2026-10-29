@@ -57,7 +57,7 @@ function carregarOperacional() {
       supabase.from('atividades').select('codigo, datahorainicio, nomeusuario').eq('realizada', false).lte('datahorainicio', fimDeHoje)
     ),
     propostas: fetchTodasLinhas(() => supabase.from('propostas_locacao').select(COLUNAS_PROPOSTA)),
-    ultimaCrm: ultimaData('dashboard_atendimentos_crm', 'data_de_entrada'),
+    ultimaCrm: ultimaData('crm_leituras', 'dia'),
     ultimaMeta: ultimaData('dashboard_meta_ads', 'data'),
     ultimaGoogle: ultimaData('dashboard_google_ads', 'data'),
     ultimaAtividades: ultimaData('atividades', 'inserido_em'),
@@ -103,7 +103,7 @@ function carregarPerformance() {
     ),
     // leads pagos da imobiliária inteira (o corretor também vê a Performance; sem código nem corretor)
     pagos: fetchTodasLinhas(() => supabase.rpc('performance_leads_pagos')),
-    ultimaCrm: ultimaData('dashboard_atendimentos_crm', 'data_de_entrada'),
+    ultimaCrm: ultimaData('crm_leituras', 'dia'),
     ultimaMeta: ultimaData('dashboard_meta_ads', 'data'),
     ultimaGoogle: ultimaData('dashboard_google_ads', 'data'),
   }
@@ -121,7 +121,7 @@ function carregarComercial() {
     propostasVenda: PROPOSTAS_ATIVAS ? fetchTodasLinhas(() => supabase.from('propostas_venda').select('id, status, valor_proposta, timestamp_criacao, criado_por')) : [],
     propostasLocacao: PROPOSTAS_ATIVAS ? fetchTodasLinhas(() => supabase.from('propostas_locacao').select('id, status, valor, valor_oferta, timestamp_criacao, criado_por')) : [],
     perfis: fetchTodasLinhas(() => supabase.from('perfis').select('id, email')),
-    ultimaCrm: ultimaData('dashboard_atendimentos_crm', 'data_de_entrada'),
+    ultimaCrm: ultimaData('crm_leituras', 'dia'),
     ultimaAtividades: ultimaData('atividades', 'inserido_em'),
   }
 }
