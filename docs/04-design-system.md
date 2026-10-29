@@ -102,7 +102,7 @@
 - Erros dizem o que fazer a seguir. Destrutivo diz que não tem volta e oferece a alternativa (ex.: Excluir sugere Suspender).
 
 ## 6. Divergências em aberto
-- [ ] E-mails usam coral `#ff5e4d` e preto `#000` (template do Obsidian), e não `--coral #E8593C` / `--grafite #2D2D2D`. Decidir qual vale.
+- [x] E-mails usam coral `#ff5e4d` e preto `#000` (template do Obsidian), e não `--coral #E8593C` / `--grafite #2D2D2D`. **Decidido em 29/10 (Eduardo): e-mail segue o template do Obsidian** (`supabase/functions/esteira-locacao/emails.ts`); o Hub segue os tokens. Vale também para o e-mail diário do §5.19.
 - [ ] Tailwind v4 está instalado e é usado pontualmente. Decidir: só CSS do DS, ou Tailwind mapeado para os tokens.
 - [ ] Não há tema escuro. A TV usa fundos próprios.
 - [ ] Acessibilidade (contraste de `--grafite-soft` sobre `--creme`, foco visível) nunca foi auditada.
