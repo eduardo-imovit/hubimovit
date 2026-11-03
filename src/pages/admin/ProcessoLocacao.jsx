@@ -1,20 +1,56 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import SubnavPropostas from '../../components/layout/SubnavPropostas'
+import ModalPortal from '../../components/esteira/ModalPortal'
 import { useProcessoLocacao } from '../../hooks/useProcessoLocacao'
+import { usePerfil } from '../../hooks/usePerfil'
+import { pode } from '../../lib/acessos'
 import {
-  ABAS, PROCESSOS, COR_SEM_PAPEL, etapasDe, fasesDe, papeisUsados, ordenarPapeis,
+  ABAS, PROCESSOS, CANAIS, COR_SEM_PAPEL, etapasDe, fasesDe, papeisUsados, ordenarPapeis,
+  itensChecklist, ordemNova, trocaDeOrdem, etapaDoFormulario, formularioDaEtapa,
 } from '../../lib/processoLocacao'
 
 /**
- * Propostas › Locação › Processo (RF33, PRD §5.20). v1 = guia de leitura.
- * Mesmas tabelas da página HTML da Direção; tempo real nas duas direções.
- * Edição (gestão/adm) entra no S3 da Fase 25.
+ * Propostas › Locação › Processo (RF33, PRD §5.20).
+ * Todo o time lê; gestão/adm editam (S3). A permissão de verdade está no banco (RLS):
+ * aqui os botões só aparecem para quem pode usá-los.
  */
 export default function ProcessoLocacao() {
-  const { papeis, etapas, carregando, erro } = useProcessoLocacao()
+  const dados = useProcessoLocacao()
+  const { papeis, etapas, carregando, erro } = dados
+  const { perfil } = usePerfil()
+  const podeEditar = pode(perfil, 'processoLocacaoEditar')
   const [params, setParams] = useSearchParams()
   const aba = ABAS.some((a) => a.chave === params.get('aba')) ? params.get('aba') : 'contrato'
+
+  // editor aberto: { tipo: 'etapa', etapa, processo, grupo } | { tipo: 'papel', papel } | null
+  const [editor, setEditor] = useState(null)
+  const [aviso, setAviso] = useState(null)
+  const timerAviso = useRef(null)
+
+  function avisar(texto, tipo = 'success') {
+    clearTimeout(timerAviso.current)
+    setAviso({ texto, tipo })
+    timerAviso.current = setTimeout(() => setAviso(null), tipo === 'danger' ? 7000 : 3000)
+  }
+  useEffect(() => () => clearTimeout(timerAviso.current), [])
+
+  /** Roda uma escrita do hook e avisa o resultado. Devolve true se deu certo. */
+  async function escrever(acao, ok) {
+    try {
+      await acao()
+      if (ok) avisar(ok)
+      return true
+    } catch (e) {
+      avisar(`Não foi possível salvar: ${e.message}`, 'danger')
+      return false
+    }
+  }
+
+  async function mover(etapa, dir) {
+    const trocas = trocaDeOrdem(etapasDe(etapas, etapa.processo), etapa, dir)
+    if (trocas) await escrever(() => dados.moverEtapa(trocas))
+  }
 
   return (
     <div>
@@ -46,15 +82,66 @@ export default function ProcessoLocacao() {
 
       {!carregando && !erro && (
         aba === 'equipe'
-          ? <Equipe papeis={papeis} etapas={etapas} />
-          // key: ao trocar de aba, o filtro de papel volta a zero
-          : <Processo key={aba} processo={aba} papeis={papeis} etapas={etapas} />
+          ? (
+            <Equipe
+              papeis={papeis}
+              etapas={etapas}
+              podeEditar={podeEditar}
+              onNovo={() => setEditor({ tipo: 'papel', papel: null })}
+              onEditar={(p) => setEditor({ tipo: 'papel', papel: p })}
+            />
+          )
+          : (
+            <Processo
+              key={aba} // ao trocar de aba, o filtro de papel volta a zero
+              processo={aba}
+              papeis={papeis}
+              etapas={etapas}
+              podeEditar={podeEditar}
+              onNova={(grupo) => setEditor({ tipo: 'etapa', etapa: null, processo: aba, grupo })}
+              onEditar={(e) => setEditor({ tipo: 'etapa', etapa: e, processo: e.processo, grupo: e.grupo })}
+              onMover={mover}
+            />
+          )
+      )}
+
+      {editor?.tipo === 'etapa' && (
+        <EditorEtapa
+          {...editor}
+          papeis={papeis}
+          todas={etapasDe(etapas, editor.processo)}
+          dados={dados}
+          escrever={escrever}
+          onFechar={() => setEditor(null)}
+        />
+      )}
+      {editor?.tipo === 'papel' && (
+        <EditorPapel
+          papel={editor.papel}
+          papeis={papeis}
+          etapas={etapas}
+          dados={dados}
+          escrever={escrever}
+          onFechar={() => setEditor(null)}
+        />
+      )}
+
+      {aviso && (
+        <div className="pl-avisos" role="status" aria-live="polite">
+          <div className={`toast toast-${aviso.tipo}`}>
+            <span className="toast-icon">{aviso.tipo === 'danger' ? '!' : '✓'}</span>
+            <div className="toast-body">{aviso.texto}</div>
+            <button type="button" className="toast-close" aria-label="Fechar aviso" onClick={() => setAviso(null)}>×</button>
+          </div>
+        </div>
       )}
     </div>
   )
 }
 
-function Processo({ processo, papeis, etapas }) {
+/* ============================== processo ============================== */
+
+function Processo({ processo, papeis, etapas, podeEditar, onNova, onEditar, onMover }) {
   const [filtro, setFiltro] = useState(null)
   const info = PROCESSOS[processo]
   const todas = etapasDe(etapas, processo)
@@ -66,17 +153,25 @@ function Processo({ processo, papeis, etapas }) {
   const melhorias = todas.filter((e) => e.melhoria).length
 
   function irPara(id) {
-    document.getElementById(`pl-etapa-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    const reduzido = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    document.getElementById(`pl-etapa-${id}`)?.scrollIntoView({ behavior: reduzido ? 'auto' : 'smooth', block: 'center' })
   }
 
   return (
     <div>
       <div className="pl-intro">
-        <h2 className="pl-titulo">{info.nome}</h2>
-        <p className="page-sub">
-          {info.desc} {todas.length} etapas{melhorias > 0 && `, ${melhorias} com melhoria pendente`}.
-          Só ADM e Gestão editam o desenho do processo.
-        </p>
+        <div>
+          <h2 className="pl-titulo">{info.nome}</h2>
+          <p className="page-sub">
+            {info.desc} {todas.length} etapas{melhorias > 0 && `, ${melhorias} com melhoria pendente`}.
+            {podeEditar ? ' Use Editar e as setas para mudar o desenho.' : ' Só ADM e Gestão editam o desenho do processo.'}
+          </p>
+        </div>
+        {podeEditar && (
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => onNova(fases[fases.length - 1]?.nome ?? '')}>
+            Nova etapa
+          </button>
+        )}
       </div>
 
       {info.nota && <div className="pl-nota">{info.nota}</div>}
@@ -84,7 +179,9 @@ function Processo({ processo, papeis, etapas }) {
       {todas.length === 0 ? (
         <div className="empty">
           <div className="empty-title">Nenhuma etapa ainda</div>
-          <div className="empty-sub">Quando a ADM ou a Gestão desenhar este processo, as etapas aparecem aqui.</div>
+          <div className="empty-sub">
+            {podeEditar ? 'Comece pela primeira etapa deste processo em "Nova etapa".' : 'Quando a ADM ou a Gestão desenhar este processo, as etapas aparecem aqui.'}
+          </div>
         </div>
       ) : (
         <>
@@ -153,6 +250,11 @@ function Processo({ processo, papeis, etapas }) {
               <div className="pl-fase-topo">
                 <h3>{f.nome}</h3>
                 <span className="pl-fase-conta">{f.etapas.length} etapa{f.etapas.length > 1 ? 's' : ''}</span>
+                {podeEditar && (
+                  <button type="button" className="btn btn-ghost btn-sm pl-fase-add" onClick={() => onNova(f.nome)}>
+                    + Etapa nesta fase
+                  </button>
+                )}
               </div>
               <ol className="pl-etapas">
                 {f.etapas.map((e) => (
@@ -162,6 +264,11 @@ function Processo({ processo, papeis, etapas }) {
                     numero={numero(e)}
                     papel={papelPorId[e.papel]}
                     apagada={filtro !== null && e.papel !== filtro}
+                    podeEditar={podeEditar}
+                    primeira={numero(e) === 1}
+                    ultima={numero(e) === todas.length}
+                    onEditar={() => onEditar(e)}
+                    onMover={(dir) => onMover(e, dir)}
                   />
                 ))}
               </ol>
@@ -173,15 +280,13 @@ function Processo({ processo, papeis, etapas }) {
   )
 }
 
-function CartaoEtapa({ etapa: e, numero, papel, apagada }) {
-  const checklist = (Array.isArray(e.checklist) ? e.checklist : [])
-    .map((c) => (typeof c === 'string' ? c : c?.texto))
-    .filter(Boolean)
+function CartaoEtapa({ etapa: e, numero, papel, apagada, podeEditar, primeira, ultima, onEditar, onMover }) {
+  const checklist = itensChecklist(e)
 
   return (
     <li
       id={`pl-etapa-${e.id}`}
-      className={`card pl-etapa${apagada ? ' is-apagada' : ''}`}
+      className={`card pl-etapa${apagada ? ' is-apagada' : ''}${podeEditar ? ' pl-etapa--editavel' : ''}`}
       style={{ '--c': papel?.cor ?? COR_SEM_PAPEL }}
     >
       <div className="pl-etapa-n">{String(numero).padStart(2, '0')}</div>
@@ -202,11 +307,22 @@ function CartaoEtapa({ etapa: e, numero, papel, apagada }) {
         {e.decisao && <div className="pl-callout is-decisao"><b>Decisão</b>{e.decisao}</div>}
         {e.melhoria && <div className="pl-callout is-melhoria"><b>Melhoria pendente</b>{e.melhoria}</div>}
       </div>
+      {podeEditar && (
+        <div className="pl-etapa-acoes">
+          <button type="button" className="btn btn-secondary btn-sm" onClick={onEditar}>Editar</button>
+          <div className="pl-etapa-setas">
+            <button type="button" className="btn btn-ghost btn-sm" aria-label={`Subir etapa ${numero}`} title="Subir" disabled={primeira} onClick={() => onMover(-1)}>↑</button>
+            <button type="button" className="btn btn-ghost btn-sm" aria-label={`Descer etapa ${numero}`} title="Descer" disabled={ultima} onClick={() => onMover(1)}>↓</button>
+          </div>
+        </div>
+      )}
     </li>
   )
 }
 
-function Equipe({ papeis, etapas }) {
+/* ============================== equipe ============================== */
+
+function Equipe({ papeis, etapas, podeEditar, onNovo, onEditar }) {
   const lista = ordenarPapeis(papeis)
   const conta = (id, processo) => etapas.filter((e) => e.papel === id && e.processo === processo).length
   const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`
@@ -214,11 +330,14 @@ function Equipe({ papeis, etapas }) {
   return (
     <div>
       <div className="pl-intro">
-        <h2 className="pl-titulo">Equipe e papéis</h2>
-        <p className="page-sub">
-          Os processos apontam para papéis, não para pessoas. Quando muda quem responde por um papel,
-          o processo inteiro passa a mostrar o novo nome.
-        </p>
+        <div>
+          <h2 className="pl-titulo">Equipe e papéis</h2>
+          <p className="page-sub">
+            Os processos apontam para papéis, não para pessoas. Quando muda quem responde por um papel,
+            o processo inteiro passa a mostrar o novo nome.
+          </p>
+        </div>
+        {podeEditar && <button type="button" className="btn btn-primary btn-sm" onClick={onNovo}>Novo papel</button>}
       </div>
 
       {lista.length === 0 ? (
@@ -236,10 +355,253 @@ function Equipe({ papeis, etapas }) {
               <div className="pl-papel-conta">
                 {plural(conta(p.id, 'contrato'), 'etapa', 'etapas')} no contrato · {conta(p.id, 'adm')} na administração
               </div>
+              {podeEditar && (
+                <button type="button" className="btn btn-ghost btn-sm" onClick={() => onEditar(p)}>Editar</button>
+              )}
             </div>
           ))}
         </div>
       )}
     </div>
+  )
+}
+
+/* ============================== editores ============================== */
+
+/** Moldura dos modais desta página (mesmo padrão de OnboardingAdmin). Esc fecha. */
+function Modal({ titulo, onFechar, rodape, children }) {
+  useEffect(() => {
+    const tecla = (ev) => { if (ev.key === 'Escape') onFechar() }
+    document.addEventListener('keydown', tecla)
+    return () => document.removeEventListener('keydown', tecla)
+  }, [onFechar])
+
+  return (
+    <ModalPortal>
+      <div className="modal-overlay" onClick={onFechar}>
+        <div className="modal modal-lg" role="dialog" aria-modal="true" aria-label={titulo} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <div className="modal-title">{titulo}</div>
+            <button type="button" className="modal-close" onClick={onFechar} aria-label="Fechar">×</button>
+          </div>
+          <div className="modal-body pl-modal-corpo">{children}</div>
+          <div className="modal-footer pl-modal-rodape">{rodape}</div>
+        </div>
+      </div>
+    </ModalPortal>
+  )
+}
+
+function EditorEtapa({ etapa, processo, grupo, papeis, todas, dados, escrever, onFechar }) {
+  const [form, setForm] = useState(() => ({ ...formularioDaEtapa(etapa), grupo: etapa?.grupo ?? grupo ?? '' }))
+  const [salvando, setSalvando] = useState(false)
+  const [falta, setFalta] = useState('')
+  const [confirmar, setConfirmar] = useState(null) // null | { casos: n }
+  const fases = [...new Set(todas.map((e) => e.grupo))]
+  const campo = (nome) => ({ id: `pl-f-${nome}`, value: form[nome], onChange: (ev) => setForm({ ...form, [nome]: ev.target.value }) })
+
+  async function salvar(ev) {
+    ev.preventDefault()
+    if (!form.titulo.trim()) return setFalta('Diga o que acontece nesta etapa.')
+    setFalta('')
+    setSalvando(true)
+    const campos = etapaDoFormulario(form)
+    const ok = etapa
+      ? await escrever(() => dados.salvarEtapa(etapa.id, campos), 'Etapa salva.')
+      : await escrever(() => dados.salvarEtapa(null, { ...campos, processo, ordem: ordemNova(todas, campos.grupo) }), 'Etapa criada.')
+    setSalvando(false)
+    if (ok) onFechar()
+  }
+
+  async function pedirExclusao() {
+    setConfirmar({ casos: await dados.casosNaEtapa(etapa.id) })
+  }
+
+  async function excluir() {
+    setSalvando(true)
+    const ok = await escrever(() => dados.excluirEtapa(etapa.id), 'Etapa excluída.')
+    setSalvando(false)
+    if (ok) onFechar()
+  }
+
+  return (
+    <Modal
+      titulo={etapa ? 'Editar etapa' : 'Nova etapa'}
+      onFechar={onFechar}
+      rodape={(
+        <>
+          {etapa && !confirmar && (
+            <button type="button" className="btn btn-danger btn-sm" onClick={pedirExclusao} disabled={salvando}>Excluir etapa</button>
+          )}
+          <span style={{ flex: 1 }} />
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onFechar}>Cancelar</button>
+          <button type="submit" form="pl-form-etapa" className="btn btn-primary btn-sm" disabled={salvando}>
+            {salvando ? 'Salvando…' : 'Salvar'}
+          </button>
+        </>
+      )}
+    >
+      <form id="pl-form-etapa" onSubmit={salvar} noValidate className="pl-form">
+        <div className={`field${falta ? ' field-error' : ''}`}>
+          <label htmlFor="pl-f-titulo">O que acontece</label>
+          <input {...campo('titulo')} placeholder="Ex.: Validar minuta com as partes" autoFocus />
+          {falta && <span className="field-hint">{falta}</span>}
+        </div>
+
+        <div className="pl-form-grade">
+          <div className="field">
+            <label htmlFor="pl-f-papel">Quem faz</label>
+            <select {...campo('papel')}>
+              <option value="">Sem papel definido</option>
+              {ordenarPapeis(papeis).map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="pl-f-grupo">{processo === 'adm' ? 'Fase / fluxo' : 'Fase'}</label>
+            <input {...campo('grupo')} list="pl-fases" placeholder="Sem fase" />
+            <datalist id="pl-fases">{fases.map((g) => <option key={g} value={g} />)}</datalist>
+            <span className="field-hint">Escolha uma fase existente ou digite um nome novo.</span>
+          </div>
+          <div className="field">
+            <label htmlFor="pl-f-canal">Canal</label>
+            <input {...campo('canal')} list="pl-canais" />
+            <datalist id="pl-canais">{CANAIS.map((c) => <option key={c} value={c} />)}</datalist>
+          </div>
+          <div className="field">
+            <label htmlFor="pl-f-prazo">Prazo (dias úteis)</label>
+            <input {...campo('prazo')} type="number" min="0" step="1" inputMode="numeric" placeholder="Sem prazo" />
+          </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="pl-f-detalhes">Detalhes</label>
+          <textarea {...campo('detalhes')} rows={3} />
+        </div>
+        <div className="field">
+          <label htmlFor="pl-f-checklist">Checklist</label>
+          <textarea {...campo('checklist')} rows={4} placeholder="Um item por linha" />
+          <span className="field-hint">Um item por linha.</span>
+        </div>
+        <div className="field">
+          <label htmlFor="pl-f-decisao">Decisão / desvio</label>
+          <textarea {...campo('decisao')} rows={2} placeholder="Ex.: Se não estiver ok → pedir mais documentos" />
+        </div>
+        <div className="field">
+          <label htmlFor="pl-f-melhoria">Melhoria pendente</label>
+          <textarea {...campo('melhoria')} rows={2} placeholder="O que ainda precisa mudar nesta etapa" />
+        </div>
+
+        {confirmar && (
+          <div className="pl-confirmar" role="alert">
+            <p>
+              Excluir “{etapa.titulo}”? Não tem volta.
+              {confirmar.casos > 0 && ` ${confirmar.casos} processo(s) em andamento estão nesta etapa e ficarão sem etapa atual.`}
+              {' '}Se a etapa só mudou, prefira editar.
+            </p>
+            <div className="pl-confirmar-botoes">
+              <button type="button" className="btn btn-danger btn-sm" onClick={excluir} disabled={salvando}>Excluir de vez</button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmar(null)}>Manter</button>
+            </div>
+          </div>
+        )}
+      </form>
+    </Modal>
+  )
+}
+
+function EditorPapel({ papel, papeis, etapas, dados, escrever, onFechar }) {
+  const [form, setForm] = useState({
+    nome: papel?.nome ?? '',
+    cor: papel?.cor ?? COR_SEM_PAPEL,
+    responsaveis: papel?.responsaveis ?? '',
+    externo: papel?.externo ?? false,
+  })
+  const [salvando, setSalvando] = useState(false)
+  const [falta, setFalta] = useState('')
+  const [confirmar, setConfirmar] = useState(false)
+  const emUso = papel ? etapas.filter((e) => e.papel === papel.id).length : 0
+
+  async function salvar(ev) {
+    ev.preventDefault()
+    if (!form.nome.trim()) return setFalta('Dê um nome ao papel, como "Corretor".')
+    setFalta('')
+    setSalvando(true)
+    const campos = { nome: form.nome.trim(), cor: form.cor, responsaveis: form.responsaveis.trim(), externo: form.externo }
+    const ordem = Math.max(0, ...papeis.map((p) => Number(p.ordem) || 0)) + 10
+    const ok = papel
+      ? await escrever(() => dados.salvarPapel(papel.id, campos), 'Papel salvo.')
+      : await escrever(() => dados.salvarPapel(null, { ...campos, ordem }), 'Papel criado.')
+    setSalvando(false)
+    if (ok) onFechar()
+  }
+
+  async function excluir() {
+    setSalvando(true)
+    const ok = await escrever(() => dados.excluirPapel(papel.id), 'Papel excluído.')
+    setSalvando(false)
+    if (ok) onFechar()
+  }
+
+  return (
+    <Modal
+      titulo={papel ? 'Editar papel' : 'Novo papel'}
+      onFechar={onFechar}
+      rodape={(
+        <>
+          {papel && !confirmar && (
+            <button type="button" className="btn btn-danger btn-sm" onClick={() => setConfirmar(true)} disabled={salvando}>Excluir papel</button>
+          )}
+          <span style={{ flex: 1 }} />
+          <button type="button" className="btn btn-ghost btn-sm" onClick={onFechar}>Cancelar</button>
+          <button type="submit" form="pl-form-papel" className="btn btn-primary btn-sm" disabled={salvando}>
+            {salvando ? 'Salvando…' : 'Salvar'}
+          </button>
+        </>
+      )}
+    >
+      <form id="pl-form-papel" onSubmit={salvar} noValidate className="pl-form">
+        <div className="pl-form-grade pl-form-grade--cor">
+          <div className={`field${falta ? ' field-error' : ''}`}>
+            <label htmlFor="pl-p-nome">Nome do papel</label>
+            <input id="pl-p-nome" value={form.nome} onChange={(ev) => setForm({ ...form, nome: ev.target.value })} placeholder="Ex.: Coordenação Administrativa" autoFocus />
+            {falta && <span className="field-hint">{falta}</span>}
+          </div>
+          <div className="field">
+            <label htmlFor="pl-p-cor">Cor</label>
+            <input id="pl-p-cor" type="color" className="pl-cor" value={form.cor} onChange={(ev) => setForm({ ...form, cor: ev.target.value })} />
+          </div>
+        </div>
+        <div className="field">
+          <label htmlFor="pl-p-resp">Responsáveis</label>
+          <input id="pl-p-resp" value={form.responsaveis} onChange={(ev) => setForm({ ...form, responsaveis: ev.target.value })} placeholder="Nomes, separados por vírgula" />
+          <span className="field-hint">Aparece em todas as etapas deste papel.</span>
+        </div>
+        <label className="pl-check">
+          <input type="checkbox" checked={form.externo} onChange={(ev) => setForm({ ...form, externo: ev.target.checked })} />
+          Fora da Imovit (ex.: seguradora, cartório)
+        </label>
+
+        {confirmar && (
+          <div className="pl-confirmar" role="alert">
+            {emUso > 0 ? (
+              <>
+                <p>Este papel está em {emUso} etapa{emUso > 1 ? 's' : ''}. Troque o “Quem faz” dessas etapas antes de excluir.</p>
+                <div className="pl-confirmar-botoes">
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmar(false)}>Entendi</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>Excluir o papel “{papel.nome}”? Não tem volta.</p>
+                <div className="pl-confirmar-botoes">
+                  <button type="button" className="btn btn-danger btn-sm" onClick={excluir} disabled={salvando}>Excluir de vez</button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => setConfirmar(false)}>Manter</button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </form>
+    </Modal>
   )
 }

@@ -1378,7 +1378,8 @@
 
 /* ------- PROCESSO DE LOCAÇÃO (RF33, PRD §5.20) ------- */
 /* --c = cor do papel, vinda de locacao_papeis.cor (escolhida pela ADM/Gestão). */
-.pl-intro { margin-bottom: var(--space-4); }
+.pl-intro { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-4); }
+.pl-intro .btn { flex-shrink: 0; }
 .pl-titulo { font-family: var(--font-serif); font-weight: 400; font-size: var(--text-lg); color: var(--grafite); margin: 0 0 var(--space-1); }
 .pl-nota {
   background: var(--info-soft); color: var(--info);
@@ -1463,9 +1464,32 @@
 .pl-papel-quem { font-size: var(--text-sm); color: var(--grafite-mid); }
 .pl-papel-conta { font-size: var(--text-xs); color: var(--grafite-soft); }
 
+/* Edição (gestão/adm, S3) */
+.pl-fase-add { margin-left: auto; }
+.pl-etapa--editavel { grid-template-columns: 40px minmax(0, 1fr) auto; }
+.pl-etapa-acoes { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); }
+.pl-etapa-setas { display: flex; gap: var(--space-1); }
+.pl-etapa-setas .btn { min-width: 32px; padding-left: 0; padding-right: 0; }
+.pl-modal-corpo { max-height: 70vh; overflow-y: auto; }
+.pl-modal-rodape { align-items: center; }
+.pl-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.pl-form-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.pl-form-grade--cor { grid-template-columns: minmax(0, 1fr) 72px; }
+.pl-cor { padding: 4px !important; cursor: pointer; }
+.pl-check { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--grafite-mid); cursor: pointer; }
+.pl-confirmar { background: var(--danger-soft); color: var(--danger); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); }
+.pl-confirmar p { margin: 0 0 var(--space-3); }
+.pl-confirmar-botoes { display: flex; gap: var(--space-2); }
+.pl-avisos { position: fixed; right: var(--space-5); bottom: var(--space-5); z-index: var(--z-toast); }
+
 @media (max-width: 640px) {
-  .pl-etapa { grid-template-columns: 1fr; gap: var(--space-1); }
+  .pl-etapa, .pl-etapa--editavel { grid-template-columns: 1fr; gap: var(--space-1); }
+  .pl-etapa-acoes { flex-direction: row; justify-content: space-between; align-items: center; margin-top: var(--space-2); }
+  .pl-form-grade { grid-template-columns: 1fr; }
+  .pl-form-grade--cor { grid-template-columns: minmax(0, 1fr) 72px; }
+  .pl-intro { flex-direction: column; }
   .pl-raias-card { padding: var(--space-3); }
+  .pl-avisos { left: var(--space-3); right: var(--space-3); bottom: var(--space-3); }
 }
 @media (prefers-reduced-motion: reduce) {
   .pl-no, .pl-etapa { transition: none; }

@@ -44,5 +44,59 @@ export function useProcessoLocacao() {
     }
   }, [recarregar])
 
-  return { papeis, etapas, carregando, erro, recarregar }
+  // ---------- escrita (só gestão/adm: o banco recusa os outros, ver Schema §2.20) ----------
+  // Cada função lança o erro para a tela mostrar; depois relê (o realtime também avisaria).
+  // Atenção: quando a RLS barra um UPDATE/DELETE, o banco NÃO dá erro, só afeta 0 linhas.
+  // Por isso pedimos as linhas de volta (.select('id')) e conferimos que veio alguma.
+  async function executar(consulta) {
+    const { data, error } = await consulta.select('id')
+    if (error) throw error
+    if (!data?.length) throw new Error('Nada foi alterado: você não tem permissão ou o item foi excluído por outra pessoa.')
+    await recarregar()
+  }
+
+  const agora = () => new Date().toISOString()
+
+  /** Cria (id = null) ou atualiza uma etapa. */
+  const salvarEtapa = (id, campos) => executar(
+    id
+      ? supabase.from('locacao_etapas').update({ ...campos, atualizado_em: agora() }).eq('id', id)
+      : supabase.from('locacao_etapas').insert(campos),
+  )
+
+  const excluirEtapa = (id) => executar(supabase.from('locacao_etapas').delete().eq('id', id))
+
+  /** Aplica a troca de ordem calculada por trocaDeOrdem() (duas atualizações). */
+  async function moverEtapa(trocas) {
+    try {
+      for (const t of trocas) {
+        const { data, error } = await supabase.from('locacao_etapas').update(t.patch).eq('id', t.id).select('id')
+        if (error) throw error
+        if (!data?.length) throw new Error('Nada foi alterado: você não tem permissão ou a etapa foi excluída.')
+      }
+    } finally {
+      await recarregar() // mesmo se a 2ª falhar, a tela mostra o estado real do banco
+    }
+  }
+
+  /** Quantos casos em andamento estão nesta etapa (aviso antes de excluir). */
+  async function casosNaEtapa(id) {
+    const { count, error } = await supabase
+      .from('locacao_casos').select('id', { count: 'exact', head: true })
+      .eq('etapa_id', id).eq('status', 'andamento')
+    return error ? 0 : count ?? 0
+  }
+
+  const salvarPapel = (id, campos) => executar(
+    id
+      ? supabase.from('locacao_papeis').update({ ...campos, atualizado_em: agora() }).eq('id', id)
+      : supabase.from('locacao_papeis').insert(campos),
+  )
+
+  const excluirPapel = (id) => executar(supabase.from('locacao_papeis').delete().eq('id', id))
+
+  return {
+    papeis, etapas, carregando, erro, recarregar,
+    salvarEtapa, excluirEtapa, moverEtapa, casosNaEtapa, salvarPapel, excluirPapel,
+  }
 }

@@ -38,6 +38,7 @@ const soComPropostas = (papeis) => papeis
 export const ACESSO = {
   esteira: soComPropostas(['gestao', 'adm']), // Propostas / Esteira / Processos / Cadastros locador
   processoLocacao: ['gestao', 'adm', 'corretor', 'marketing'], // Propostas › Locação › Processo (PRD §5.20, RF33); RLS: pode_ler_processo_locacao(); editar = is_adm_ou_gestao()
+  processoLocacaoEditar: ['gestao', 'adm'], // criar/editar/mover/excluir etapas e papéis; RLS: is_adm_ou_gestao()
   distratos: ['gestao', 'adm'], // Propostas › Locação › Distratos (PRD §5.16); ADM liberado em 15/10; RLS: is_adm_ou_gestao()
   esteiraDecidir: soComPropostas(['gestao', 'adm']), // aprovar, descartar, decidir documentos, solicitar ajustes, finalizar
   vendas: soComPropostas(['gestao', 'adm']), // Propostas de venda

@@ -428,9 +428,11 @@ Estimativa da v1: **M–G, ~1,5 a 2 dias** (sem a aba "Em andamento"), contando 
 - **S0 Aprovação:** ✅ escopo aprovado em 30/10 (D1–D7). A página HTML da Direção fica até a ADM validar o guia (D7).
 - **Andamento (03/11):**
   - S1 ✅: migration `20261103120000` aplicada, 32/32 no teste e commit `25fd624`.
-  - S2: código pronto e build ok, aguardando a conferência do Eduardo no navegador.
-    - Já entrou do S4: a rota, `ACESSO.processoLocacao` e o item "Processo" na subnav de Locação.
-    - Falta do S4: o menu do corretor (RF33.4).
+  - S2 ✅: conferido visualmente pelo Eduardo; commit `f9d827c`.
+  - S3 e S4: código pronto, build ok e regras testadas em Node (14/14 + menu por papel). **Aguardam a conferência no navegador.**
+    - O Eduardo pediu (03/11) o Hub autossuficiente: ele não tem acesso à página da Direção.
+    - O item do menu se chama **"Guia do processo"**, para não confundir com "Processos" (linha do tempo das propostas).
+    - Corretor e marketing veem o menu "Locação" só com esse item; o link "Propostas" vira texto para eles.
 - **S1 Banco (P–M, ~2h), precisa de sessão com o MCP do Supabase:**
   - inventário real das 3 tabelas: colunas, `pg_policies`, grants, publicação realtime e corpo de `is_team()`;
   - corrigir o Schema §2.20 com o que for encontrado;
