@@ -429,7 +429,9 @@ Estimativa da v1: **M–G, ~1,5 a 2 dias** (sem a aba "Em andamento"), contando 
 - **Andamento (03/11):**
   - S1 ✅: migration `20261103120000` aplicada, 32/32 no teste e commit `25fd624`.
   - S2 ✅: conferido visualmente pelo Eduardo; commit `f9d827c`.
-  - S3 e S4: código pronto, build ok e regras testadas em Node (14/14 + menu por papel). **Aguardam a conferência no navegador.**
+  - S3 e S4 ✅: conferidos pelo Eduardo no localhost (edição, tempo real com 2 abas, "ver como" corretor); commit `b19861b`.
+  - S5 ✅ **PUBLICADO em 03/11**: push `main` (Vercel ok, hub.imovit.com.br) + merge na `teste` (`748622f`, Vercel ok). Falta só uma olhada rápida no ar.
+  - Próximo: S6 (validação da ADM, depois desligar a página da Direção com o Daniel).
     - O Eduardo pediu (03/11) o Hub autossuficiente: ele não tem acesso à página da Direção.
     - O item do menu se chama **"Guia do processo"**, para não confundir com "Processos" (linha do tempo das propostas).
     - Corretor e marketing veem o menu "Locação" só com esse item; o link "Propostas" vira texto para eles.
