@@ -17,6 +17,7 @@ export const AREAS_PROPOSTAS = [
       { to: '/admin/processos', label: 'Processos' },
       { to: '/admin/cadastros', label: 'Cadastros' },
       { to: '/admin/distratos', label: 'Distratos', acesso: 'distratos' },
+      { to: '/admin/processo-locacao', label: 'Processo', acesso: 'processoLocacao' }, // guia (RF33); o menu do corretor entra no S4
     ],
   },
   {

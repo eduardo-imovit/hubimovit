@@ -426,6 +426,11 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
 ## Fase 25 — Processo de Locação no Hub, v1 = guia (RF33, PRD §5.20, Schema §2.20) — **APROVADA (30/10)**
 Estimativa da v1: **M–G, ~1,5 a 2 dias** (sem a aba "Em andamento"), contando teste e deploy.
 - **S0 Aprovação:** ✅ escopo aprovado em 30/10 (D1–D7). A página HTML da Direção fica até a ADM validar o guia (D7).
+- **Andamento (03/11):**
+  - S1 ✅: migration `20261103120000` aplicada, 32/32 no teste e commit `25fd624`.
+  - S2: código pronto e build ok, aguardando a conferência do Eduardo no navegador.
+    - Já entrou do S4: a rota, `ACESSO.processoLocacao` e o item "Processo" na subnav de Locação.
+    - Falta do S4: o menu do corretor (RF33.4).
 - **S1 Banco (P–M, ~2h), precisa de sessão com o MCP do Supabase:**
   - inventário real das 3 tabelas: colunas, `pg_policies`, grants, publicação realtime e corpo de `is_team()`;
   - corrigir o Schema §2.20 com o que for encontrado;

@@ -32,6 +32,7 @@ import Esteiras from './pages/admin/Esteiras'
 import Processos from './pages/admin/Processos'
 import CadastrosAdmin from './pages/admin/Cadastros'
 import Distratos from './pages/admin/Distratos'
+import ProcessoLocacao from './pages/admin/ProcessoLocacao'
 import DistratoPublico from './pages/publico/DistratoPublico'
 import OnboardingPublico from './pages/publico/OnboardingPublico'
 import PortalLogin from './pages/portal/PortalLogin'
@@ -80,6 +81,7 @@ export default function App() {
         <Route path="/admin/cadastros" element={<ProtectedRoute papeis={ACESSO.esteira}><CadastrosAdmin /></ProtectedRoute>} />
         <Route path="/admin/cadastros-locador" element={<Redirecionar para="/admin/cadastros" />} />
         <Route path="/admin/distratos" element={<ProtectedRoute papeis={ACESSO.distratos}><Distratos /></ProtectedRoute>} />
+        <Route path="/admin/processo-locacao" element={<ProtectedRoute papeis={ACESSO.processoLocacao}><ProcessoLocacao /></ProtectedRoute>} />
         <Route path="/captacoes" element={<ProtectedRoute papeis={ACESSO.formularios}><Captacoes /></ProtectedRoute>} />
         <Route path="/feedback-visita" element={<ProtectedRoute papeis={ACESSO.formularios}><FeedbackVisita /></ProtectedRoute>} />
         <Route path="/materiais" element={<ProtectedRoute papeis={ACESSO.formularios}><MateriaisClientes /></ProtectedRoute>} />
