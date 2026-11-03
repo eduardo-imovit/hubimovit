@@ -901,6 +901,9 @@ O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colabo
 
 - **0 Manchete.** **Em atendimento agora = todos os ativos** (não só Qualificado a Proposta, como no §5.0c), para bater com o CRM: 182 (locação 56 · venda 126) em 29/10. Aviso: "O CRM mostra N: M são captações e ficam fora desta conta." Ao lado: 🔴 esquecidos (vs ontem), conversão na passagem gargalo (vs período anterior), negócios no período (vs mês anterior até o mesmo dia). Frase ex.: "182 clientes em atendimento, 143 sem nenhuma ação no prazo. O maior acúmulo está em Qualificado (103)." Cada número abre a sua lista; o gargalo leva ao capítulo 1.
 - **1 Onde trava?** Seletor Locação | Venda. **5 etapas**: Lead (Pré-atendimento + Seleção de perfil + Seleção de imóveis) → Qualificado → Visita → Proposta → Negócio. Em cada etapa: quantos chegaram (fluxo), dias desde a entrada (mediana; "acumulando" com n < 5) e descartados (clique → capítulo 2). Na seta: conversão da passagem (safra, com selo de maturidade). **Gargalo = menor taxa entre as passagens com base ≥ 20 leads**, seta em coral. Com a safra jul–set: locação Lead → Qualificado 29% (288 → 84 → 29 → 16 → 12); venda Qualificado → Visita 29%.
+- **1b Qual canal performa melhor? (pedido da Diretoria, 29/10; aprovado).** Tabela canal × funil: leads, qualificados, visitas, propostas, negócios e lead → negócio (safra madura), com a **pior passagem de cada canal em coral**. Canal com menos de 20 leads no período ganha o selo "base pequena". Clicar no canal filtra a página inteira (os motivos do capítulo 2 passam a ser os daquele canal); clicar num número abre a lista de leads. Finalidade, corretor e período continuam valendo. No Relatório, o Ato 2 ganha a linha "melhor e pior canal" com link para este capítulo.
+  - **Achado de 29/10 (safra abr–ago, clientes):** Campanhas pagas 208 leads → 55 qualificados (26%) → 8 visitas → **0 negócios**; Site 173 → 112 (65%) → 69 → 17 negócios (9,8%); Indicação 89 → 75 (84%) → 44 → 11 (12,4%); WhatsApp 122 → 3 (2,5%); Portais 94 → 3 (3,2%).
+  - **Conferência (29/10):** 5 leads pagos (5385, 5404, 5552, 5900, 5912) conferidos no Imoview, 5/5 descartados como no Hub; motivos de perfil (desistiu, sem condição, comprou com terceiros, não responde, outro). Pela pessoa nas atividades, 44 dos 208 eram rastreáveis: 2 tiveram outro atendimento, nenhum virou negócio. Conclusão: o zero se sustenta, com o limite de que só 1 em 5 era rastreável. Em aberto: "Campanha Halma" é anúncio da Imovit ou de construtora (se for de construtora, sai da conta de mídia paga).
 - **2 Por quê?** Motivos de descarte lidos das interações do CRM ("ATENDIMENTO DESCARTADO MOTIVO: …"), agrupados:
   - 🔴 **Perdemos o contato**: não responde contato; +30 dias sem interação;
   - 🟠 **Cliente sem perfil**: sem condições; desistiu; região fora do escopo; curiosidade;
@@ -921,7 +924,7 @@ O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colabo
 - Se a leitura do CRM do dia falhar, o e-mail sai com aviso no topo ("CRM sem leitura hoje, números de dd/mm"). Dia sem novidade: e-mail curto.
 - **Detalhe aprovado em 29/10:**
   - **Destinatários:** daniel@imovit.com.br, gabriel@imovit.com.br, eduardo@imovit.com.br (o mesmo e-mail para os três).
-  - **Quando:** segunda a sexta, **7h30** (depois da receita às 6h45 e do alerta de leitura às 7h15; combinado com o Asimov em 29/10). Na segunda, o bloco "ontem" cobre sábado e domingo.
+  - **Quando:** segunda a sexta, **7h30** (depois da receita às 6h45 e do alerta de leitura às 7h15; combinado com o Asimov em 29/10). Na segunda, o bloco "ontem" cobre **sexta, sábado e domingo** (correção do Asimov, 29/10: sem e-mail no sábado, a sexta ficava de fora).
   - **Assunto:** "Imovit dd/mm · N negócios ontem · N perto do dinheiro esquecidos".
   - **Blocos:** Placar (Investido · Leads · Em atendimento · Negócios · Receita; mês até ontem vs mês anterior até o mesmo dia) → Ontem (leads novos L/V, mudanças de etapa, propostas novas, negócios) → Atenção (🔥 perto do dinheiro esquecidos com variação vs ontem; 🔴 esquecidos no total; avisos de rescisão novos) → link "Abrir o relatório completo" → rodapé com a hora de cada leitura.
   - Cada número com link para a lista no Hub.
@@ -963,6 +966,45 @@ O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colabo
 
 **Perguntas em aberto.**
 - Detalhe página por página: **Relatório ✅ (29/10)** → **e-mail diário ✅ (29/10)** → **Atendimento ✅ (29/10)** → Aquisição → Fechamento → Carteira → Estoque; `03-app-flow.md` e a fase no plano depois do detalhe.
+
+### 5.20 Processo de Locação: guia do processo no Hub (pedido do Eduardo, 30/10) — **APROVADO (30/10), v1 pode construir** (plano Fase 25, Schema §2.20)
+**Origem.** Em 30/10, a Direção (Daniel Aranovich) montou fora do Hub, no claude.ai, uma página HTML (`processo-locacao-imovit.html`) com o processo de locação desenhado. Ela já grava no banco do Hub, em 3 tabelas criadas fora das migrations do repo: `locacao_papeis` (9 papéis), `locacao_etapas` (42 etapas) e `locacao_casos` (vazia). Usa o login do Hub e as funções `is_team()` e `is_adm_ou_gestao()`. O Eduardo decidiu trazer uma cópia para dentro do Hub.
+
+**Problema.**
+- O processo de locação, do fechamento ao 1º boleto, e as solicitações durante a vigência não estão escritos em lugar nenhum do Hub.
+- A página da Direção fica fora do Hub: não tem migration, RLS conferida nem design system.
+
+**Decisões do Eduardo (30/10).**
+- D1. **v1 = guia do processo.** Abas **Processo de Contrato**, **Administração do Contrato** e **Equipe e papéis**, lendo e gravando nas tabelas `locacao_*` existentes, sem recriar nem apagar os dados.
+- D2. **Visual 100% no design system do Hub** (tokens, `hub.css`, componentes existentes). Não copiar o CSS da página HTML.
+- D3. **Gestão e ADM editam; o time só lê** (é um guia).
+- D4. **Menu: dentro da Esteira de Locação** (Propostas › Locação).
+- D5. **Aba "Em andamento" escondida na v1.** `locacao_casos` fica no banco, sem tela.
+- D6. **v2, quando a Esteira estiver ativa e estável:** a proposta aprovada na Esteira abre o caso sozinha, e a aba "Em andamento" é ligada. **Caso não é digitado à mão.**
+
+**O que a v1 mostra.**
+1. **Processo de Contrato:** do fechamento da negociação até a emissão do 1º boleto. Mapa de raias (papel × etapa), filtro "destacar papel" e lista de etapas por fase, cada uma com papel, canal, prazo em dias úteis, detalhes, checklist, decisão/desvio e melhoria pendente.
+2. **Administração do Contrato:** um fluxo por tipo de solicitação (fase = fluxo), no mesmo formato.
+3. **Equipe e papéis:** nome, cor, responsáveis, "fora da Imovit" e ordem.
+- Gestão e ADM veem, além disso: criar, editar, subir/descer e excluir etapa (com aviso se algum caso estiver nela); criar, editar e excluir papel.
+
+**Requisitos (RF33).**
+- RF33.1: a escrita em `locacao_papeis` e `locacao_etapas` é só `is_adm_ou_gestao()`, garantida **no banco (RLS)**, não só na tela.
+- RF33.2: leitura por todo o time ativo (gestão, adm, corretor, marketing). `user`, `tvaccess` e anon não leem.
+- RF33.3: as alterações aparecem para quem está com a página aberta sem F5 (realtime).
+- RF33.4: o menu Propostas › Locação hoje é só gestão/adm (`ACESSO.propostas`). Para o time ler o guia, o item novo tem acesso próprio (`ACESSO.processoLocacao`), e o grupo aparece para o corretor **só com esse item**. Propostas, Esteira etc. continuam escondidas para ele.
+- RF33.5: as 3 tabelas ganham migration de regularização no repo e registro no Schema §2.20.
+
+**Fora de escopo (v1).** Aba "Em andamento" e qualquer tela de `locacao_casos` (vai para a v2, D6); integração com o Imoview; notificações.
+
+- D7. **A página HTML da Direção fica no ar até a ADM validar o guia no Hub** (decisão de 30/10). Depois, combinar com o Daniel e desligar. As duas gravam nas mesmas tabelas, então convivem sem conflito.
+
+**Critérios de aceite.**
+- As 42 etapas e os 9 papéis aparecem no Hub iguais à página da Direção.
+- Uma etapa editada no Hub aparece na página da Direção, e o contrário também.
+- O corretor vê o guia sem botões de edição e recebe erro (RLS) ao tentar editar pela API (teste simulando o papel).
+- O corretor continua sem ver Propostas, Esteira e os demais itens do menu.
+- `npm run build` ok; 375 px ok.
 
 ### 5.1 Dicionário de métricas (fórmulas e fontes; vale para o Painel da Gestão)
 Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = execução** (dia a dia, Gestão, ADM e corretores). As métricas de plataforma (CTR, CPC, CPM, conversões da Meta/Google) ficam num painel de **Marketing**, fora destes dois.

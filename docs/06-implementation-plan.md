@@ -423,6 +423,42 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
   - **E5 = S4:** pausar 7 dias, depois desligar; a tabela vira arquivo morto com a escrita bloqueada.
   - **E6 Fechamento:** docs (A1/A5/A7) e vault ✅. Depois, opcional: sentinela "visto por último em".
 
+## Fase 25 — Processo de Locação no Hub, v1 = guia (RF33, PRD §5.20, Schema §2.20) — **APROVADA (30/10)**
+Estimativa da v1: **M–G, ~1,5 a 2 dias** (sem a aba "Em andamento"), contando teste e deploy.
+- **S0 Aprovação:** ✅ escopo aprovado em 30/10 (D1–D7). A página HTML da Direção fica até a ADM validar o guia (D7).
+- **Andamento (03/11):**
+  - S1 ✅: migration `20261103120000` aplicada, 32/32 no teste e commit `25fd624`.
+  - S2 ✅: conferido visualmente pelo Eduardo; commit `f9d827c`.
+  - S3 e S4: código pronto, build ok e regras testadas em Node (14/14 + menu por papel). **Aguardam a conferência no navegador.**
+    - O Eduardo pediu (03/11) o Hub autossuficiente: ele não tem acesso à página da Direção.
+    - O item do menu se chama **"Guia do processo"**, para não confundir com "Processos" (linha do tempo das propostas).
+    - Corretor e marketing veem o menu "Locação" só com esse item; o link "Propostas" vira texto para eles.
+- **S1 Banco (P–M, ~2h), precisa de sessão com o MCP do Supabase:**
+  - inventário real das 3 tabelas: colunas, `pg_policies`, grants, publicação realtime e corpo de `is_team()`;
+  - corrigir o Schema §2.20 com o que for encontrado;
+  - migration de regularização sem drop: RLS de leitura para o time ativo, escrita `is_adm_ou_gestao()` em papéis e etapas, `locacao_casos` só gestão/adm (sem tela na v1), revoke do anon;
+  - testar em `BEGIN … ROLLBACK` simulando gestão, adm, corretor, `user` e anon;
+  - **conferir que a página da Direção continua funcionando.**
+- **S2 Leitura (M, ~3–4h):**
+  - página `/admin/processo-locacao` com as abas Contrato, Administração e Equipe;
+  - hook `useProcessoLocacao` (leitura + realtime);
+  - mapa de raias, lista por fase e filtro por papel;
+  - só componentes e tokens do Hub.
+- **S3 Edição gestão/ADM (M, ~3h):** editor de etapa (criar, editar, subir/descer, excluir com aviso) e de papel. Os botões só aparecem para `is_adm_ou_gestao`.
+- **S4 Menu e acesso (P, ~1h):**
+  - `ACESSO.processoLocacao = ['gestao','adm','corretor','marketing']`;
+  - item em `propostasNav.js` › Locação, com `acesso: 'processoLocacao'`;
+  - o grupo aparece para o corretor só com esse item (RF33.4);
+  - rota em `App.jsx`.
+- **S5 Publicar e testar (P–M, ~2h):**
+  - push `main` + `main:teste`;
+  - edição cruzada Hub ↔ página da Direção;
+  - como corretor: lê, não edita (tela e API) e não vê Propostas/Esteira;
+  - 375 px.
+- **S6 Validação da ADM:** a ADM confere o guia no Hub; depois, combinar com o Daniel o desligamento da página HTML (D7).
+- **Pronto quando:** os critérios de aceite do PRD §5.20 forem atendidos.
+- **v2 (quando a Esteira estiver ativa e estável):** proposta aprovada abre o caso em `locacao_casos` sozinha (trigger ou Edge Function na aprovação), e a aba "Em andamento" é ligada. Sem caso digitado à mão. Atualizar o PRD, o Schema e uma fase nova antes.
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).

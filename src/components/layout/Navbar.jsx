@@ -5,7 +5,7 @@ import { useSession } from '../../hooks/useSession'
 import { usePerfil } from '../../hooks/usePerfil'
 import WeatherWidget from './WeatherWidget'
 import { PAPEL_LABEL, pode } from '../../lib/acessos'
-import { AREAS_PROPOSTAS, paginasVisiveis } from '../../lib/propostasNav'
+import { AREAS_PROPOSTAS, areaVisivel, paginasVisiveis } from '../../lib/propostasNav'
 
 /**
  * Navegação por trabalho (decisão do Eduardo, 15/10): Painéis, Atendimento,
@@ -35,9 +35,10 @@ function buildMenus(perfil) {
   }
   menus.push({ label: 'Atendimento', children: atendimento })
 
-  // Locação e Venda: as áreas de lib/propostasNav, cada uma vira um menu
+  // Locação e Venda: as áreas de lib/propostasNav, cada uma vira um menu.
+  // O corretor vê "Locação" só com "Processo" (RF33.4): a área aparece se houver alguma página visível.
   for (const area of AREAS_PROPOSTAS) {
-    if (pode(perfil, area.acesso)) menus.push({ label: area.label, children: paginasVisiveis(area, perfil) })
+    if (areaVisivel(area, perfil)) menus.push({ label: area.label, children: paginasVisiveis(area, perfil) })
   }
 
   const ferramentas = []

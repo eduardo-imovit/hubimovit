@@ -1375,3 +1375,123 @@
   .jl-desc, .jl-desc + div { display: none; }
   .jl-desc-inline { display: inline; font-size: var(--text-xs); color: var(--danger); }
 }
+
+/* ------- PROCESSO DE LOCAÇÃO (RF33, PRD §5.20) ------- */
+/* --c = cor do papel, vinda de locacao_papeis.cor (escolhida pela ADM/Gestão). */
+.pl-intro { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-4); }
+.pl-intro .btn { flex-shrink: 0; }
+.pl-titulo { font-family: var(--font-serif); font-weight: 400; font-size: var(--text-lg); color: var(--grafite); margin: 0 0 var(--space-1); }
+.pl-nota {
+  background: var(--info-soft); color: var(--info);
+  border-radius: var(--radius-md); padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm); margin-bottom: var(--space-4);
+}
+.pl-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--grafite-fade)); flex-shrink: 0; }
+
+/* Mapa de raias */
+.pl-raias-card { padding: var(--space-4); margin-bottom: var(--space-5); }
+.pl-raias { overflow-x: auto; }
+.pl-raias:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+.pl-raias table { border-collapse: collapse; font-size: var(--text-xs); }
+.pl-raias thead th {
+  font-weight: var(--weight-medium); color: var(--grafite-soft); text-align: left; white-space: nowrap;
+  padding: 0 var(--space-2) var(--space-2); border-bottom: 1px solid var(--champagne);
+}
+.pl-raias tbody tr + tr td, .pl-raias tbody tr + tr th { border-top: 1px dashed var(--champagne); }
+.pl-raias td { width: 30px; min-width: 30px; height: 34px; text-align: center; padding: 0 2px; }
+.pl-raias td.is-inicio-fase { border-left: 1px solid var(--champagne); }
+.pl-raias-papel {
+  position: sticky; left: 0; z-index: 1; background: var(--branco);
+  text-align: left; white-space: nowrap; font-weight: var(--weight-medium); color: var(--grafite-mid);
+  padding: 0 var(--space-3) 0 0;
+}
+.pl-raias tbody .pl-raias-papel { display: flex; align-items: center; gap: var(--space-2); height: 34px; }
+.pl-no {
+  width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--c); color: var(--branco);
+  font-size: var(--text-xs); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums;
+  transition: transform var(--duration-fast, 160ms) var(--ease-out);
+}
+.pl-no:hover { transform: scale(1.12); }
+.pl-no:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+.pl-no.is-melhoria { box-shadow: 0 0 0 2px var(--branco), 0 0 0 4px var(--warning); }
+.pl-legenda { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-3); font-size: var(--text-xs); color: var(--grafite-soft); }
+.pl-legenda > span { display: inline-flex; align-items: center; gap: var(--space-2); }
+.pl-legenda-melhoria { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--warning); }
+
+/* Filtro por papel */
+.pl-filtro-rotulo { font-size: var(--text-xs); color: var(--grafite-soft); text-transform: uppercase; letter-spacing: .06em; }
+.pl-chip {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: 5px 12px; border-radius: var(--radius-full);
+  border: 1.5px solid var(--champagne); background: var(--branco); color: var(--grafite-mid);
+  font-size: var(--text-xs); font-weight: var(--weight-medium); cursor: pointer; transition: var(--transition-base);
+}
+.pl-chip:hover { border-color: var(--grafite-fade); }
+.pl-chip.is-active { border-color: var(--coral); color: var(--coral-dark); background: var(--coral-soft); }
+.pl-chip:focus-visible { outline: 2px solid var(--coral); outline-offset: 2px; }
+
+/* Fases e etapas */
+.pl-fase { margin-bottom: var(--space-6); }
+.pl-fase-topo { display: flex; align-items: baseline; gap: var(--space-3); margin-bottom: var(--space-3); }
+.pl-fase-topo h3 { font-size: var(--text-md); font-weight: var(--weight-medium); color: var(--grafite); margin: 0; }
+.pl-fase-conta { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--grafite-soft); }
+.pl-etapas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-3); }
+.pl-etapa {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: var(--space-3);
+  padding: var(--space-4); border-left: 3px solid var(--c);
+  transition: opacity var(--duration-base, 220ms) var(--ease-out);
+  scroll-margin-top: var(--space-8);
+}
+.pl-etapa.is-apagada { opacity: .35; }
+.pl-etapa-n { font-family: var(--font-mono); font-size: var(--text-sm); color: var(--grafite-soft); padding-top: 2px; }
+.pl-etapa-corpo h4 { font-size: var(--text-base); font-weight: var(--weight-medium); color: var(--grafite); margin: 0 0 var(--space-2); }
+.pl-etapa-meta { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+.pl-badge-papel { background: var(--pergaminho); color: var(--grafite-mid); border: 1px solid var(--champagne); }
+.pl-quem { font-size: var(--text-xs); color: var(--grafite-soft); }
+.pl-detalhes { font-size: var(--text-sm); color: var(--grafite-mid); white-space: pre-wrap; margin: 0 0 var(--space-2); }
+.pl-checklist { margin: 0 0 var(--space-2); padding-left: var(--space-5); font-size: var(--text-sm); color: var(--grafite-mid); }
+.pl-checklist li + li { margin-top: var(--space-1); }
+.pl-callout { border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); font-size: var(--text-sm); margin-top: var(--space-2); white-space: pre-wrap; }
+.pl-callout b { display: block; font-size: var(--text-xs); font-weight: var(--weight-semibold); text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+.pl-callout.is-decisao { background: var(--info-soft); color: var(--info); }
+.pl-callout.is-melhoria { background: var(--warning-soft); color: var(--warning); }
+
+/* Equipe e papéis */
+.pl-papeis { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-4); }
+.pl-papel { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); border-top: 3px solid var(--c); }
+.pl-papel-nome { display: flex; align-items: center; gap: var(--space-2); font-weight: var(--weight-medium); color: var(--grafite); }
+.pl-papel-quem { font-size: var(--text-sm); color: var(--grafite-mid); }
+.pl-papel-conta { font-size: var(--text-xs); color: var(--grafite-soft); }
+
+/* Edição (gestão/adm, S3) */
+.pl-fase-add { margin-left: auto; }
+.pl-etapa--editavel { grid-template-columns: 40px minmax(0, 1fr) auto; }
+.pl-etapa-acoes { display: flex; flex-direction: column; align-items: flex-end; gap: var(--space-2); }
+.pl-etapa-setas { display: flex; gap: var(--space-1); }
+.pl-etapa-setas .btn { min-width: 32px; padding-left: 0; padding-right: 0; }
+.pl-modal-corpo { max-height: 70vh; overflow-y: auto; }
+.pl-modal-rodape { align-items: center; }
+.pl-form { display: flex; flex-direction: column; gap: var(--space-4); }
+.pl-form-grade { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.pl-form-grade--cor { grid-template-columns: minmax(0, 1fr) 72px; }
+.pl-cor { padding: 4px !important; cursor: pointer; }
+.pl-check { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--grafite-mid); cursor: pointer; }
+.pl-confirmar { background: var(--danger-soft); color: var(--danger); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); }
+.pl-confirmar p { margin: 0 0 var(--space-3); }
+.pl-confirmar-botoes { display: flex; gap: var(--space-2); }
+.pl-avisos { position: fixed; right: var(--space-5); bottom: var(--space-5); z-index: var(--z-toast); }
+
+@media (max-width: 640px) {
+  .pl-etapa, .pl-etapa--editavel { grid-template-columns: 1fr; gap: var(--space-1); }
+  .pl-etapa-acoes { flex-direction: row; justify-content: space-between; align-items: center; margin-top: var(--space-2); }
+  .pl-form-grade { grid-template-columns: 1fr; }
+  .pl-form-grade--cor { grid-template-columns: minmax(0, 1fr) 72px; }
+  .pl-intro { flex-direction: column; }
+  .pl-raias-card { padding: var(--space-3); }
+  .pl-avisos { left: var(--space-3); right: var(--space-3); bottom: var(--space-3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-no, .pl-etapa { transition: none; }
+  .pl-no:hover { transform: none; }
+}

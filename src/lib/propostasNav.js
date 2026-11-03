@@ -17,6 +17,7 @@ export const AREAS_PROPOSTAS = [
       { to: '/admin/processos', label: 'Processos' },
       { to: '/admin/cadastros', label: 'Cadastros' },
       { to: '/admin/distratos', label: 'Distratos', acesso: 'distratos' },
+      { to: '/admin/processo-locacao', label: 'Guia do processo', acesso: 'processoLocacao' }, // RF33; "Guia" para não confundir com "Processos" (linha do tempo das propostas)
     ],
   },
   {
@@ -33,5 +34,12 @@ export const AREAS_PROPOSTAS = [
 
 export const areaPropostas = (chave) => AREAS_PROPOSTAS.find((a) => a.chave === chave)
 
-/** Páginas da área que o perfil pode ver (uma página pode ter `acesso` próprio, mais restrito que a área). */
-export const paginasVisiveis = (area, perfil) => area.paginas.filter((p) => !p.acesso || pode(perfil, p.acesso))
+/**
+ * Páginas da área que o perfil pode ver. Uma página com `acesso` próprio usa só o dela
+ * (pode ser mais restrito, como Distratos, ou mais amplo, como Processo, que o corretor lê);
+ * as outras herdam o `acesso` da área.
+ */
+export const paginasVisiveis = (area, perfil) => area.paginas.filter((p) => pode(perfil, p.acesso ?? area.acesso))
+
+/** A área aparece no menu se o perfil puder ver ao menos uma página dela (RF33.4). */
+export const areaVisivel = (area, perfil) => paginasVisiveis(area, perfil).length > 0
