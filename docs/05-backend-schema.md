@@ -465,6 +465,66 @@ A escrita é feita só pela Edge Function `onboarding` (service role). A leitura
 - Conferido em 29/10 com a prévia: leads 200, em atendimento 182, perto do dinheiro 34 e receita R$ 141 mil batem. **Esquecidos 143 × 142 da página de Atendimento: falta alinhar a regra de borda com o SQL do Pareto.**
 - E-mail `{ "teste": true }` recebido por eduardo@ em 29/10.
 
+### 2.20 Processo de Locação (RF33, PRD §5.20, aprovado 30/10) — tabelas criadas fora do repo em 30/10 e **regularizadas pela migration `20261103120000_processo_locacao`, APLICADA em 03/11**. Passou no teste `BEGIN … ROLLBACK` (32/32), está registrada em `schema_migrations` e os dados foram mantidos (9 papéis, 42 etapas).
+As 3 tabelas foram criadas pela página HTML da Direção, sem migration. A migration `2026110xxxxxxx_processo_locacao` só **regulariza**: usa `create table if not exists`/`alter`, nunca drop, e mantém os dados.
+
+**Inventário real (03/11, SQL de leitura rodado pelo Eduardo no SQL Editor).** Dados existentes: 9 papéis, 42 etapas e 0 casos. Ainda **não conferidos**: FKs, checks e índices (próxima consulta).
+- **`locacao_papeis`:**
+  - `id` text, padrão `gen_random_uuid()::text`;
+  - `nome` text;
+  - `cor` text, padrão `'#7a8a99'`;
+  - `externo` bool, padrão false;
+  - `responsaveis` text, padrão `''`;
+  - `ordem` numeric, padrão 0;
+  - `atualizado_em` timestamptz, padrão now().
+- **`locacao_etapas`:**
+  - `id` text, padrão uuid::text;
+  - `processo` text (`contrato` | `adm`);
+  - `grupo` text, padrão `'Sem fase'`: fase, ou fluxo quando `adm`;
+  - `titulo` text;
+  - `papel` text, nulo → `locacao_papeis.id`;
+  - `canal` text, padrão `''`;
+  - `prazo` int, nulo (dias úteis);
+  - `detalhes`, `decisao` e `melhoria`: text, padrão `''`;
+  - `checklist` jsonb, padrão `[]`;
+  - `ordem` numeric, padrão 0 (aceita meio-termo);
+  - `atualizado_em`.
+- **`locacao_casos`:**
+  - `id` **uuid**;
+  - `processo` text;
+  - `fluxo` text, nulo;
+  - `imovel` text;
+  - `partes` e `esteira`: text, padrão `''`;
+  - `etapa_id` **text**, nulo → `locacao_etapas.id`;
+  - `status` text, padrão `'andamento'` (`andamento` | `concluido` | `cancelado`);
+  - `inicio` e `desde`: timestamptz, padrão now();
+  - `fim` e `motivo`: nulo;
+  - `feitos` jsonb, padrão `{}` (`{etapa_id: [índices]}`);
+  - `historico` jsonb, padrão `[]` (`[{em, texto}]`);
+  - `criado_por` uuid, padrão `auth.uid()`;
+  - `atualizado_em`.
+
+**Segurança atual (03/11):**
+- RLS ligada nas 3 (não forçada).
+- anon sem grant: a REST responde `42501`.
+- `authenticated` tem **todos** os privilégios de tabela, inclusive TRUNCATE, TRIGGER e REFERENCES.
+- Realtime ligado nas 3.
+- Policies:
+  - papéis e etapas: SELECT com `is_team()`; ALL com `is_adm_ou_gestao()`;
+  - casos: SELECT, INSERT e UPDATE com `is_team()`; DELETE com `is_adm_ou_gestao()`.
+- `is_team()` (repo `20260928180000`): tem perfil e `suspenso_em is null`, **qualquer role**, inclusive `user` e `tvaccess`.
+
+**Diferenças para a RLS desejada (todas corrigidas em 03/11 pela `20261103120000`):**
+1. A leitura de papéis e etapas usa `is_team()`, que deixa `user` e `tvaccess` lerem. Deve ser só gestão, adm, corretor e marketing.
+2. Em `locacao_casos`, o time inteiro cria e edita. Deve ser só `is_adm_ou_gestao()`. São 0 linhas, então não há dado afetado. Porém, um corretor que tentar abrir um caso na página da Direção passará a receber erro.
+3. Revogar TRUNCATE, TRIGGER e REFERENCES do `authenticated`. TRUNCATE ignora a RLS. Hoje não é alcançável pela API, e a revogação é defesa em profundidade.
+
+RLS desejada (decisão de 30/10, PRD §5.20 D3/D5):
+- `locacao_papeis` e `locacao_etapas`: leitura pelo time ativo (gestão, adm, corretor, marketing); escrita só `is_adm_ou_gestao()`.
+- `locacao_casos`: só `is_adm_ou_gestao()`. Não tem tela na v1; na v2 os casos serão abertos pela aprovação da proposta na Esteira.
+- `user`, `tvaccess` e anon: nada.
+- Realtime ligado em papéis e etapas (a página da Direção e o Hub dependem disso).
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 
@@ -477,6 +537,8 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | documentos_tipos_obrigatorios | authenticated | — |
 | dashboard_meta_ads, dashboard_google_ads, metas_campanhas, metas_mensais | `pode_ver_dash()` | — |
 | dashboard_atendimentos_crm, atividades, atividades_notas, colaboradores_raw, leads_wpp_gtm, metas, metas_atividades_tipo, campanhas_metas | **qualquer authenticated** (inclui `user` e `tvaccess`) | — |
+| locacao_papeis, locacao_etapas (§2.20) | `pode_ler_processo_locacao()` = gestao, adm, corretor, marketing, sem suspensão | `is_adm_ou_gestao()` |
+| locacao_casos (§2.20) | `is_adm_ou_gestao()` | `is_adm_ou_gestao()` |
 | blog_posts | anon: só `status = 'publicado'` | — |
 | pilares | público | — |
 | repique_control, repique_ponteiro | RLS ligado, 0 políticas: só `service_role` (conferido em 26/10) | — |
@@ -497,6 +559,8 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 ## 4. Funções, triggers e views
 | Nome | Tipo | O que faz | Chamado por |
 |---|---|---|---|
+| `pode_ler_processo_locacao` | função definer (authenticated) | leitura do guia de locação: gestão, adm, corretor e marketing sem suspensão (§2.20) | RLS de `locacao_papeis` e `locacao_etapas` |
+| `is_team` | função definer | tem perfil e não está suspenso (**qualquer role**) | RLS, página HTML da Direção |
 | `handle_new_user` | trigger em auth.users | cria perfil `user` para `@imovit.com.br` | Auth |
 | `saude_leituras` | função definer (só service_role) | confere as 6 leituras automáticas (§2.18) | Edge `alerta-leituras` |
 | `meus_codigos_crm` | função definer | leads cujo dono **atual** é o corretor logado (§2.17) | RLS da jornada, `atividades`, `leads_wpp_gtm` |
