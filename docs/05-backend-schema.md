@@ -557,6 +557,12 @@ Tabela à parte da §2.16 porque a RLS é por linha: o ADM precisa ler os dados 
 - A chave PIX do tipo `cpf` tem de ser igual ao `cpf` do onboarding. Celular → `+55DDXXXXXXXXX`; e-mail em minúsculas; aleatória = UUID.
 - Dado bancário nunca vai para e-mail nem para `console.log`.
 
+**Edição (PRD §5.18b B7–B8)**: migration `20261104170000_dados_bancarios_edicao`, testada em `BEGIN … ROLLBACK`.
+- Colunas novas: `atualizado_em` timestamptz e `atualizado_por` uuid → perfis (on delete set null).
+- A RPC foi recriada com `atualizado_em` e `atualizado_por_nome`.
+- Função `onboarding` v4: `editar_bancarios` (JWT gestão/adm; mesmas regras do `normalizarBancario`; grava quem e quando) e `excluir_bancarios` (JWT gestão/adm; apaga só a linha bancária).
+- Continua sem policy de escrita: no teste, o ADM recebeu 42501 ao alterar ou apagar direto na tabela.
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 

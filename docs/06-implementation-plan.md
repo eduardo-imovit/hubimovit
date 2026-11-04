@@ -470,6 +470,7 @@ Estimativa da v1: **M–G, ~1,5 a 2 dias** (sem a aba "Em andamento"), contando 
 - **S4 Telas:** bloco bancário na ficha da Gestão (com copiar) e lista do ADM (lugar da B5); `acessos.js` ganha `dadosBancarios: ['gestao', 'adm']`.
 - **S5 Publicar:** migration → função → push `main` + `main:teste` (ordem do Schema). Ponta a ponta com um colaborador de teste, conferir como ADM e como corretor e **apagar o teste**.
 - **Pronto quando:** os critérios do PRD §5.18b forem atendidos.
+- **26b Editar e excluir (B7–B8, 04/11):** migration `20261104170000` (quem editou), função v4 (`editar_bancarios`, `excluir_bancarios`), botões na lista e `SecaoBancaria` em componente próprio (`src/components/onboarding/`). Migration testada em `BEGIN … ROLLBACK`; build ok. **NO AR em 04/11:** migration aplicada, função v4 (anon recusado em editar e excluir) e push.
 
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).

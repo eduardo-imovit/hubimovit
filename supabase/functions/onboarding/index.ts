@@ -15,6 +15,8 @@
 //   abrir    (token)  -- se o link ainda vale e se falta o bancário (não devolve dados)
 //   enviar   (token)  -- grava os dados (+ bancário opcional); e-mail para a Gestão (sem CPF nem banco)
 //   enviar_bancarios (token) -- só o bancário, depois do envio (PRD §5.18b, uso único)
+//   editar_bancarios  (gestão/adm) -- corrige conta/PIX; grava quem e quando
+//   excluir_bancarios (gestão/adm) -- apaga só o bancário (o onboarding fica)
 //
 // Deploy: supabase functions deploy onboarding --no-verify-jwt
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, BREVO_API_KEY, APP_URL
@@ -93,6 +95,9 @@ const eventoSchema = z.discriminatedUnion('evento', [
     dados_bancarios: bancarioSchema.optional().nullable(),
   }),
   z.object({ evento: z.literal('enviar_bancarios'), token, dados_bancarios: bancarioSchema }),
+  // Gestão/ADM (PRD §5.18b, B7–B8); id = onboarding_id
+  z.object({ evento: z.literal('editar_bancarios'), id: z.string().uuid(), dados_bancarios: bancarioSchema }),
+  z.object({ evento: z.literal('excluir_bancarios'), id: z.string().uuid() }),
 ])
 
 class HttpError extends Error {
@@ -192,18 +197,18 @@ function formatarTelefone(t: string) {
   return null
 }
 
-async function exigirGestao(req: Request) {
+async function exigirPapel(req: Request, papeis: string[], recusa: string) {
   const authHeader = req.headers.get('Authorization')
   if (!authHeader) throw new HttpError(401, 'Requisição sem token de autenticação')
   const comoChamador = createClient(supabaseUrl!, anonKey!, { global: { headers: { Authorization: authHeader } } })
   const { data: { user }, error } = await comoChamador.auth.getUser()
   if (error || !user) throw new HttpError(401, 'Faça login de novo')
   const { data: perfil } = await supabase.from('perfis').select('id, role, suspenso_em').eq('id', user.id).single()
-  if (!perfil || perfil.role !== 'gestao' || perfil.suspenso_em) {
-    throw new HttpError(403, 'Só a Gestão trata o onboarding de colaboradores')
-  }
+  if (!perfil || !papeis.includes(perfil.role) || perfil.suspenso_em) throw new HttpError(403, recusa)
   return perfil.id as string
 }
+const exigirGestao = (req: Request) => exigirPapel(req, ['gestao'], 'Só a Gestão trata o onboarding de colaboradores')
+const exigirAdmOuGestao = (req: Request) => exigirPapel(req, ['gestao', 'adm'], 'Só a Gestão e o Financeiro (ADM) mexem nos dados bancários')
 
 async function notificar(destinatarios: string[], assunto: string, html: string) {
   const brevoApiKey = Deno.env.get('BREVO_API_KEY')
@@ -361,6 +366,29 @@ Deno.serve(async (req) => {
       const { error } = await supabase.from('onboarding_dados_bancarios').insert({ onboarding_id: o.id, ...linha })
       if (error?.code === '23505') throw new HttpError(409, 'Seus dados bancários já foram enviados.')
       if (error) throw error
+      return json({ ok: true })
+    }
+
+    if (ev.evento === 'editar_bancarios') {
+      const quem = await exigirAdmOuGestao(req)
+      const { data: o } = await supabase.from('onboarding_colaboradores').select('id, cpf').eq('id', ev.id).maybeSingle()
+      if (!o) throw new HttpError(404, 'Onboarding não encontrado')
+      const linha = normalizarBancario(ev.dados_bancarios, o.cpf)
+      if (!linha) throw new HttpError(400, 'Deixe pelo menos a conta ou o PIX. Para tirar tudo, use Excluir.')
+      const { data, error } = await supabase.from('onboarding_dados_bancarios')
+        .update({ ...linha, atualizado_em: new Date().toISOString(), atualizado_por: quem })
+        .eq('onboarding_id', ev.id).select('onboarding_id').maybeSingle()
+      if (error) throw error
+      if (!data) throw new HttpError(404, 'Este colaborador não tem dados bancários para editar')
+      return json({ ok: true })
+    }
+
+    if (ev.evento === 'excluir_bancarios') {
+      await exigirAdmOuGestao(req)
+      const { data, error } = await supabase.from('onboarding_dados_bancarios')
+        .delete().eq('onboarding_id', ev.id).select('onboarding_id').maybeSingle()
+      if (error) throw error
+      if (!data) throw new HttpError(404, 'Dados bancários não encontrados')
       return json({ ok: true })
     }
 

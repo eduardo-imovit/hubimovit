@@ -890,12 +890,18 @@ O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colabo
 
 **Fora de escopo.**
 - Colaboradores que já entraram antes de 04/11 (sem link de onboarding). Ficam para depois, ou o financeiro segue como hoje.
-- Editar os dados pelo Hub (a Gestão ou o ADM digitando). Correção = cancelar e gerar link novo, ou ajuste no banco.
+- ~~Editar os dados pelo Hub~~: entrou em 04/11 (B7–B8, abaixo).
 - Validar a conta no banco (dígito da agência ou da conta): cada banco tem uma regra; confere-se no primeiro pagamento.
 
 **Em aberto.**
 - ~~B5. Onde fica a lista do ADM?~~ **Decidido (04/11): Configurações ▸ Usuários & Acessos.** PRD e plano aprovados pelo Eduardo em 04/11.
 - B6. Retenção: os dados bancários seguem a P3 (o que acontece quando o colaborador sai).
+
+**Editar e excluir (pedido do Eduardo, 04/11).**
+- B7. **Gestão e ADM** editam e excluem, na lista de Configurações ▸ Usuários & Acessos (botões Editar e Excluir).
+- B8. **Excluir apaga só os dados bancários**: o onboarding, o CPF e o checklist ficam. Pede confirmação ("não tem como desfazer").
+- Editar segue as mesmas regras do formulário (PIX CPF = CPF do colaborador; cada bloco tudo ou nada). Para tirar tudo, usa-se Excluir.
+- **Quem editou fica registrado** (sugestão do Asimov, aceita): a lista mostra "Editado por X em data". Troca de PIX é o golpe clássico de desvio de comissão.
 
 **Critérios de pronto.**
 - O colaborador envia com e sem dados bancários; sem eles, o link aceita só a seção bancária depois.
