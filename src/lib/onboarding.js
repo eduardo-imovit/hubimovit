@@ -17,6 +17,17 @@ export const cancelarOnboarding = (id) => chamarFuncao(FUNCAO, { evento: 'cancel
 export const abrirOnboarding = (token) => chamarFuncao(FUNCAO, { evento: 'abrir', token })
 export const enviarOnboarding = (token, dados) => chamarFuncao(FUNCAO, { evento: 'enviar', token, ...dados })
 export const enviarBancarios = (token, dados_bancarios) => chamarFuncao(FUNCAO, { evento: 'enviar_bancarios', token, dados_bancarios })
+export const editarBancarios = (id, dados_bancarios) => chamarFuncao(FUNCAO, { evento: 'editar_bancarios', id, dados_bancarios })
+export const excluirBancarios = (id) => chamarFuncao(FUNCAO, { evento: 'excluir_bancarios', id })
+
+/** Linha do banco → estado do formulário (separa a conta do dígito). */
+export function bancarioParaForm(d) {
+  const [conta, digito] = (d.conta ?? '').split('-')
+  return {
+    banco: d.banco ?? '', agencia: d.agencia ?? '', conta: conta ?? '', digito: digito ?? '',
+    tipoConta: d.tipo_conta ?? null, pixTipo: d.pix_tipo ?? null, pixChave: d.pix_chave ?? '',
+  }
+}
 
 /**
  * Dados bancários (PRD §5.18b): Gestão e ADM leem. A RPC devolve só nome,

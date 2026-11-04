@@ -1,24 +1,118 @@
-import { useEffect, useState } from 'react'
-import { equipeLabel, listarDadosBancarios, tipoContaLabel, tipoPixLabel } from '../../lib/onboarding'
+import { useCallback, useEffect, useState } from 'react'
+import ModalPortal from '../esteira/ModalPortal'
+import SecaoBancaria from '../onboarding/SecaoBancaria'
+import { fmtDataHora } from '../../lib/distrato'
+import {
+  bancarioParaForm, editarBancarios, equipeLabel, excluirBancarios, listarDadosBancarios, prepararBancario,
+  tipoContaLabel, tipoPixLabel,
+} from '../../lib/onboarding'
 
 function copiar(texto, avisar) {
   navigator.clipboard.writeText(texto).then(() => avisar?.())
 }
 
+function Modal({ titulo, onClose, travado, children, rodape }) {
+  return (
+    <ModalPortal>
+      <div className="modal-overlay" onClick={() => !travado && onClose()}>
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-header">
+            <div className="modal-title">{titulo}</div>
+            <button type="button" className="modal-close" disabled={travado} onClick={onClose} aria-label="Fechar">×</button>
+          </div>
+          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>{children}</div>
+          <div className="modal-footer">{rodape}</div>
+        </div>
+      </div>
+    </ModalPortal>
+  )
+}
+
+/** Editar conta/PIX (Gestão/ADM). A função confere as regras e grava quem editou. */
+function Editar({ d, onClose, onSalvo }) {
+  const [b, setB] = useState(() => bancarioParaForm(d))
+  const [erro, setErro] = useState('')
+  const [salvando, setSalvando] = useState(false)
+
+  async function salvar() {
+    const { erro: msg, dados } = prepararBancario(b, null)
+    if (msg) return setErro(msg)
+    if (!dados) return setErro('Deixe pelo menos a conta ou o PIX. Para tirar tudo, use Excluir.')
+    setErro('')
+    setSalvando(true)
+    try {
+      await editarBancarios(d.onboarding_id, dados)
+      onSalvo(`Dados bancários de ${d.nome_completo} atualizados.`)
+    } catch (e) {
+      setErro(e.message)
+      setSalvando(false)
+    }
+  }
+
+  return (
+    <Modal titulo={`Editar · ${d.nome_completo}`} onClose={onClose} travado={salvando}
+      rodape={<>
+        <button type="button" className="btn btn-ghost btn-sm" disabled={salvando} onClick={onClose}>Cancelar</button>
+        <button type="button" className="btn btn-primary btn-sm" disabled={salvando} onClick={salvar}>{salvando ? 'Salvando…' : 'Salvar'}</button>
+      </>}>
+      <SecaoBancaria b={b} setB={setB} modo="interno" />
+      {erro && <div className="login-error">{erro}</div>}
+    </Modal>
+  )
+}
+
+function Excluir({ d, onClose, onExcluido }) {
+  const [erro, setErro] = useState('')
+  const [excluindo, setExcluindo] = useState(false)
+
+  async function excluir() {
+    setExcluindo(true)
+    try {
+      await excluirBancarios(d.onboarding_id)
+      onExcluido(`Dados bancários de ${d.nome_completo} excluídos.`)
+    } catch (e) {
+      setErro(e.message)
+      setExcluindo(false)
+    }
+  }
+
+  return (
+    <Modal titulo={`Excluir os dados bancários de ${d.nome_completo}?`} onClose={onClose} travado={excluindo}
+      rodape={<>
+        <button type="button" className="btn btn-ghost btn-sm" disabled={excluindo} onClick={onClose}>Cancelar</button>
+        <button type="button" className="btn btn-danger btn-sm" disabled={excluindo} onClick={excluir}>{excluindo ? 'Excluindo…' : 'Excluir definitivamente'}</button>
+      </>}>
+      <p style={{ margin: 0 }}>Apaga a conta e o PIX. O cadastro do colaborador (onboarding e checklist) continua.</p>
+      <p style={{ margin: 0 }}><strong>Não tem como desfazer.</strong> Para corrigir um dado, prefira <strong>Editar</strong>.</p>
+      {erro && <div className="login-error">{erro}</div>}
+    </Modal>
+  )
+}
+
 /**
  * Configurações ▸ Usuários ▸ Dados bancários (PRD §5.18b): Gestão e ADM
- * (Financeiro). Lê pela RPC dados_bancarios_colaboradores, que confere o
- * papel e devolve só nome, equipe e o bancário (sem CPF e sem endereço).
+ * (Financeiro) veem, editam e excluem. Lê pela RPC dados_bancarios_colaboradores,
+ * que confere o papel e devolve só nome, equipe e o bancário (sem CPF e sem
+ * endereço). A escrita passa pela função `onboarding`.
  */
 export default function DadosBancariosLista() {
   const [lista, setLista] = useState(null)
   const [erro, setErro] = useState('')
   const [msg, setMsg] = useState('')
+  const [editando, setEditando] = useState(null)
+  const [excluindo, setExcluindo] = useState(null)
 
-  useEffect(() => {
+  const recarregar = useCallback(() => {
     listarDadosBancarios().then(setLista).catch((e) => setErro(e.message))
   }, [])
+  useEffect(() => { recarregar() }, [recarregar])
 
+  const concluir = (texto) => {
+    setEditando(null)
+    setExcluindo(null)
+    setMsg(texto)
+    recarregar()
+  }
   const copiado = (o) => setMsg(`${o} copiado.`)
 
   return (
@@ -39,6 +133,7 @@ export default function DadosBancariosLista() {
                 <th>Colaborador</th>
                 <th>Conta</th>
                 <th>PIX</th>
+                <th>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -49,6 +144,9 @@ export default function DadosBancariosLista() {
                     <td>
                       <div style={{ fontWeight: 'var(--weight-medium)' }}>{d.nome_completo || '—'}</div>
                       <div className="timeline-sub" style={{ marginTop: 0 }}>{[equipeLabel(d.equipe), d.email_imovit].filter(Boolean).join(' · ')}</div>
+                      {d.atualizado_em && (
+                        <div className="timeline-sub" style={{ marginTop: 0 }}>Editado por {d.atualizado_por_nome ?? '—'} em {fmtDataHora(d.atualizado_em)}</div>
+                      )}
                     </td>
                     <td>
                       {conta ? (
@@ -66,6 +164,12 @@ export default function DadosBancariosLista() {
                         </div>
                       ) : <span className="muted">—</span>}
                     </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setMsg(''); setEditando(d) }}>Editar</button>
+                        <button type="button" className="btn btn-danger btn-sm" onClick={() => { setMsg(''); setExcluindo(d) }}>Excluir</button>
+                      </div>
+                    </td>
                   </tr>
                 )
               })}
@@ -73,6 +177,8 @@ export default function DadosBancariosLista() {
           </table>
         </div>
       )}
+      {editando && <Editar d={editando} onClose={() => setEditando(null)} onSalvo={concluir} />}
+      {excluindo && <Excluir d={excluindo} onClose={() => setExcluindo(null)} onExcluido={concluir} />}
     </section>
   )
 }
