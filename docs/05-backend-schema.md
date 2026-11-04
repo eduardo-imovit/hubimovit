@@ -525,6 +525,38 @@ RLS desejada (decisão de 30/10, PRD §5.20 D3/D5):
 - `user`, `tvaccess` e anon: nada.
 - Realtime ligado em papéis e etapas (a página da Direção e o Hub dependem disso).
 
+### 2.21 Dados bancários do onboarding (RF32.7–10, PRD §5.18b) — migration `20261104120000_onboarding_dados_bancarios`, **APLICADA em 04/11** (antes: `BEGIN … ROLLBACK` 21/21); Edge Function `onboarding` v3 publicada
+Tabela à parte da §2.16 porque a RLS é por linha: o ADM precisa ler os dados bancários e não pode ler o CPF e o endereço.
+
+**Tabela `onboarding_dados_bancarios`** (0 ou 1 linha por onboarding)
+- `onboarding_id` uuid PK → `onboarding_colaboradores(id)` on delete cascade.
+- Conta (os 4 juntos, ou nenhum):
+  - `banco` text (código COMPE de 3 dígitos + nome, ex.: `341 · Itaú`);
+  - `agencia` text, check `^\d{1,5}(-[0-9Xx])?$`;
+  - `conta` text, check `^\d{1,13}-[0-9Xx]$` (com dígito);
+  - `tipo_conta` text, check `corrente` | `poupanca`.
+- PIX (os 2 juntos, ou nenhum):
+  - `pix_tipo` text, check `cpf` | `celular` | `email` | `aleatoria`;
+  - `pix_chave` text.
+- `informado_em` timestamptz default now().
+- Checks: conta completa ou vazia; PIX completo ou vazio; pelo menos um dos dois (linha vazia não é gravada).
+
+**RLS e grants**
+- RLS ligada; policy de SELECT `is_adm_ou_gestao()`. Sem policy de escrita: só a função `onboarding` (service role) grava.
+- `revoke all … from anon, authenticated`; `grant select to authenticated` (a policy filtra).
+
+**RPC `dados_bancarios_colaboradores()`** (security definer, `search_path = public`)
+- Recusa (42501) quem não é `is_adm_ou_gestao()`.
+- Devolve: `onboarding_id`, `nome_completo`, `equipe`, `status`, `email_imovit` e os campos bancários. **Sem CPF nem endereço.**
+- Só onboardings não cancelados que têm linha bancária. `grant execute` só para `authenticated`.
+
+**Edge Function `onboarding`** (v2)
+- `enviar`: aceita `dados_bancarios` opcional. Com ele, grava a linha na mesma chamada, depois do update do onboarding.
+- `enviar_bancarios` (token, novo): só quando o status é `dados_recebidos` ou `aprovado`, o link não venceu e ainda não existe linha bancária. Insere e pronto (uso único).
+- `abrir`: devolve também `falta_bancario` (bool), para a página mostrar só a seção bancária. Sem devolver dado nenhum.
+- A chave PIX do tipo `cpf` tem de ser igual ao `cpf` do onboarding. Celular → `+55DDXXXXXXXXX`; e-mail em minúsculas; aleatória = UUID.
+- Dado bancário nunca vai para e-mail nem para `console.log`.
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 

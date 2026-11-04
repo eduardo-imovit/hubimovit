@@ -12,8 +12,9 @@
 //   aprovar  (gestão) -- e-mail @imovit + código do Imoview -> colaboradores_raw
 //   marcar   (gestão) -- etapa manual do checklist
 //   cancelar (gestão)
-//   abrir    (token)  -- se o link ainda vale (não devolve dados)
-//   enviar   (token)  -- grava os dados; e-mail para a Gestão (sem CPF)
+//   abrir    (token)  -- se o link ainda vale e se falta o bancário (não devolve dados)
+//   enviar   (token)  -- grava os dados (+ bancário opcional); e-mail para a Gestão (sem CPF nem banco)
+//   enviar_bancarios (token) -- só o bancário, depois do envio (PRD §5.18b, uso único)
 //
 // Deploy: supabase functions deploy onboarding --no-verify-jwt
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY, BREVO_API_KEY, APP_URL
@@ -47,6 +48,17 @@ const UFS = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', '
 const token = z.string().trim().min(32).max(80)
 const soDigitos = (t: string) => t.replace(/\D/g, '')
 
+// Dados bancários (PRD §5.18b): opcionais; cada bloco é tudo ou nada.
+const texto = (max: number) => z.string().trim().max(max).optional().nullable()
+const bancarioSchema = z.object({
+  banco: texto(80),
+  agencia: texto(12),
+  conta: texto(20), // "12345-6": a página junta conta e dígito
+  tipo_conta: z.enum(['corrente', 'poupanca']).optional().nullable(),
+  pix_tipo: z.enum(['cpf', 'celular', 'email', 'aleatoria']).optional().nullable(),
+  pix_chave: texto(120),
+})
+
 const eventoSchema = z.discriminatedUnion('evento', [
   z.object({ evento: z.literal('criar'), nome: z.string().trim().max(160).optional().nullable() }),
   z.object({
@@ -78,7 +90,9 @@ const eventoSchema = z.discriminatedUnion('evento', [
       uf: z.enum(UFS),
     }),
     aceite: z.literal(true),
+    dados_bancarios: bancarioSchema.optional().nullable(),
   }),
+  z.object({ evento: z.literal('enviar_bancarios'), token, dados_bancarios: bancarioSchema }),
 ])
 
 class HttpError extends Error {
@@ -110,6 +124,63 @@ function cpfValido(cpf: string) {
     return r === 10 ? 0 : r
   }
   return dv(9) === Number(cpf[9]) && dv(10) === Number(cpf[10])
+}
+
+/**
+ * Confere e normaliza os dados bancários. Devolve null se veio tudo vazio.
+ * A conta é sempre do próprio colaborador (B3): chave PIX do tipo CPF tem de
+ * ser o CPF dele. Nunca logar o conteúdo.
+ */
+function normalizarBancario(b: z.infer<typeof bancarioSchema> | null | undefined, cpfDoColaborador: string | null) {
+  if (!b) return null
+  const vazio = (v: string | null | undefined) => !v || !v.trim()
+  const contaCampos = [b.banco, b.agencia, b.conta, b.tipo_conta]
+  const temConta = contaCampos.some((v) => !vazio(v ?? null))
+  const temPix = !vazio(b.pix_tipo ?? null) || !vazio(b.pix_chave ?? null)
+  if (!temConta && !temPix) return null
+
+  const linha: Record<string, string | null> = {
+    banco: null, agencia: null, conta: null, tipo_conta: null, pix_tipo: null, pix_chave: null,
+  }
+
+  if (temConta) {
+    if (contaCampos.some((v) => vazio(v ?? null))) throw new HttpError(400, 'Complete os dados da conta: banco, agência, conta com dígito e tipo.')
+    const agencia = b.agencia!.replace(/\s/g, '')
+    const conta = b.conta!.replace(/[\s.]/g, '')
+    if (!/^\d{1,5}(-[0-9Xx])?$/.test(agencia)) throw new HttpError(400, 'Confira a agência (só números, com o dígito se houver).')
+    if (!/^\d{1,13}-[0-9Xx]$/.test(conta)) throw new HttpError(400, 'Confira a conta e o dígito.')
+    Object.assign(linha, { banco: b.banco!.trim(), agencia: agencia.toUpperCase(), conta: conta.toUpperCase(), tipo_conta: b.tipo_conta! })
+  }
+
+  if (temPix) {
+    if (vazio(b.pix_tipo ?? null) || vazio(b.pix_chave ?? null)) throw new HttpError(400, 'Escolha o tipo da chave PIX e preencha a chave.')
+    const bruta = b.pix_chave!.trim()
+    let chave = bruta
+    if (b.pix_tipo === 'cpf') {
+      chave = soDigitos(bruta)
+      if (!cpfDoColaborador || chave !== cpfDoColaborador) throw new HttpError(400, 'A chave PIX do tipo CPF precisa ser o seu CPF: a conta tem de estar no seu nome.')
+    } else if (b.pix_tipo === 'celular') {
+      let d = soDigitos(bruta)
+      if (d.length > 11 && d.startsWith('55')) d = d.slice(2)
+      if (d.length !== 11) throw new HttpError(400, 'Confira o celular da chave PIX, com DDD.')
+      chave = `+55${d}`
+    } else if (b.pix_tipo === 'email') {
+      chave = bruta.toLowerCase()
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(chave)) throw new HttpError(400, 'Confira o e-mail da chave PIX.')
+    } else {
+      chave = bruta.toLowerCase()
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(chave)) throw new HttpError(400, 'Confira a chave aleatória: ela tem 32 letras e números, separados por traços.')
+    }
+    Object.assign(linha, { pix_tipo: b.pix_tipo!, pix_chave: chave })
+  }
+  return linha
+}
+
+async function temBancario(onboardingId: string) {
+  const { count, error } = await supabase.from('onboarding_dados_bancarios')
+    .select('onboarding_id', { count: 'exact', head: true }).eq('onboarding_id', onboardingId)
+  if (error) throw error
+  return (count ?? 0) > 0
 }
 
 // Mesmo formato do resto de colaboradores_raw: (19) 99999-9999
@@ -273,7 +344,24 @@ Deno.serve(async (req) => {
 
     if (ev.evento === 'abrir') {
       const o = await porToken(ev.token)
-      return json({ onboarding: { situacao: situacaoPublica(o) } })
+      const sit = situacaoPublica(o)
+      // Só diz se falta o bancário (para a página mostrar a seção); nenhum dado volta.
+      const falta_bancario = sit === 'enviado' && new Date(o.expira_em) >= new Date() && !(await temBancario(o.id))
+      return json({ onboarding: { situacao: sit, falta_bancario } })
+    }
+
+    if (ev.evento === 'enviar_bancarios') {
+      const o = await porToken(ev.token)
+      if (!['dados_recebidos', 'aprovado', 'concluido'].includes(o.status) || new Date(o.expira_em) < new Date()) {
+        throw new HttpError(409, 'Este link não aceita mais dados bancários. Fale com a Gestão da Imovit.')
+      }
+      const { data: comCpf } = await supabase.from('onboarding_colaboradores').select('cpf').eq('id', o.id).single()
+      const linha = normalizarBancario(ev.dados_bancarios, comCpf?.cpf ?? null)
+      if (!linha) throw new HttpError(400, 'Preencha a conta, o PIX ou os dois.')
+      const { error } = await supabase.from('onboarding_dados_bancarios').insert({ onboarding_id: o.id, ...linha })
+      if (error?.code === '23505') throw new HttpError(409, 'Seus dados bancários já foram enviados.')
+      if (error) throw error
+      return json({ ok: true })
     }
 
     // enviar
@@ -288,6 +376,8 @@ Deno.serve(async (req) => {
     if (!telefone) throw new HttpError(400, 'Confira o telefone, com DDD.')
     const cep = soDigitos(ev.endereco.cep)
     if (cep.length !== 8) throw new HttpError(400, 'Confira o CEP.')
+    // Confere o bancário antes de gravar qualquer coisa.
+    const bancario = normalizarBancario(ev.dados_bancarios, cpf)
 
     const agora = new Date().toISOString()
     const { data: gravado, error } = await supabase.from('onboarding_colaboradores').update({
@@ -298,6 +388,14 @@ Deno.serve(async (req) => {
     }).eq('token', ev.token).eq('status', 'link_enviado').select('id').maybeSingle()
     if (error) throw error
     if (!gravado) throw new HttpError(409, 'Seus dados já foram enviados.')
+    if (bancario) {
+      const { error: eb } = await supabase.from('onboarding_dados_bancarios').insert({ onboarding_id: gravado.id, ...bancario })
+      // Os dados principais já estão salvos: o link volta a pedir só o bancário.
+      if (eb) {
+        console.error('[onboarding] falha ao gravar dados bancários:', eb.code)
+        throw new HttpError(500, 'Seus dados foram salvos, mas os bancários não. Abra o link de novo para enviar só eles.')
+      }
+    }
 
     // Sem CPF nem endereço no e-mail: só o aviso e o link da ficha.
     const ok = await notificar([DESTINO_GESTAO], `Onboarding: ${ev.nome_completo} enviou os dados`, moldura(

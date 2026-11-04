@@ -3,7 +3,8 @@ import ModalPortal from '../esteira/ModalPortal'
 import { supabase } from '../../lib/supabaseClient'
 import { fmtDataHora } from '../../lib/distrato'
 import {
-  INSTRUCAO_REPIQUE, aprovarOnboarding, cancelarOnboarding, checklist, criarOnboarding, enderecoTexto, equipeLabel,
+  INSTRUCAO_REPIQUE, aprovarOnboarding, cancelarOnboarding, checklist, criarOnboarding, dadosBancariosDe, enderecoTexto, equipeLabel,
+  tipoContaLabel, tipoPixLabel,
   formatarCpf, linkOnboarding, linkWhatsApp, listarOnboardings, marcarEtapa, mascararCpf, mensagemAcesso, mensagemLink, situacao,
 } from '../../lib/onboarding'
 
@@ -106,6 +107,37 @@ function Dado({ rotulo, valor, copiavel = valor, onCopiado }) {
         )}
       </dd>
     </>
+  )
+}
+
+/** Dados bancários do onboarding (PRD §5.18b); podem chegar depois do envio. */
+function BlocoBancario({ id, expiraEm, onCopiado }) {
+  const [b, setB] = useState(undefined)
+  const [erro, setErro] = useState('')
+  useEffect(() => {
+    dadosBancariosDe(id).then(setB).catch((e) => setErro(e.message))
+  }, [id])
+
+  if (erro) return <div className="hub-error">Não foi possível carregar os dados bancários: {erro}</div>
+  if (b === undefined) return null
+  return (
+    <div>
+      <div className="page-eyebrow">Dados bancários</div>
+      {!b ? (
+        <span className="field-hint">
+          {new Date(expiraEm) >= new Date()
+            ? `Ainda não enviados. O colaborador pode enviar pelo mesmo link até ${fmtDataHora(expiraEm)}.`
+            : 'Não enviados, e o link já venceu.'}
+        </span>
+      ) : (
+        <dl style={{ display: 'grid', gridTemplateColumns: 'minmax(120px, auto) 1fr', gap: 'var(--space-2) var(--space-4)', margin: 0 }}>
+          {b.banco && <Dado rotulo="Banco" valor={b.banco} onCopiado={onCopiado} />}
+          {b.banco && <Dado rotulo="Agência" valor={b.agencia} onCopiado={onCopiado} />}
+          {b.banco && <Dado rotulo="Conta" valor={`${b.conta} (${tipoContaLabel(b.tipo_conta)})`} copiavel={b.conta} onCopiado={onCopiado} />}
+          {b.pix_tipo && <Dado rotulo={`PIX (${tipoPixLabel(b.pix_tipo)})`} valor={b.pix_chave} onCopiado={onCopiado} />}
+        </dl>
+      )}
+    </div>
   )
 }
 
@@ -285,6 +317,7 @@ function Ficha({ o, onClose, onMudou }) {
           {aprovado && <Dado rotulo="Código Imoview" valor={String(o.id_corretor_crm)} onCopiado={copiado} />}
         </dl>
       )}
+      {o.enviado_em && <BlocoBancario id={o.id} expiraEm={o.expira_em} onCopiado={copiado} />}
       {msg && <span className="field-hint">{msg}</span>}
 
       {o.status === 'dados_recebidos' && <Aprovar o={o} onAprovado={onMudou} />}

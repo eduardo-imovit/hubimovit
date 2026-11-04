@@ -53,8 +53,9 @@ export const ACESSO = {
   dashEstoque: ['gestao', 'corretor'], // Dash ▸ Estoque, busca de imóveis (PRD §5.14, 16/10); RPCs estoque_busca/estoque_bairros conferem o papel
   dashAdmLocacao: ['gestao', 'adm'], // carteira de contratos de locação (PRD §5.13); ADM liberado em 15/10; RLS: is_adm_ou_gestao()
   campanha: ['gestao', 'adm', 'marketing', 'corretor', 'tvaccess'], // trilha da campanha na Home (PRD §5.9, C3) // Comercial (corretor: só os dados dele, PRD §5.8)
-  configuracoes: ['gestao', 'marketing'],
+  configuracoes: ['gestao', 'marketing', 'adm'], // ADM: só a aba Usuários, com os dados bancários (PRD §5.18b)
   usuarios: ['gestao'],
+  dadosBancarios: ['gestao', 'adm'], // Configurações ▸ Usuários ▸ Dados bancários (PRD §5.18b); RLS/RPC: is_adm_ou_gestao()
   tv: ['gestao', 'adm', 'marketing', 'tvaccess'],
   spotify: ['gestao'],
 }

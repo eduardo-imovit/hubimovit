@@ -461,6 +461,16 @@ Estimativa da v1: **M–G, ~1,5 a 2 dias** (sem a aba "Em andamento"), contando 
 - **Pronto quando:** os critérios de aceite do PRD §5.20 forem atendidos.
 - **v2 (quando a Esteira estiver ativa e estável):** proposta aprovada abre o caso em `locacao_casos` sozinha (trigger ou Edge Function na aprovação), e a aba "Em andamento" é ligada. Sem caso digitado à mão. Atualizar o PRD, o Schema e uma fase nova antes.
 
+## Fase 26 — Dados bancários no onboarding (RF32.7–10, PRD §5.18b, Schema §2.21) — **NO AR em 04/11**
+- **S0 Aprovação:** ✅ 04/11. B5 = Configurações ▸ Usuários & Acessos (o ADM vê só essa aba; `configuracoes` ganhou `adm`).
+- Feito em 04/11: S1 testado em `BEGIN … ROLLBACK` (21/21: gestão e adm leem; adm com 0 em `onboarding_colaboradores`; corretor, marketing e anon zero; ninguém escreve direto; checks de tudo-ou-nada). S2–S4 no código, `npm run build` ok. S5: migration aplicada, função `onboarding` v3 publicada, ponta a ponta com 10 casos pela função (PIX CPF de outra pessoa e conta incompleta recusados; "mandar depois" de uso único) e tela conferida no localhost; testes apagados; push na `main` e na `teste`. **Falta:** conferir no navegador logado como ADM e como Marketing.
+- **S1 Banco:** migration da §2.21 (tabela, checks, RLS `is_adm_ou_gestao()`, RPC). Testar em `BEGIN … ROLLBACK`: gestão e adm leem; corretor, marketing e anon recebem zero; o adm continua com zero em `onboarding_colaboradores`. Aplicar pelo MCP só depois do OK.
+- **S2 Função `onboarding` v2:** `dados_bancarios` opcional no `enviar`, evento `enviar_bancarios`, `falta_bancario` no `abrir`, regra da chave PIX CPF. Testar com um onboarding de teste.
+- **S3 Link público:** seção "Dados bancários (opcional)" + o modo "só bancário" depois do envio; aceite LGPD novo. Testar no localhost e a 375 px.
+- **S4 Telas:** bloco bancário na ficha da Gestão (com copiar) e lista do ADM (lugar da B5); `acessos.js` ganha `dadosBancarios: ['gestao', 'adm']`.
+- **S5 Publicar:** migration → função → push `main` + `main:teste` (ordem do Schema). Ponta a ponta com um colaborador de teste, conferir como ADM e como corretor e **apagar o teste**.
+- **Pronto quando:** os critérios do PRD §5.18b forem atendidos.
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).
@@ -496,4 +506,5 @@ Estimativa da v1: **M–G, ~1,5 a 2 dias** (sem a aba "Em andamento"), contando 
 | 2026-10-29 | PRD §5.19 (Relatório da Diretoria e dashboards finais) | Reclamação da Diretoria: dados divergem e a navegação perde o fio. Eduardo aprovou a espinha de 6 páginas, o relatório + e-mail diário, safra × fluxo sem filtro e o "parado" 3/7 dias com 🟢🟡🔴. **Sem fase no plano ainda**: depende da Fase 24 S3 e do detalhe página por página; ordem com o Brooks |
 | 2026-10-29 | Agendador da receita da carteira (prioridade 2 do Pareto) | Pagamentos só eram lidos pelo botão "Atualizar"; `pg_cron` diário chama a `carteira-locacao` (Schema §2.10) |
 | 2026-10-29 | Alerta de leitura que falhou (prioridade 3 do Pareto) | E-mail às 7h15 para eduardo@ só com falha (Schema §2.18); base do aviso do e-mail diário v1 |
+| 2026-11-04 | Fase 26 (dados bancários no onboarding) | Pedido do Financeiro; Eduardo: conta + PIX, Gestão e ADM leem, conta sempre do colaborador, opcional; tabela própria para o ADM não ler CPF/endereço |
 | 2026-10-29 | E-mail diário da Diretoria v1 (PRD §5.19) | Aprovado pelo Eduardo; seg–sex 7h30; segunda cobre sexta a domingo (para a sexta não ficar sem e-mail); Schema §2.19 |
