@@ -8,29 +8,34 @@ import FotografoAdmin from '../components/settings/FotografoAdmin'
 import DatasComemorativasAdmin from '../components/settings/DatasComemorativasAdmin'
 import UsuariosAdmin from '../components/settings/UsuariosAdmin'
 import OnboardingAdmin from '../components/settings/OnboardingAdmin'
+import DadosBancariosLista from '../components/settings/DadosBancariosLista'
 import { usePerfil } from '../hooks/usePerfil'
 import { pode } from '../lib/acessos'
 
+// `acesso` = chave de ACESSO (acessos.js) que libera a aba; sem ela, vale
+// para quem tem conteúdo da Home (gestão e marketing).
 const ABAS = [
   { id: 'avisos', label: 'Avisos & Links' },
   { id: 'banners', label: 'Banners da Home' },
   { id: 'plantao', label: 'Plantão' },
   { id: 'fotografo', label: 'Agenda do Fotógrafo' },
   { id: 'datas', label: 'Datas Comemorativas' },
-  { id: 'usuarios', label: 'Usuários & Acessos', somenteGestao: true },
-  { id: 'onboarding', label: 'Onboarding', somenteGestao: true }, // PRD §5.18; RLS: is_gestao()
+  // Gestão: usuários + dados bancários; ADM (Financeiro): só os dados bancários (PRD §5.18b)
+  { id: 'usuarios', label: 'Usuários & Acessos', acesso: 'dadosBancarios' },
+  { id: 'onboarding', label: 'Onboarding', acesso: 'usuarios' }, // PRD §5.18; RLS: is_gestao()
 ]
+const CONTEUDO_HOME = ['gestao', 'marketing']
 
 export default function Configuracoes() {
   const { perfil } = usePerfil()
-  const abasVisiveis = ABAS.filter((a) => !a.somenteGestao || pode(perfil, 'usuarios'))
+  const abasVisiveis = ABAS.filter((a) => (a.acesso ? pode(perfil, a.acesso) : CONTEUDO_HOME.includes(perfil?.role)))
   // ?aba=plantao abre direto na aba (links das pendências da Home)
   const [params] = useSearchParams()
   const abaUrl = params.get('aba')
-  // A aba da URL vale mesmo antes do perfil carregar (as abas só da Gestão
-  // aparecem depois); enquanto não puder ver, mostra Avisos.
+  // A aba da URL vale mesmo antes do perfil carregar (as abas restritas
+  // aparecem depois); enquanto não puder ver, mostra a primeira visível.
   const [abaEscolhida, setAba] = useState(ABAS.some((a) => a.id === abaUrl) ? abaUrl : 'avisos')
-  const aba = abasVisiveis.some((a) => a.id === abaEscolhida) ? abaEscolhida : 'avisos'
+  const aba = abasVisiveis.some((a) => a.id === abaEscolhida) ? abaEscolhida : abasVisiveis[0]?.id
 
   return (
     <div>
@@ -71,7 +76,12 @@ export default function Configuracoes() {
       {aba === 'plantao' && <PlantaoAdmin />}
       {aba === 'fotografo' && <FotografoAdmin />}
       {aba === 'datas' && <DatasComemorativasAdmin />}
-      {aba === 'usuarios' && <UsuariosAdmin />}
+      {aba === 'usuarios' && (
+        <>
+          {pode(perfil, 'usuarios') && <UsuariosAdmin />}
+          <DadosBancariosLista />
+        </>
+      )}
       {aba === 'onboarding' && <OnboardingAdmin />}
     </div>
   )

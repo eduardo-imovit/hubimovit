@@ -16,6 +16,79 @@ export const marcarEtapa = (id, etapa, feito) => chamarFuncao(FUNCAO, { evento: 
 export const cancelarOnboarding = (id) => chamarFuncao(FUNCAO, { evento: 'cancelar', id })
 export const abrirOnboarding = (token) => chamarFuncao(FUNCAO, { evento: 'abrir', token })
 export const enviarOnboarding = (token, dados) => chamarFuncao(FUNCAO, { evento: 'enviar', token, ...dados })
+export const enviarBancarios = (token, dados_bancarios) => chamarFuncao(FUNCAO, { evento: 'enviar_bancarios', token, dados_bancarios })
+
+/**
+ * Dados bancários (PRD §5.18b): Gestão e ADM leem. A RPC devolve só nome,
+ * equipe e o bancário, sem CPF e sem endereço.
+ */
+export async function listarDadosBancarios() {
+  const { data, error } = await supabase.rpc('dados_bancarios_colaboradores')
+  if (error) throw error
+  return data ?? []
+}
+
+/** Bancário de um onboarding (ficha da Gestão). */
+export async function dadosBancariosDe(onboardingId) {
+  const { data, error } = await supabase.from('onboarding_dados_bancarios').select('*').eq('onboarding_id', onboardingId).maybeSingle()
+  if (error) throw error
+  return data
+}
+
+export const TIPOS_CONTA = [
+  { valor: 'corrente', label: 'Corrente' },
+  { valor: 'poupanca', label: 'Poupança' },
+]
+export const TIPOS_PIX = [
+  { valor: 'cpf', label: 'CPF' },
+  { valor: 'celular', label: 'Celular' },
+  { valor: 'email', label: 'E-mail' },
+  { valor: 'aleatoria', label: 'Chave aleatória' },
+]
+export const tipoContaLabel = (v) => TIPOS_CONTA.find((t) => t.valor === v)?.label ?? '—'
+export const tipoPixLabel = (v) => TIPOS_PIX.find((t) => t.valor === v)?.label ?? '—'
+
+// Os mais usados; o campo aceita qualquer outro digitado.
+export const BANCOS = [
+  '001 · Banco do Brasil', '033 · Santander', '104 · Caixa', '237 · Bradesco', '341 · Itaú',
+  '077 · Inter', '260 · Nubank', '336 · C6 Bank', '290 · PagBank', '323 · Mercado Pago',
+  '756 · Sicoob', '748 · Sicredi', '212 · Banco Original', '208 · BTG Pactual', '655 · Neon',
+]
+
+export const BANCARIO_VAZIO = { banco: '', agencia: '', conta: '', digito: '', tipoConta: null, pixTipo: null, pixChave: '' }
+
+/**
+ * Confere o bancário no navegador (a função confere de novo). Devolve
+ * { erro } ou { dados } (dados = null se tudo vazio).
+ */
+export function prepararBancario(b, cpf) {
+  const temConta = [b.banco, b.agencia, b.conta, b.digito].some((v) => v.trim()) || !!b.tipoConta
+  const temPix = !!b.pixTipo || !!b.pixChave.trim()
+  if (!temConta && !temPix) return { dados: null }
+  if (temConta) {
+    if (!b.banco.trim() || !b.agencia.trim() || !b.conta.trim() || !b.digito.trim() || !b.tipoConta) {
+      return { erro: 'Complete os dados da conta: banco, agência, conta, dígito e tipo. Ou deixe a conta em branco.' }
+    }
+    if (!/^\d{1,5}(-[0-9Xx])?$/.test(b.agencia.replace(/\s/g, ''))) return { erro: 'Confira a agência (só números).' }
+    if (!/^\d{1,13}$/.test(soDigitos(b.conta)) || !/^[0-9Xx]$/.test(b.digito.trim())) return { erro: 'Confira a conta e o dígito.' }
+  }
+  if (temPix) {
+    if (!b.pixTipo || !b.pixChave.trim()) return { erro: 'Escolha o tipo da chave PIX e preencha a chave. Ou deixe o PIX em branco.' }
+    if (b.pixTipo === 'cpf' && cpf != null && soDigitos(b.pixChave) !== soDigitos(cpf)) {
+      return { erro: 'A chave PIX do tipo CPF precisa ser o seu CPF: a conta tem de estar no seu nome.' }
+    }
+  }
+  return {
+    dados: {
+      banco: temConta ? b.banco.trim() : null,
+      agencia: temConta ? b.agencia.replace(/\s/g, '') : null,
+      conta: temConta ? `${soDigitos(b.conta)}-${b.digito.trim()}` : null,
+      tipo_conta: temConta ? b.tipoConta : null,
+      pix_tipo: temPix ? b.pixTipo : null,
+      pix_chave: temPix ? b.pixChave.trim() : null,
+    },
+  }
+}
 
 export { linkWhatsApp }
 

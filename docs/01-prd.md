@@ -866,6 +866,45 @@ O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colabo
 - O checklist marca sozinho login e nível.
 - `npm run build` ok.
 
+#### 5.18b Dados bancários no onboarding (pedido do Financeiro, 04/11) — **APROVADO e NO AR em 04/11** (plano Fase 26) (plano Fase 26, Schema §2.21)
+**Problema.** O financeiro precisa da conta e do PIX de cada colaborador para pagar comissões. Hoje esses dados chegam por fora (WhatsApp/chat), sem lugar seguro no Hub.
+
+**Decisões do Eduardo (04/11).**
+- B1. O formulário pede **conta + PIX**: banco, agência, conta com dígito, tipo (corrente/poupança), tipo da chave PIX e a chave.
+- B2. **Gestão e ADM** (o financeiro) leem os dados bancários.
+- B3. A conta **é sempre do próprio colaborador**. O formulário avisa isso e não pede titular.
+- B4. Os dados bancários são **opcionais**: o colaborador pode enviar sem eles e mandar depois.
+
+**Como fica.**
+1. **No link público**, uma seção nova "Dados bancários (opcional)", com o aviso "a conta precisa estar no seu nome". Cada bloco é tudo ou nada: quem começa a conta preenche os 4 campos da conta, e quem escolhe o tipo da chave PIX preenche a chave. Se a chave for do tipo CPF, ela tem de ser o CPF do próprio colaborador (B3).
+2. **"Mandar depois"**: se o colaborador enviou sem os dados bancários, o mesmo link mostra "Recebemos seus dados" e, abaixo, só a seção bancária, até ele enviar ou o link vencer. Assim os dados não passam pelo WhatsApp.
+3. **Gestão**: a ficha do onboarding mostra os dados bancários, com botão de copiar.
+4. **ADM (financeiro)**: em **Configurações ▸ Usuários & Acessos** (B5), a lista **Dados bancários** (nome, equipe, banco, agência, conta, PIX), sem CPF nem endereço. O ADM vê só essa aba e, nela, só essa lista; a Gestão vê a lista abaixo da tabela de usuários.
+5. O aceite LGPD passa a dizer: "O CPF e o endereço ficam visíveis só para a Gestão; os dados bancários, para a Gestão e o financeiro."
+
+**Requisitos.**
+- RF32.7: tabela própria `onboarding_dados_bancarios` (1 por onboarding), com RLS de leitura `is_adm_ou_gestao()`. Separada da `onboarding_colaboradores` porque a RLS vale para a linha inteira: na mesma tabela, liberar o ADM abriria também o CPF e o endereço.
+- RF32.8: a escrita passa só pela Edge Function `onboarding` (eventos `enviar` e `enviar_bancarios`). O anon não lê nem escreve.
+- RF32.9: dados bancários **nunca** vão para `colaboradores_raw`, para e-mail ou para log.
+- RF32.10: a lista do ADM lê por uma RPC (`dados_bancarios_colaboradores`) que confere o papel e devolve só nome, equipe e os campos bancários.
+
+**Fora de escopo.**
+- Colaboradores que já entraram antes de 04/11 (sem link de onboarding). Ficam para depois, ou o financeiro segue como hoje.
+- Editar os dados pelo Hub (a Gestão ou o ADM digitando). Correção = cancelar e gerar link novo, ou ajuste no banco.
+- Validar a conta no banco (dígito da agência ou da conta): cada banco tem uma regra; confere-se no primeiro pagamento.
+
+**Em aberto.**
+- ~~B5. Onde fica a lista do ADM?~~ **Decidido (04/11): Configurações ▸ Usuários & Acessos.** PRD e plano aprovados pelo Eduardo em 04/11.
+- B6. Retenção: os dados bancários seguem a P3 (o que acontece quando o colaborador sai).
+
+**Critérios de pronto.**
+- O colaborador envia com e sem dados bancários; sem eles, o link aceita só a seção bancária depois.
+- A chave PIX do tipo CPF diferente do CPF dele é recusada.
+- Gestão e ADM veem os dados; corretor, marketing e anon recebem zero (conferido no banco).
+- O ADM continua sem ler CPF e endereço.
+- O e-mail para a Gestão não leva dado bancário.
+- `npm run build` ok.
+
 ### 5.19 Relatório da Diretoria e dashboards finais (pedido da Diretoria, 28–29/10) — **APROVADO (29/10) como direção; detalhe página por página a seguir**
 **Problema.** O diretor não confia nos dados (divergem do CRM) e perde o fio do raciocínio navegando entre páginas. Causa: duas fontes de atendimento (achados A1/A7, Fase 24) e painéis sem ligação entre si nem com as listas (0 links nos 4 painéis; os filtros da URL se perdem ao trocar de página pelo menu).
 

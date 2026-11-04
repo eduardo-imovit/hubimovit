@@ -1,6 +1,111 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
-import { EQUIPES, UFS, abrirOnboarding, buscarCep, cpfValido, enviarOnboarding, soDigitos } from '../../lib/onboarding'
+import {
+  BANCARIO_VAZIO, BANCOS, EQUIPES, TIPOS_CONTA, TIPOS_PIX, UFS, abrirOnboarding, buscarCep, cpfValido,
+  enviarBancarios, enviarOnboarding, prepararBancario, soDigitos,
+} from '../../lib/onboarding'
+
+/** Botões de escolha única (mesmo padrão da equipe). */
+function Escolha({ rotulo, opcoes, valor, onChange }) {
+  return (
+    <div className="field">
+      <label>{rotulo}</label>
+      <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }} role="radiogroup" aria-label={rotulo}>
+        {opcoes.map((o) => (
+          <button key={o.valor} type="button" role="radio" aria-checked={valor === o.valor}
+            className={`btn btn-sm ${valor === o.valor ? 'btn-primary' : 'btn-ghost'}`}
+            onClick={() => onChange(valor === o.valor ? null : o.valor)}>
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+const PLACEHOLDER_PIX = { cpf: 'Só números', celular: '(19) 99999-9999', email: 'voce@email.com', aleatoria: '0000aaaa-00aa-00aa-00aa-000000aaaaaa' }
+
+/**
+ * Dados bancários (PRD §5.18b): opcionais, conta e/ou PIX, sempre no nome
+ * do próprio colaborador. Só o Financeiro (ADM) e a Gestão veem.
+ */
+function SecaoBancaria({ b, setB, depois = false }) {
+  const set = (patch) => setB((atual) => ({ ...atual, ...patch }))
+  return (
+    <>
+      <div>
+        <div className="page-eyebrow" style={{ marginBottom: 0 }}>Dados bancários (opcional)</div>
+        <span className="field-hint">Para o Financeiro pagar suas comissões. <strong>A conta precisa estar no seu nome.</strong>{!depois && ' Se preferir, envie depois por este mesmo link.'}</span>
+      </div>
+      <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+        <div className="field" style={{ flex: '2 1 220px' }}>
+          <label htmlFor="ob-banco">Banco</label>
+          <input id="ob-banco" list="ob-bancos" placeholder="Ex.: 341 · Itaú" value={b.banco} onChange={(ev) => set({ banco: ev.target.value })} maxLength={80} />
+          <datalist id="ob-bancos">{BANCOS.map((x) => <option key={x} value={x} />)}</datalist>
+        </div>
+        <div className="field" style={{ flex: '1 1 110px' }}>
+          <label htmlFor="ob-agencia">Agência</label>
+          <input id="ob-agencia" inputMode="numeric" placeholder="0000" value={b.agencia} onChange={(ev) => set({ agencia: ev.target.value })} maxLength={7} />
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap' }}>
+        <div className="field" style={{ flex: '2 1 180px' }}>
+          <label htmlFor="ob-conta">Conta</label>
+          <input id="ob-conta" inputMode="numeric" placeholder="Sem o dígito" value={b.conta} onChange={(ev) => set({ conta: ev.target.value })} maxLength={15} />
+        </div>
+        <div className="field" style={{ flex: '0 1 90px' }}>
+          <label htmlFor="ob-digito">Dígito</label>
+          <input id="ob-digito" value={b.digito} onChange={(ev) => set({ digito: ev.target.value })} maxLength={1} />
+        </div>
+      </div>
+      <Escolha rotulo="Tipo de conta" opcoes={TIPOS_CONTA} valor={b.tipoConta} onChange={(v) => set({ tipoConta: v })} />
+      <Escolha rotulo="Chave PIX" opcoes={TIPOS_PIX} valor={b.pixTipo} onChange={(v) => set({ pixTipo: v })} />
+      {b.pixTipo && (
+        <div className="field">
+          <label htmlFor="ob-pix">Chave ({TIPOS_PIX.find((t) => t.valor === b.pixTipo)?.label})</label>
+          <input id="ob-pix" placeholder={PLACEHOLDER_PIX[b.pixTipo]} value={b.pixChave} onChange={(ev) => set({ pixChave: ev.target.value })} maxLength={120} />
+        </div>
+      )}
+    </>
+  )
+}
+
+/** Depois do envio, sem bancário: o link aceita só esta parte (uma vez). */
+function SoBancario({ token }) {
+  const [b, setB] = useState(BANCARIO_VAZIO)
+  const [erro, setErro] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [enviado, setEnviado] = useState(false)
+
+  async function enviar(ev) {
+    ev.preventDefault()
+    // O CPF não volta para a página: a função confere a chave CPF.
+    const { erro: msg, dados } = prepararBancario(b, null)
+    if (msg) return setErro(msg)
+    if (!dados) return setErro('Preencha a conta, o PIX ou os dois.')
+    setErro('')
+    setEnviando(true)
+    try {
+      await enviarBancarios(token, dados)
+      setEnviado(true)
+    } catch (e) {
+      setErro(e.message)
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  if (enviado) return <p className="page-sub" style={{ margin: 0 }}>Dados bancários recebidos. Obrigado!</p>
+  return (
+    <form onSubmit={enviar} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+      <SecaoBancaria b={b} setB={setB} depois />
+      {erro && <div className="login-error">{erro}</div>}
+      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <button type="submit" className="btn btn-primary btn-sm" disabled={enviando}>{enviando ? 'Enviando…' : 'Enviar dados bancários'}</button>
+      </div>
+    </form>
+  )
+}
 
 function Moldura({ children }) {
   return (
@@ -16,12 +121,13 @@ function Moldura({ children }) {
   )
 }
 
-function Mensagem({ titulo, texto }) {
+function Mensagem({ titulo, texto, children }) {
   return (
     <Moldura>
       <div className="card card-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
         <div className="page-title" style={{ fontSize: 'var(--text-xl)' }}>{titulo}</div>
         <p className="page-sub" style={{ margin: 0 }}>{texto}</p>
+        {children}
       </div>
     </Moldura>
   )
@@ -40,8 +146,10 @@ const VAZIO = {
 export default function OnboardingPublico() {
   const { token } = useParams()
   const [situacao, setSituacao] = useState(null)
+  const [faltaBancario, setFaltaBancario] = useState(false)
   const [erroCarga, setErroCarga] = useState('')
   const [form, setForm] = useState(VAZIO)
+  const [bancario, setBancario] = useState(BANCARIO_VAZIO)
   const [erro, setErro] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(false)
@@ -50,7 +158,10 @@ export default function OnboardingPublico() {
 
   useEffect(() => {
     abrirOnboarding(token)
-      .then(({ onboarding }) => setSituacao(onboarding.situacao))
+      .then(({ onboarding }) => {
+        setSituacao(onboarding.situacao)
+        setFaltaBancario(!!onboarding.falta_bancario)
+      })
       .catch((e) => setErroCarga(e.message))
   }, [token])
 
@@ -77,8 +188,9 @@ export default function OnboardingPublico() {
   async function enviar(ev) {
     ev.preventDefault()
     const msg = validar()
-    setErro(msg)
-    if (msg) return
+    const banc = prepararBancario(bancario, form.cpf)
+    setErro(msg || banc.erro || '')
+    if (msg || banc.erro) return
     setEnviando(true)
     try {
       await enviarOnboarding(token, {
@@ -93,7 +205,9 @@ export default function OnboardingPublico() {
           complemento: form.complemento.trim() || null, bairro: form.bairro.trim(), cidade: form.cidade.trim(), uf: form.uf,
         },
         aceite: true,
+        dados_bancarios: banc.dados,
       })
+      setFaltaBancario(!banc.dados)
       setEnviado(true)
       window.scrollTo({ top: 0 })
     } catch (e) {
@@ -109,7 +223,11 @@ export default function OnboardingPublico() {
     return <Mensagem titulo="Este link não está mais ativo" texto="Fale com a Gestão da Imovit para receber um novo link." />
   }
   if (enviado || situacao === 'enviado') {
-    return <Mensagem titulo="Recebemos seus dados" texto="A Gestão vai criar o seu e-mail da Imovit e os seus acessos, e te chama no WhatsApp. Bem-vindo(a)!" />
+    return (
+      <Mensagem titulo="Recebemos seus dados" texto="A Gestão vai criar o seu e-mail da Imovit e os seus acessos, e te chama no WhatsApp. Bem-vindo(a)!">
+        {faltaBancario && <SoBancario token={token} />}
+      </Mensagem>
+    )
   }
 
   return (
@@ -205,9 +323,11 @@ export default function OnboardingPublico() {
           </div>
         </div>
 
+        <SecaoBancaria b={bancario} setB={setBancario} />
+
         <label style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-start', cursor: 'pointer' }}>
           <input type="checkbox" checked={form.aceite} onChange={(ev) => set({ aceite: ev.target.checked })} style={{ marginTop: 4 }} />
-          <span>Autorizo a Imovit a usar estes dados para o meu cadastro como colaborador(a). O CPF e o endereço ficam visíveis só para a Gestão.</span>
+          <span>Autorizo a Imovit a usar estes dados para o meu cadastro como colaborador(a). O CPF e o endereço ficam visíveis só para a Gestão; os dados bancários, para a Gestão e o Financeiro.</span>
         </label>
 
         {erro && <div className="login-error">{erro}</div>}
