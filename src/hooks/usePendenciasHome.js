@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { isoLocal, limitesMes, nomeMes, somarDias } from '../lib/paineis'
 import { PROPOSTAS_ATIVAS } from '../lib/acessos'
+import { ORDEM_TIPOS, TIPOS_PLANTAO, tipoDe } from '../lib/tiposPlantao'
 
 // Status em que a proposta já saiu da esteira.
 const ENCERRADAS = ['sincronizada', 'concluida', 'rejeitada', 'descartada', 'expirada']
@@ -79,12 +80,17 @@ async function pendenciasMarketing(hoje) {
   const mes = hoje.slice(0, 7)
   const [orcamentos, plantoes] = await Promise.all([
     dados(supabase.from('metas_campanhas').select('id').gte('periodo_inicio', limitesMes(mes).inicio).lte('periodo_inicio', limitesMes(mes).fim)),
-    dados(supabase.from('plantao').select('data').gte('data', hoje).lte('data', somarDias(hoje, 6)).neq('status', 'cancelado')),
+    dados(supabase.from('plantao').select('data, tipo').gte('data', hoje).lte('data', somarDias(hoje, 6)).neq('status', 'cancelado')),
   ])
   if (!orcamentos.length) out.push({ tom: 'atencao', n: null, texto: `O orçamento de mídia de ${nomeMes(mes).split(' ')[0]} não está cadastrado`, to: '/dashboard/performance', acao: 'Ver' })
-  const comPlantao = new Set(plantoes.map((p) => p.data))
-  const semPlantao = Array.from({ length: 7 }, (_, i) => somarDias(hoje, i)).filter((d) => !comPlantao.has(d)).length
-  if (semPlantao) out.push({ tom: 'atencao', n: semPlantao, texto: plural(semPlantao, 'dia sem plantão nos próximos 7 dias', 'dias sem plantão nos próximos 7 dias'), to: '/configuracoes?aba=plantao', acao: 'Importar escala' })
+  // conta por plantão: um dia com vendas e sem locação ainda é um buraco na escala de locação
+  const proximos7 = Array.from({ length: 7 }, (_, i) => somarDias(hoje, i))
+  for (const tipo of ORDEM_TIPOS) {
+    const comPlantao = new Set(plantoes.filter((p) => tipoDe(p) === tipo).map((p) => p.data))
+    const semPlantao = proximos7.filter((d) => !comPlantao.has(d)).length
+    const nome = TIPOS_PLANTAO[tipo].rotulo.toLowerCase()
+    if (semPlantao) out.push({ tom: 'atencao', n: semPlantao, texto: plural(semPlantao, `dia sem plantão de ${nome} nos próximos 7 dias`, `dias sem plantão de ${nome} nos próximos 7 dias`), to: '/configuracoes?aba=plantao', acao: 'Importar escala' })
+  }
   return out
 }
 

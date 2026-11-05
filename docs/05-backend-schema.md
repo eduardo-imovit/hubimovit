@@ -50,7 +50,7 @@ Não há FK entre `perfis` e `colaboradores_raw` (a ligação é por e-mail, qua
 | `avisos` | tipo (`aviso, data_importante, processo, link`), titulo!, corpo, link_url, data_referencia, ativo | soft-delete |
 | `biblioteca_links` | titulo!, url!, categoria, descricao, ordem, ativo | |
 | `home_banners` | titulo!, subtitulo, imagem_path! (bucket `banners`), link_url, ordem, ativo | |
-| `plantao` | corretor_id→colaboradores_raw, corretor_nome!, data!, turno (`manha, tarde, dia_inteiro`), status (`agendado, confirmado, cancelado`), observacao | |
+| `plantao` | corretor_id→colaboradores_raw, corretor_nome!, data!, turno (`manha, tarde, dia_inteiro`), status (`agendado, confirmado, cancelado`), observacao, **tipo!** (`venda, locacao`, default `venda`; 05/11) | índice (data, tipo); `kpis_tv.plantao_hoje` devolve o tipo |
 | `agendamentos_fotografo` | corretor_id→colaboradores_raw, corretor_nome!, corretor_email!, dia_semana (0–6, igual a `Date.getDay()`), hora_inicio < hora_fim, observacao, ativo | bloco semanal recorrente |
 | `fotografo_bloqueios` | data_hora_inicio!, data_hora_fim!, motivo | ⚠ sem uso aparente no front |
 | `datas_comemorativas` | nome!, data!, recorrente_anual!, categoria, observacao, ativo | |

@@ -1,4 +1,6 @@
 import { STATUS_LABEL } from '../../lib/esteiraLabels'
+import TagPlantao from '../plantao/TagPlantao'
+import { tipoDe } from '../../lib/tiposPlantao'
 
 const numero = (v) => Number(v ?? 0).toLocaleString('pt-BR')
 const percentual = (v) => `${Number(v ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`
@@ -132,7 +134,8 @@ export function KpisOperacaoTV({ kpis, erro }) {
             : (
               <div className="kpi-tv-plantao">
                 {o.plantao_hoje.map((p) => (
-                  <div key={`${p.nome}-${p.turno}`}>
+                  <div key={`${p.tipo ?? 'venda'}-${p.nome}-${p.turno}`}>
+                    <TagPlantao tipo={tipoDe(p)} compacta />{' '}
                     <span className="kpi-tv-plantao-nome">{p.nome}</span>
                     <span className="kpi-tv-sub"> · {TURNO_LABEL[p.turno] ?? p.turno}</span>
                   </div>

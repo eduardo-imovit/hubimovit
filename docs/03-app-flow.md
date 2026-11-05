@@ -39,7 +39,7 @@
 | Dash · Painel da Gestão | `/dashboard/gestao` (e `/dashboard`, que redireciona) | gestao, marketing | História em cascata (PRD §5.0): manchete, ritmo, funil, custo da perda, canais, pessoas, saúde dos dados | Filtros na URL: `periodo`, `finalidade`, `canal`, `corretor` |
 | Dash · Painel de Performance | `/dashboard/performance` | gestao, marketing | História do dinheiro (PRD §5.0b): ritmo de gasto × orçamento, atenção, campanhas, cascata até o negócio, onde investir | Filtros na URL: `periodo`, `plataforma`, `etapa`, `finalidade`, `campanha` |
 | Endereços antigos do Dash | `/dashboard/leads`, `/funil`, `/campanhas`, `/performance-v2`, `/comercial`, `/operacional` | — | Redirecionam para os painéis novos, mantendo os filtros da URL (removidos em 24/09) | — |
-| Configurações | `/configuracoes` | gestao, marketing | Conteúdo da Home | Abas: Avisos & Links, Banners, Plantão (com **Importar escala (PDF)** → prévia → Importar, PRD §5.3), Fotógrafo, Datas; **Usuários & Acessos só gestao** |
+| Configurações | `/configuracoes` | gestao, marketing | Conteúdo da Home | Abas: Avisos & Links, Banners, Plantão (seletor **Vendas | Locação**; cada um com **Importar escala (PDF)** → prévia → Importar e cadastro à mão, PRD §5.3), Fotógrafo, Datas; **Usuários & Acessos só gestao** |
 | Propostas | `/admin/propostas` | gestao, adm, corretor | Criar e acompanhar propostas | Nova proposta; aprovar/descartar/pedir correção (**gestao, adm**) |
 | Esteiras | `/admin/esteiras` | gestao, adm, corretor | Documentos por proposta | Aprovar/reprovar documento, Solicitar ajustes, Finalizar (**gestao, adm**) |
 | Processos | `/admin/processos` | gestao, adm, corretor | Histórico e concluídos | Ver detalhe |

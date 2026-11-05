@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { formatarDiaCurto } from '../../lib/dateUtils'
+import { TIPOS_PLANTAO } from '../../lib/tiposPlantao'
 import { casarNome, chaveApelido, ehFimDeSemana, lerApelidosSalvos, lerEscalaPdf, salvarApelidos } from '../../lib/escalaPlantao'
 
 const fmtData = (iso) => iso.split('-').reverse().slice(0, 2).join('/')
@@ -13,7 +14,8 @@ const diaComMes = (iso) => `${formatarDiaCurto(iso)}/${iso.slice(5, 7)}`
  * pessoa confirma. As datas do arquivo passam a valer: os plantões já
  * cadastrados nesse intervalo são substituídos.
  */
-export default function ImportarEscalaPlantao({ colaboradores, onImportado }) {
+export default function ImportarEscalaPlantao({ tipo = 'venda', colaboradores, onImportado }) {
+  const infoTipo = TIPOS_PLANTAO[tipo]
   const inputRef = useRef(null)
   const [arquivo, setArquivo] = useState(null)
   const [escala, setEscala] = useState(null)
@@ -56,6 +58,7 @@ export default function ImportarEscalaPlantao({ colaboradores, onImportado }) {
       const { data, error } = await supabase
         .from('plantao')
         .select('id, data, turno, corretor_nome, status')
+        .eq('tipo', tipo) // só substitui o plantão do mesmo tipo
         .gte('data', linhas[0].data)
         .lte('data', linhas.at(-1).data)
       if (error) throw error
@@ -97,6 +100,7 @@ export default function ImportarEscalaPlantao({ colaboradores, onImportado }) {
         data: r.data,
         turno: r.turno,
         status: 'agendado',
+        tipo,
         observacao: `Escala importada: ${arquivo.name}`,
       }))
       // grava os novos primeiro; só depois apaga os antigos (falha no meio = duplicado, nunca dia vazio)
@@ -123,8 +127,8 @@ export default function ImportarEscalaPlantao({ colaboradores, onImportado }) {
     <div className="escala-import">
       <div className="escala-import-cabeca">
         <div>
-          <div className="escala-import-titulo">Importar escala do mês (PDF)</div>
-          <div className="escala-import-sub">Suba o PDF "PLANTAO VENDAS". Você confere a prévia antes de gravar.</div>
+          <div className="escala-import-titulo">Importar escala de {infoTipo.rotulo.toLowerCase()} do mês (PDF)</div>
+          <div className="escala-import-sub">Suba o PDF "{infoTipo.pdf}". Você confere a prévia antes de gravar; só o plantão de {infoTipo.rotulo.toLowerCase()} é substituído.</div>
         </div>
         <label className="btn btn-secondary btn-sm escala-import-botao">
           {lendo ? 'Lendo…' : 'Escolher PDF'}
@@ -135,7 +139,7 @@ export default function ImportarEscalaPlantao({ colaboradores, onImportado }) {
       {erro && <div className="hub-error">{erro}</div>}
       {resultado && (
         <div className="escala-import-ok" role="status">
-          ✓ {resultado.gravados} plantões gravados de {fmtData(resultado.de)} a {fmtData(resultado.ate)}
+          ✓ {resultado.gravados} plantões de {infoTipo.rotulo.toLowerCase()} gravados de {fmtData(resultado.de)} a {fmtData(resultado.ate)}
           {resultado.substituidos > 0 && ` (${resultado.substituidos} antigos substituídos)`}.
         </div>
       )}
@@ -147,7 +151,7 @@ export default function ImportarEscalaPlantao({ colaboradores, onImportado }) {
             {existentes.length > 0 && (
               <>
                 {' '}
-                <strong className="escala-import-alerta">{existentes.length} plantões já cadastrados nesse período serão substituídos.</strong>
+                <strong className="escala-import-alerta">{existentes.length} plantões de {infoTipo.rotulo.toLowerCase()} já cadastrados nesse período serão substituídos.</strong>
               </>
             )}
           </p>
@@ -207,7 +211,7 @@ export default function ImportarEscalaPlantao({ colaboradores, onImportado }) {
                 ? 'Importando…'
                 : faltando.length > 0
                   ? `Escolha o corretor de ${faltando.length} ${faltando.length === 1 ? 'nome' : 'nomes'}`
-                  : `Importar ${registros.length} plantões${existentes.length ? ` e substituir ${existentes.length}` : ''}`}
+                  : `${infoTipo.icone} Importar ${registros.length} plantões de ${infoTipo.rotulo.toLowerCase()}${existentes.length ? ` e substituir ${existentes.length}` : ''}`}
             </button>
           </div>
         </div>

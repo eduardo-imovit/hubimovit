@@ -1,5 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { usePlantao } from '../../hooks/usePlantao'
+import TagPlantao from '../plantao/TagPlantao'
+import { ORDEM_TIPOS, tipoDe } from '../../lib/tiposPlantao'
 
 const NOMES_DIA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 const TURNOS = [
@@ -47,7 +49,10 @@ export default function PlantaoSemanalTV({ hojeISO }) {
   return (
     <section className="agenda-fotografo-tv">
       <div className="agenda-fotografo-tv-titulo">
-        🏠 Plantão — próximos dias · {ddmm(dias[0])} a {ddmm(dias[4])}
+        Plantão — próximos dias · {ddmm(dias[0])} a {ddmm(dias[4])}
+        <span className="plantao-tv-legenda">
+          {ORDEM_TIPOS.map((t) => <TagPlantao key={t} tipo={t} />)}
+        </span>
       </div>
 
       <div className="plantao-tv-grid">
@@ -60,15 +65,17 @@ export default function PlantaoSemanalTV({ hojeISO }) {
                 {ehHoje ? 'Hoje' : NOMES_DIA[new Date(`${diaISO}T12:00:00`).getDay()]} <span>{ddmm(diaISO)}</span>
               </div>
               {doDia.length === 0 && <div className="plantao-tv-vazio">sem escala</div>}
-              {TURNOS.map((t) =>
-                doDia
-                  .filter((p) => p.turno === t.chave)
-                  .map((p) => (
-                    <div className="plantao-tv-item" key={p.id}>
-                      <span className="plantao-tv-turno">{t.rotulo}</span>
-                      <span className="plantao-tv-nome">{nomeCurto(p.corretor_nome)}</span>
-                    </div>
-                  ))
+              {ORDEM_TIPOS.flatMap((tipo) =>
+                TURNOS.flatMap((t) =>
+                  doDia
+                    .filter((p) => tipoDe(p) === tipo && p.turno === t.chave)
+                    .map((p) => (
+                      <div className={`plantao-tv-item plantao-barra--${tipo}`} key={p.id}>
+                        <span className="plantao-tv-turno"><TagPlantao tipo={tipo} compacta />{t.rotulo}</span>
+                        <span className="plantao-tv-nome">{nomeCurto(p.corretor_nome)}</span>
+                      </div>
+                    ))
+                )
               )}
             </div>
           )
