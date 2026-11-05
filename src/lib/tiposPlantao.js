@@ -11,7 +11,3 @@ export const ORDEM_TIPOS = ['venda', 'locacao']
 
 /** Tipo de um plantão; registros sem tipo são de vendas (o default do banco). */
 export const tipoDe = (p) => (p?.tipo === 'locacao' ? 'locacao' : 'venda')
-
-/** Ordena Vendas antes de Locação, mantendo a ordem original dentro de cada tipo. */
-export const ordenarPorTipo = (lista) =>
-  [...lista].sort((a, b) => ORDEM_TIPOS.indexOf(tipoDe(a)) - ORDEM_TIPOS.indexOf(tipoDe(b)))

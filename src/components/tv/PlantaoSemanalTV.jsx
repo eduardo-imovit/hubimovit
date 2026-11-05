@@ -1,7 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { usePlantao } from '../../hooks/usePlantao'
-import TagPlantao from '../plantao/TagPlantao'
-import { ORDEM_TIPOS, tipoDe } from '../../lib/tiposPlantao'
+import { TIPOS_PLANTAO, tipoDe } from '../../lib/tiposPlantao'
 
 const NOMES_DIA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 const TURNOS = [
@@ -32,8 +31,9 @@ function proximosDias(inicioISO, n = 5) {
  * colunas (docs/01-prd.md §5.3). Começa sempre em hoje, que fica em destaque;
  * os outros dias ficam esmaecidos. Fim de semana é plantão do dia inteiro.
  * Relê a cada 10 minutos, para uma escala importada aparecer sem reiniciar a TV.
+ * Um painel por time (`tipo` = venda | locacao): cada um é um slide do carrossel.
  */
-export default function PlantaoSemanalTV({ hojeISO }) {
+export default function PlantaoSemanalTV({ hojeISO, tipo = 'venda' }) {
   const dias = useMemo(() => proximosDias(hojeISO), [hojeISO])
   const { plantoes, recarregar } = usePlantao(dias[0], dias[4])
 
@@ -42,17 +42,15 @@ export default function PlantaoSemanalTV({ hojeISO }) {
     return () => clearInterval(timer)
   }, [recarregar])
 
-  const ativos = plantoes.filter((p) => p.status !== 'cancelado')
+  const ativos = plantoes.filter((p) => p.status !== 'cancelado' && tipoDe(p) === tipo)
+  const info = TIPOS_PLANTAO[tipo]
   const destaque = dias[0]
   const ddmm = (iso) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
 
   return (
-    <section className="agenda-fotografo-tv">
+    <section className={`agenda-fotografo-tv plantao-tv--${tipo}`}>
       <div className="agenda-fotografo-tv-titulo">
-        Plantão — próximos dias · {ddmm(dias[0])} a {ddmm(dias[4])}
-        <span className="plantao-tv-legenda">
-          {ORDEM_TIPOS.map((t) => <TagPlantao key={t} tipo={t} />)}
-        </span>
+        <span className="plantao-tv-time">{info.icone} Plantão de {info.rotulo}</span> · próximos dias · {ddmm(dias[0])} a {ddmm(dias[4])}
       </div>
 
       <div className="plantao-tv-grid">
@@ -65,17 +63,15 @@ export default function PlantaoSemanalTV({ hojeISO }) {
                 {ehHoje ? 'Hoje' : NOMES_DIA[new Date(`${diaISO}T12:00:00`).getDay()]} <span>{ddmm(diaISO)}</span>
               </div>
               {doDia.length === 0 && <div className="plantao-tv-vazio">sem escala</div>}
-              {ORDEM_TIPOS.flatMap((tipo) =>
-                TURNOS.flatMap((t) =>
-                  doDia
-                    .filter((p) => tipoDe(p) === tipo && p.turno === t.chave)
-                    .map((p) => (
-                      <div className={`plantao-tv-item plantao-barra--${tipo}`} key={p.id}>
-                        <span className="plantao-tv-turno"><TagPlantao tipo={tipo} compacta />{t.rotulo}</span>
-                        <span className="plantao-tv-nome">{nomeCurto(p.corretor_nome)}</span>
-                      </div>
-                    ))
-                )
+              {TURNOS.map((t) =>
+                doDia
+                  .filter((p) => p.turno === t.chave)
+                  .map((p) => (
+                    <div className="plantao-tv-item" key={p.id}>
+                      <span className="plantao-tv-turno">{t.rotulo}</span>
+                      <span className="plantao-tv-nome">{nomeCurto(p.corretor_nome)}</span>
+                    </div>
+                  ))
               )}
             </div>
           )
