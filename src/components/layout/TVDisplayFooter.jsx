@@ -27,10 +27,11 @@ export default function TVDisplayFooter() {
   // Km 32 (16/10): relê a cada 5 min; o painel só entra na rotação com a campanha no ar
   const { dados: campanha } = useCampanha(SLUG_KM32, 5 * 60 * 1000)
 
-  // Ordem: Fotógrafo → Plantão (24/09) → Km 32 (16/10) → KPIs 1 → KPIs 2 → Eventos.
+  // Ordem: Fotógrafo → Plantão de Vendas → Plantão de Locação (05/11) → Km 32 (16/10) → KPIs 1 → KPIs 2 → Eventos.
   const paineis = [
     { chave: 'fotografo', rotulo: 'Fotógrafo', conteudo: <AgendaFotografoSemanalTV /> },
-    { chave: 'plantao', rotulo: 'Plantão', conteudo: <PlantaoSemanalTV hojeISO={hoje} /> },
+    { chave: 'plantao', rotulo: 'Plantão Vendas', conteudo: <PlantaoSemanalTV hojeISO={hoje} tipo="venda" /> },
+    { chave: 'plantao-locacao', rotulo: 'Plantão Locação', conteudo: <PlantaoSemanalTV hojeISO={hoje} tipo="locacao" /> },
     ...(campanhaNoAr(campanha) ? [{ chave: 'km32', rotulo: 'Km 32', conteudo: <Km32TV dados={campanha} /> }] : []),
     { chave: 'comercial', rotulo: 'Comercial', conteudo: <KpisComercialTV kpis={kpis} erro={erro} /> },
     { chave: 'operacao', rotulo: 'Operação', conteudo: <KpisOperacaoTV kpis={kpis} erro={erro} /> },

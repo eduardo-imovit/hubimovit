@@ -3,8 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { buscar } from '../../lib/homeNiveis'
 import { useEventosCalendario } from '../../hooks/useEventosCalendario'
 import { usePlantao } from '../../hooks/usePlantao'
-import TagPlantao from '../plantao/TagPlantao'
-import { ordenarPorTipo, tipoDe } from '../../lib/tiposPlantao'
+import { ORDEM_TIPOS, TIPOS_PLANTAO, tipoDe } from '../../lib/tiposPlantao'
 import { somarDias } from '../../lib/paineis'
 
 // ---------------------------------------------------------------------------
@@ -168,35 +167,69 @@ const nomeCurto = (nome) => {
   return partes.length <= 2 ? partes.join(' ') : `${partes[0]} ${partes.at(-1)}`
 }
 
+const CHAVE_ABA_PLANTAO = 'hub:home-plantao-aba'
+function lerAbaPlantao() {
+  try {
+    const v = localStorage.getItem(CHAVE_ABA_PLANTAO)
+    return TIPOS_PLANTAO[v] ? v : 'venda'
+  } catch {
+    return 'venda'
+  }
+}
+
+/** Plantão dos próximos 5 dias, um time por vez: abas Vendas | Locação (PRD §5.3, escolha do Eduardo em 05/11). */
 export function HojeNoEscritorio({ hoje }) {
   const { plantoes, carregando } = usePlantao(hoje, somarDias(hoje, 4))
+  const [tipo, setTipo] = useState(lerAbaPlantao)
   const dias = Array.from({ length: 5 }, (_, i) => somarDias(hoje, i))
-  const ativos = ordenarPorTipo(plantoes.filter((p) => p.status !== 'cancelado'))
-  // enquanto carrega, não afirmar "sem escala"
-  if (carregando && plantoes.length === 0) return <p className="is-muted home-vazio">Carregando o plantão…</p>
+  const ativos = plantoes.filter((p) => p.status !== 'cancelado')
+  const doTipo = ativos.filter((p) => tipoDe(p) === tipo)
+
+  function escolher(t) {
+    setTipo(t)
+    try { localStorage.setItem(CHAVE_ABA_PLANTAO, t) } catch { /* sem armazenamento: só não lembra */ }
+  }
 
   return (
     <div className="home-hoje">
-      <ul className="home-plantao">
-        {dias.map((d) => {
-          const doDia = ativos.filter((p) => p.data === d)
-          const semana = DIA_SEMANA[new Date(`${d}T12:00:00`).getDay()]
-          return (
-            <li key={d} className={d === hoje ? 'is-hoje' : undefined}>
-              <span className="home-plantao-dia">{d === hoje ? 'Hoje' : semana} <span>{d.slice(8, 10)}/{d.slice(5, 7)}</span></span>
-              <span className="home-plantao-nomes">
-                {doDia.length === 0
-                  ? <span className="is-muted">sem escala</span>
-                  : doDia.map((p) => (
-                    <span key={p.id} className={`home-plantao-item plantao-barra--${tipoDe(p)}`}>
-                      <TagPlantao tipo={tipoDe(p)} /> <span className="is-muted">{TURNO[p.turno]}</span> {nomeCurto(p.corretor_nome)}
-                    </span>
-                  ))}
-              </span>
-            </li>
-          )
-        })}
-      </ul>
+      <div className="plantao-tipos plantao-tipos--sm" role="tablist" aria-label="Qual plantão">
+        {ORDEM_TIPOS.map((t) => (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tipo === t}
+            key={t}
+            className={`plantao-tipo--${t}${tipo === t ? ' is-ativo' : ''}`}
+            onClick={() => escolher(t)}
+          >
+            <span aria-hidden="true">{TIPOS_PLANTAO[t].icone}</span> {TIPOS_PLANTAO[t].rotulo}
+          </button>
+        ))}
+      </div>
+
+      {/* enquanto carrega, não afirmar "sem escala" */}
+      {carregando && plantoes.length === 0
+        ? <p className="is-muted home-vazio">Carregando o plantão…</p>
+        : (
+          <ul className={`home-plantao plantao-lista--${tipo}`} role="tabpanel">
+            {dias.map((d) => {
+              const doDia = doTipo.filter((p) => p.data === d)
+              const semana = DIA_SEMANA[new Date(`${d}T12:00:00`).getDay()]
+              return (
+                <li key={d} className={d === hoje ? 'is-hoje' : undefined}>
+                  <span className="home-plantao-dia">{d === hoje ? 'Hoje' : semana} <span>{d.slice(8, 10)}/{d.slice(5, 7)}</span></span>
+                  <span className="home-plantao-nomes">
+                    {doDia.length === 0
+                      ? <span className="is-muted">sem escala</span>
+                      : doDia.map((p) => (
+                        <span key={p.id}><span className="is-muted">{TURNO[p.turno]}</span> {nomeCurto(p.corretor_nome)}</span>
+                      ))}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
     </div>
   )
 }
