@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { buscar } from '../../lib/homeNiveis'
 import { useEventosCalendario } from '../../hooks/useEventosCalendario'
 import { usePlantao } from '../../hooks/usePlantao'
+import TagPlantao from '../plantao/TagPlantao'
+import { ordenarPorTipo, tipoDe } from '../../lib/tiposPlantao'
 import { somarDias } from '../../lib/paineis'
 
 // ---------------------------------------------------------------------------
@@ -169,7 +171,7 @@ const nomeCurto = (nome) => {
 export function HojeNoEscritorio({ hoje }) {
   const { plantoes, carregando } = usePlantao(hoje, somarDias(hoje, 4))
   const dias = Array.from({ length: 5 }, (_, i) => somarDias(hoje, i))
-  const ativos = plantoes.filter((p) => p.status !== 'cancelado')
+  const ativos = ordenarPorTipo(plantoes.filter((p) => p.status !== 'cancelado'))
   // enquanto carrega, não afirmar "sem escala"
   if (carregando && plantoes.length === 0) return <p className="is-muted home-vazio">Carregando o plantão…</p>
 
@@ -186,7 +188,9 @@ export function HojeNoEscritorio({ hoje }) {
                 {doDia.length === 0
                   ? <span className="is-muted">sem escala</span>
                   : doDia.map((p) => (
-                    <span key={p.id}><span className="is-muted">{TURNO[p.turno]}</span> {nomeCurto(p.corretor_nome)}</span>
+                    <span key={p.id} className={`home-plantao-item plantao-barra--${tipoDe(p)}`}>
+                      <TagPlantao tipo={tipoDe(p)} /> <span className="is-muted">{TURNO[p.turno]}</span> {nomeCurto(p.corretor_nome)}
+                    </span>
                   ))}
               </span>
             </li>

@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { usePlantao } from '../../hooks/usePlantao'
 import { useColaboradores } from '../../hooks/useColaboradores'
 import ImportarEscalaPlantao from './ImportarEscalaPlantao'
+import TagPlantao from '../plantao/TagPlantao'
+import { ORDEM_TIPOS, TIPOS_PLANTAO, tipoDe } from '../../lib/tiposPlantao'
 import { diasDaSemana, formatarDiaCurto, hojeISO, inicioDaSemanaISO } from '../../lib/dateUtils'
 
 const TURNO_LABEL = { manha: 'Manhã', tarde: 'Tarde', dia_inteiro: 'Dia inteiro' }
@@ -15,11 +17,15 @@ function semanaMais(dataISO, semanas) {
 
 export default function PlantaoAdmin() {
   const [semanaBase, setSemanaBase] = useState(inicioDaSemanaISO())
+  // qual plantão está sendo editado: Vendas ou Locação (PRD §5.3)
+  const [tipo, setTipo] = useState('venda')
+  const infoTipo = TIPOS_PLANTAO[tipo]
   const dias = diasDaSemana(semanaBase)
   const fimSemana = dias[6]
   const hoje = hojeISO()
 
-  const { plantoes, carregando, erro, recarregar, criarPlantao, atualizarPlantao } = usePlantao(semanaBase, fimSemana)
+  const { plantoes: todos, carregando, erro, recarregar, criarPlantao, atualizarPlantao } = usePlantao(semanaBase, fimSemana)
+  const plantoes = todos.filter((p) => tipoDe(p) === tipo)
   const { colaboradores } = useColaboradores()
 
   const vazio = { corretor_id: '', data: hoje, turno: 'dia_inteiro', observacao: '', status: 'agendado' }
@@ -59,6 +65,7 @@ export default function PlantaoAdmin() {
         turno: form.turno,
         observacao: form.observacao || null,
         status: form.status,
+        tipo,
       }
       if (editandoId) await atualizarPlantao(editandoId, dados)
       else await criarPlantao(dados)
@@ -76,9 +83,35 @@ export default function PlantaoAdmin() {
     else setSemanaBase(semana)
   }
 
+  function trocarTipo(novo) {
+    setTipo(novo)
+    setMostrarForm(false)
+    setEditandoId(null)
+  }
+
   return (
     <div>
-      <ImportarEscalaPlantao colaboradores={colaboradores} onImportado={aposImportar} />
+      <div className="plantao-tipos" role="tablist" aria-label="Qual plantão">
+        {ORDEM_TIPOS.map((t) => (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tipo === t}
+            key={t}
+            className={`plantao-tipo--${t}${tipo === t ? ' is-ativo' : ''}`}
+            onClick={() => trocarTipo(t)}
+          >
+            <span aria-hidden="true">{TIPOS_PLANTAO[t].icone}</span> Plantão de {TIPOS_PLANTAO[t].rotulo}
+          </button>
+        ))}
+      </div>
+
+      <div className={`plantao-painel plantao-painel--${tipo}`}>
+      <h3 className="plantao-painel-titulo">
+        <TagPlantao tipo={tipo} /> Escala do plantão de {infoTipo.rotulo.toLowerCase()}
+      </h3>
+
+      <ImportarEscalaPlantao key={tipo} tipo={tipo} colaboradores={colaboradores} onImportado={aposImportar} />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div className="cal-nav-left">
@@ -90,12 +123,15 @@ export default function PlantaoAdmin() {
           <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSemanaBase(inicioDaSemanaISO())}>Semana atual</button>
         </div>
         <button type="button" className="btn btn-ghost btn-sm" onClick={abrirNovo}>
-          {mostrarForm ? 'Cancelar' : '+ Escalar corretor'}
+          {mostrarForm ? 'Cancelar' : `+ Escalar corretor (${infoTipo.rotulo})`}
         </button>
       </div>
 
       {mostrarForm && (
         <form onSubmit={handleSubmit} className="card card-body" style={{ marginBottom: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+          <div className="plantao-painel-titulo" style={{ fontSize: 'var(--text-sm)', margin: 0 }}>
+            <TagPlantao tipo={tipo} /> {editandoId ? 'Editar plantão' : 'Novo plantão'}
+          </div>
           <div className="field">
             <label htmlFor="plantao-corretor">Corretor</label>
             <select
@@ -166,14 +202,15 @@ export default function PlantaoAdmin() {
                   key={p.id}
                   className={`plantao-slot is-${p.status}`}
                   onClick={() => abrirEdicao(p)}
-                  title="Clique para editar"
+                  title={`${infoTipo.rotulo} · clique para editar`}
                 >
-                  {p.corretor_nome.split(' ')[0]} · {TURNO_LABEL[p.turno]}
+                  {infoTipo.icone} {p.corretor_nome.split(' ')[0]} · {TURNO_LABEL[p.turno]}
                 </button>
               ))}
             </div>
           )
         })}
+      </div>
       </div>
     </div>
   )

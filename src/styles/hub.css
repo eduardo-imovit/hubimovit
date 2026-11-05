@@ -156,6 +156,46 @@
 .plantao-slot.is-cancelado { background: var(--danger-soft); color: var(--danger); text-decoration: line-through; }
 .plantao-empty { font-size: var(--text-xs); color: var(--grafite-fade); font-style: italic; }
 
+/* Dois plantões (PRD §5.3): Vendas = coral, Locação = azul (as cores de Venda/Aluguel do Hub).
+   Sempre cor + ícone + rótulo, para não depender só da cor. */
+:root {
+  --plantao-venda: var(--coral);
+  --plantao-venda-soft: var(--coral-soft);
+  --plantao-venda-dark: var(--coral-dark);
+  --plantao-locacao: #2F6DB5;
+  --plantao-locacao-soft: #E3ECF7;
+  --plantao-locacao-dark: #1F4F8A;
+}
+.plantao-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 1px 8px 1px 6px; border-radius: 999px;
+  font-size: 11px; font-weight: var(--weight-semibold); letter-spacing: .04em; text-transform: uppercase;
+  line-height: 1.6; white-space: nowrap; vertical-align: middle;
+}
+.plantao-tag.is-compacta { padding: 1px 5px; }
+.plantao-tag--venda { background: var(--plantao-venda-soft); color: var(--plantao-venda-dark); }
+.plantao-tag--locacao { background: var(--plantao-locacao-soft); color: var(--plantao-locacao-dark); }
+.plantao-barra--venda { border-left: 3px solid var(--plantao-venda); padding-left: 8px; }
+.plantao-barra--locacao { border-left: 3px solid var(--plantao-locacao); padding-left: 8px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Configurações: seletor Vendas | Locação e faixa do plantão escolhido */
+.plantao-tipos { display: inline-flex; gap: var(--space-2); margin-bottom: var(--space-4); flex-wrap: wrap; }
+.plantao-tipos button {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border-radius: 999px; border: 2px solid var(--champagne);
+  background: var(--branco); color: var(--grafite-mid); font: inherit; font-size: var(--text-sm); font-weight: var(--weight-medium); cursor: pointer;
+}
+.plantao-tipos button.is-ativo.plantao-tipo--venda { border-color: var(--plantao-venda); background: var(--plantao-venda-soft); color: var(--plantao-venda-dark); }
+.plantao-tipos button.is-ativo.plantao-tipo--locacao { border-color: var(--plantao-locacao); background: var(--plantao-locacao-soft); color: var(--plantao-locacao-dark); }
+.plantao-tipos button:focus-visible { outline: 2px solid var(--grafite); outline-offset: 2px; }
+.plantao-painel { border-top: 4px solid var(--plantao-venda); padding-top: var(--space-4); }
+.plantao-painel--locacao { border-top-color: var(--plantao-locacao); }
+.plantao-painel-titulo { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-lg); font-weight: var(--weight-semibold); margin: 0 0 var(--space-3); }
+.plantao-painel--venda .plantao-slot { background: var(--plantao-venda-soft); color: var(--plantao-venda-dark); }
+.plantao-painel--locacao .plantao-slot { background: var(--plantao-locacao-soft); color: var(--plantao-locacao-dark); }
+.plantao-painel--locacao .plantao-day.is-today { border-color: var(--plantao-locacao); background: var(--plantao-locacao-soft); }
+
 /* ------- AVISOS FEED ------- */
 .avisos-list { display: flex; flex-direction: column; gap: var(--space-2); }
 .avisos-item {
@@ -1090,6 +1130,13 @@
 .plantao-tv-item { display: flex; flex-direction: column; min-width: 0; }
 .plantao-tv-turno { font-size: 10px; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; letter-spacing: 0.06em; }
 .plantao-tv-nome { font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--branco); line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plantao-tv-item.plantao-barra--venda { border-left-color: var(--plantao-venda); }
+.plantao-tv-item.plantao-barra--locacao { border-left-color: #5B95DA; }
+.plantao-tv-legenda { display: inline-flex; gap: var(--space-2); margin-left: var(--space-3); vertical-align: middle; }
+/* etiquetas sobre fundo escuro (TV) */
+.plantao-tv-grid .plantao-tag--venda, .plantao-tv-legenda .plantao-tag--venda, .kpi-tv-plantao .plantao-tag--venda { background: rgba(232, 89, 60, 0.22); color: #FFB39F; }
+.plantao-tv-grid .plantao-tag--locacao, .plantao-tv-legenda .plantao-tag--locacao, .kpi-tv-plantao .plantao-tag--locacao { background: rgba(47, 109, 181, 0.4); color: #B7D3F5; }
+.plantao-tv-turno .plantao-tag { margin-right: 6px; }
 
 /* ------- HOME POR NÍVEL (docs/01-prd.md §5.4) ------- */
 .home { max-width: 1120px; margin: 0 auto; }
@@ -1183,7 +1230,8 @@
 .home-plantao li.is-hoje { color: var(--grafite); }
 .home-plantao li.is-hoje .home-plantao-dia { color: var(--coral-dark); font-weight: var(--weight-medium); }
 .home-plantao-dia span { color: var(--grafite-soft); font-size: 12px; margin-left: 2px; }
-.home-plantao-nomes { display: flex; flex-wrap: wrap; gap: 2px var(--space-3); }
+.home-plantao-nomes { display: flex; flex-direction: column; gap: 4px; }
+.home-plantao-nomes > .home-plantao-item { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .home-compromissos li { display: flex; gap: var(--space-3); padding: 6px 0; font-size: var(--text-sm); color: var(--grafite); }
 .home-compromisso-quando { min-width: 84px; color: var(--grafite-soft); font-size: 12px; }
 

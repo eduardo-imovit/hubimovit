@@ -471,6 +471,11 @@ Estimativa da v1: **M–G, ~1,5 a 2 dias** (sem a aba "Em andamento"), contando 
 - **S5 Publicar:** migration → função → push `main` + `main:teste` (ordem do Schema). Ponta a ponta com um colaborador de teste, conferir como ADM e como corretor e **apagar o teste**.
 - **Pronto quando:** os critérios do PRD §5.18b forem atendidos.
 - **26b Editar e excluir (B7–B8, 04/11):** migration `20261104170000` (quem editou), função v4 (`editar_bancarios`, `excluir_bancarios`), botões na lista e `SecaoBancaria` em componente próprio (`src/components/onboarding/`). Migration testada em `BEGIN … ROLLBACK`; build ok. **NO AR em 04/11:** migration aplicada, função v4 (anon recusado em editar e excluir) e push.
+## Fase 27 — Plantão de locação (PRD §5.3, RF19) — aprovado (05/11)
+- **S1 Banco:** migration `20261105120000_plantao_locacao` (coluna `tipo`, check, índice; `kpis_tv` devolve o tipo).
+- **S2 Configurações:** seletor Vendas | Locação; cadastro à mão e importação PDF por tipo (substitui só o mesmo tipo).
+- **S3 Exibição:** etiqueta cor + ícone + rótulo na Home, TV (painel e card) e no admin; pendência por tipo.
+- **S4:** importar a 1ª escala de locação com o PDF real e conferir a leitura.
 
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
@@ -509,3 +514,4 @@ Estimativa da v1: **M–G, ~1,5 a 2 dias** (sem a aba "Em andamento"), contando 
 | 2026-10-29 | Alerta de leitura que falhou (prioridade 3 do Pareto) | E-mail às 7h15 para eduardo@ só com falha (Schema §2.18); base do aviso do e-mail diário v1 |
 | 2026-11-04 | Fase 26 (dados bancários no onboarding) | Pedido do Financeiro; Eduardo: conta + PIX, Gestão e ADM leem, conta sempre do colaborador, opcional; tabela própria para o ADM não ler CPF/endereço |
 | 2026-10-29 | E-mail diário da Diretoria v1 (PRD §5.19) | Aprovado pelo Eduardo; seg–sex 7h30; segunda cobre sexta a domingo (para a sexta não ficar sem e-mail); Schema §2.19 |
+| 2026-11-05 | Fase 27 (plantão de locação) | Pedido do Eduardo: segundo plantão, visualmente identificável; mesma tabela com `tipo`, cor + ícone + rótulo |

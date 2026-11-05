@@ -1,5 +1,5 @@
 // Leitura da escala de plantão em PDF (docs/01-prd.md §5.3).
-// O PDF mensal "PLANTAO VENDAS" é uma tabela DATA | DIA | MANHÃ | TARDE.
+// O PDF mensal ("PLANTAO VENDAS" ou de locação) é uma tabela DATA | DIA | MANHÃ | TARDE.
 // Lemos as palavras com a posição de cada uma (pdf.js) e usamos as colunas do
 // cabeçalho para separar manhã e tarde, porque nomes como "MARIA INES" têm
 // espaço e não dá para cortar a linha só pelo texto.
@@ -12,7 +12,12 @@ const normalizar = (s) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-const RE_DATA = /^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})$/
+// dd/mm/aa, dd/mm/aaaa ou só dd/mm (a escala de locação vem sem ano)
+const RE_DATA = /^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?$/
+const RE_ANO = /\b(20\d{2})\b/
+
+/** Tira as anotações da célula: "Gabriel (fim de semana)" → "Gabriel"; "—" → vazio. */
+const limparNome = (s) => s.replace(/\([^)]*\)/g, ' ').replace(/^[\s—–-]+$/, '').replace(/\s+/g, ' ').trim()
 
 async function carregarPdfJs() {
   const pdfjs = await import('pdfjs-dist')
@@ -53,7 +58,7 @@ export function montarEscala(palavras) {
   const hTarde = cabecalho('tarde')
   const hDia = cabecalho('dia')
   if (!hManha || !hTarde) {
-    throw new Error('Não achei as colunas MANHÃ e TARDE no PDF. Confira se é a escala no formato "PLANTAO VENDAS".')
+    throw new Error('Não achei as colunas MANHÃ e TARDE no PDF. Confira se é a escala no formato do plantão (DATA | DIA | MANHÃ | TARDE).')
   }
   const centro = (p) => p.x + p.largura / 2
   const limiteTarde = (centro(hManha) + centro(hTarde)) / 2
@@ -67,26 +72,30 @@ export function montarEscala(palavras) {
     linhas.get(chave).push(p)
   }
 
+  // ano para datas sem ano: o primeiro ano que aparecer no PDF ("Período: 04/11 a 30/11/2026") ou o atual
+  const anoDoPdf = palavras.map((p) => p.texto.match(RE_ANO)?.[1]).find(Boolean)
+  const anoPadrao = anoDoPdf ? Number(anoDoPdf) : new Date().getFullYear()
+
   const escala = []
   for (const itens of linhas.values()) {
-    const data = itens.find((p) => RE_DATA.test(p.texto))
+    // a data tem que estar na coluna DATA (à esquerda dos nomes), para não pegar datas soltas no texto
+    const data = itens.find((p) => RE_DATA.test(p.texto) && centro(p) < inicioNomes)
     if (!data) continue
     const [, d, m, a] = data.texto.match(RE_DATA)
-    const ano = a.length === 2 ? 2000 + Number(a) : Number(a)
+    const ano = !a ? anoPadrao : a.length === 2 ? 2000 + Number(a) : Number(a)
     const iso = `${ano}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
     const nomesDe = (filtro) =>
-      itens
+      limparNome(itens
         .filter((p) => p !== data && centro(p) > inicioNomes && filtro(centro(p)))
         .sort((a1, b1) => a1.x - b1.x)
         .map((p) => p.texto)
-        .join(' ')
-        .trim()
+        .join(' '))
     const dia = itens.find((p) => p !== data && centro(p) <= inicioNomes && !RE_DATA.test(p.texto))?.texto ?? ''
     escala.push({ data: iso, dia, manha: nomesDe((c) => c < limiteTarde), tarde: nomesDe((c) => c >= limiteTarde) })
   }
 
   escala.sort((a, b) => a.data.localeCompare(b.data))
-  if (escala.length === 0) throw new Error('Não achei nenhuma data no formato dd/mm/aa no PDF.')
+  if (escala.length === 0) throw new Error('Não achei nenhuma data (dd/mm ou dd/mm/aa) na coluna DATA do PDF.')
   return escala
 }
 
