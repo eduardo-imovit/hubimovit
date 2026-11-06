@@ -19,6 +19,10 @@
   min-width: 0;
   padding: var(--space-6) var(--space-7);
 }
+/* Celular: margem lateral de 16px, senão sobram < 300px de conteúdo (06/11) */
+@media (max-width: 640px) {
+  .app-main { padding: var(--space-5) var(--space-4); }
+}
 .app-main--sem-padding {
   padding: 0;
   display: flex;
@@ -1546,4 +1550,61 @@
 @media (prefers-reduced-motion: reduce) {
   .pl-no, .pl-etapa { transition: none; }
   .pl-no:hover { transform: none; }
+}
+
+/* ===== Ajuda: manual de uso (/ajuda, PRD §5.21) ===== */
+.ajuda { max-width: 900px; }
+.ajuda-sumario {
+  display: flex; flex-wrap: wrap; gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+.ajuda-sumario-item {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--champagne); border-radius: var(--radius-full);
+  background: var(--branco); color: var(--grafite);
+  font-size: var(--text-sm); text-decoration: none;
+}
+.ajuda-sumario-item:hover { border-color: var(--grafite-soft); }
+.ajuda-sumario-item.is-meu { border-color: var(--grafite); font-weight: var(--weight-semibold); }
+.ajuda-secao { margin-bottom: var(--space-5); scroll-margin-top: var(--space-10); }
+.ajuda-secao p, .ajuda-secao ol, .ajuda-secao ul {
+  font-size: var(--text-sm); line-height: 1.6; color: var(--grafite);
+  margin: 0 0 var(--space-3);
+}
+.ajuda-secao ol, .ajuda-secao ul { padding-left: var(--space-5); }
+/* o reset do Tailwind tira os marcadores: devolve número e bolinha */
+.ajuda-secao ol { list-style: decimal; }
+.ajuda-secao ul { list-style: disc; }
+.ajuda-secao li { margin-bottom: var(--space-1); }
+.ajuda-titulo {
+  font-family: var(--font-serif); font-size: var(--text-xl); font-weight: var(--weight-regular);
+  margin: 0 0 var(--space-3);
+}
+.ajuda-subtitulo { font-size: var(--text-base); font-weight: var(--weight-semibold); margin: var(--space-4) 0 var(--space-2); }
+.ajuda-onde { font-weight: var(--weight-regular); color: var(--grafite-mid); font-size: var(--text-sm); }
+.ajuda-tabela { overflow-x: auto; margin-bottom: var(--space-3); }
+.ajuda-atencao {
+  padding: var(--space-3) var(--space-4); border-radius: var(--radius-md);
+  background: var(--warning-soft);
+}
+.ajuda-tabela td:first-child { width: 32%; vertical-align: top; }
+.ajuda-tabela td { vertical-align: top; }
+
+/* Celular: sumário vira faixa que rola de lado; tabela vira lista de blocos */
+@media (max-width: 640px) {
+  .ajuda-sumario {
+    flex-wrap: nowrap; overflow-x: auto;
+    margin-inline: calc(-1 * var(--space-4)); padding-inline: var(--space-4);
+    padding-bottom: var(--space-1); scrollbar-width: none;
+  }
+  .ajuda-sumario-item { flex: none; white-space: nowrap; }
+  .ajuda-secao .card-body { padding: var(--space-4) var(--space-3); }
+  .ajuda-titulo { font-size: var(--text-lg); }
+  .ajuda-tabela thead { display: none; }
+  .ajuda-tabela table, .ajuda-tabela tbody, .ajuda-tabela tr, .ajuda-tabela td { display: block; width: 100%; }
+  .ajuda-tabela tr { padding: var(--space-3); border-bottom: 1px solid var(--champagne); }
+  .ajuda-tabela tr:last-child { border-bottom: none; }
+  .ajuda-tabela td { padding: 0; border: none; }
+  .ajuda-tabela td:first-child { width: 100%; margin-bottom: var(--space-1); }
 }

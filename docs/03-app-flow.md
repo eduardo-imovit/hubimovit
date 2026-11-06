@@ -32,6 +32,7 @@
 | Home | `/` | todos com perfil | Porta de entrada por nível (PRD §5.4) | Buscar; atalhos; pendências que levam à tela certa; plantão e compromissos; avisos e links |
 | Agenda | `/agenda` | todos com perfil | Calendário completo (saiu da Home) | Navegar mês/semana/dia |
 | Perfil | `/perfil` | todos com perfil | Dados pessoais | Editar nome, telefone, cargo, foto; pedir troca de nível; cancelar o pedido |
+| Ajuda | `/ajuda` | todos com perfil | Manual de uso (PRD §5.21) | Ler; sumário leva à seção, com selo "seu nível" |
 | TV Display | `/tv-display` | gestao, adm, tvaccess | Tela fixa do escritório | Nenhuma (carrossel automático); no rodapé, clicar numa barrinha vai direto ao painel (16/10) |
 | Kanban | `/kanban` | gestao, adm | Pipeline de atendimentos | Filtrar |
 | Dados de Atendimento | `/kanban/dados` | gestao, adm | Análise da carteira | Filtrar |
