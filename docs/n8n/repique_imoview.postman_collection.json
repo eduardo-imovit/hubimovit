@@ -1,0 +1,255 @@
+{
+  "info": {
+    "name": "Repique Imoview (teste)",
+    "description": "Chamadas do Repique 3.0 para testar uma por vez. Rode na ordem. Use junto com o ambiente 'Repique Imoview' (chave e senha ficam lá, como secret).\n\nO que cada teste responde:\n1. Login: gera codigoacesso/codigousuario (salvos sozinhos no ambiente).\n2/3. Buscar atendimentos 2 h: o filtro dataInicial é pela entrada ou pela última alteração? Qual o campo do nome do lead? Veja o Console (View > Show Postman Console).\n4. Detalhes do lead de teste: estado antes/depois da transferência.\n5. TRANSFERIR (muda dados!): só com o lead de teste. Depois rode 4 e 2 de novo e veja se apareceu interação com o seu nome e se datahorarepique foi preenchido.\n6. Falha proposital: como o Imoview responde quando a transferência não dá certo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Login (App_ValidarAcesso)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const j = pm.response.json();",
+              "if (j.codigoacesso) pm.environment.set('codigo_acesso', j.codigoacesso);",
+              "if (j.codigousuario) pm.environment.set('codigo_usuario', String(j.codigousuario));",
+              "pm.test('Recebeu codigoacesso', () => pm.expect(j.codigoacesso, 'sem codigoacesso: confira chave/senha').to.exist);",
+              "console.log('codigousuario =', j.codigousuario, '| nome =', j.nome || j.usuario || '(campo não encontrado)');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "chave", "value": "{{imoview_chave}}" }],
+        "url": {
+          "raw": "https://api.imoview.com.br/Usuario/App_ValidarAcesso?email={{imoview_email}}&senha={{imoview_senha_md5}}",
+          "protocol": "https",
+          "host": ["api", "imoview", "com", "br"],
+          "path": ["Usuario", "App_ValidarAcesso"],
+          "query": [
+            { "key": "email", "value": "{{imoview_email}}" },
+            { "key": "senha", "value": "{{imoview_senha_md5}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. Buscar atendimentos 2 h - Locação",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const d = new Date(Date.now() - 2 * 3600e3 - 3 * 3600e3);",
+              "const p = (n) => String(n).padStart(2, '0');",
+              "const s = p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + '/' + d.getUTCFullYear() + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds());",
+              "pm.environment.set('data_inicial', s);",
+              "console.log('dataInicial (Brasília, agora - 2 h) =', s);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const lista = pm.response.json().lista || [];",
+              "console.log('Atendimentos retornados:', lista.length);",
+              "if (lista[0]) console.log('Campos do 1º atendimento:', Object.keys(lista[0]).join(', '));",
+              "console.table(lista.map(l => ({",
+              "  codigo: l.codigo, finalidade: l.finalidade, funil: l.funil, situacao: l.situacao, corretor: l.corretorcodigo,",
+              "  entrada: l.datahorainclusao, ultima_alteracao: l.datahoraultimaalteracao, repique: l.datahorarepique,",
+              "  primeira_resposta: l.datahora1Resposta,",
+              "  interacoes: (l.interacoes || []).map(i => i.usuario).join(' | ')",
+              "})));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "chave", "value": "{{imoview_chave}}" },
+          { "key": "codigoAcesso", "value": "{{codigo_acesso}}" }
+        ],
+        "url": {
+          "raw": "https://api.imoview.com.br/Atendimento/RetornarAtendimentos?codigoUsuario={{codigo_usuario}}&numeroPagina=1&numeroRegistros=100&dataInicial={{data_inicial}}&finalidade=2",
+          "protocol": "https",
+          "host": ["api", "imoview", "com", "br"],
+          "path": ["Atendimento", "RetornarAtendimentos"],
+          "query": [
+            { "key": "codigoUsuario", "value": "{{codigo_usuario}}" },
+            { "key": "numeroPagina", "value": "1" },
+            { "key": "numeroRegistros", "value": "100" },
+            { "key": "dataInicial", "value": "{{data_inicial}}" },
+            { "key": "finalidade", "value": "2", "description": "1 = venda, 2 = locação" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "3. Buscar atendimentos 2 h - Venda",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const d = new Date(Date.now() - 2 * 3600e3 - 3 * 3600e3);",
+              "const p = (n) => String(n).padStart(2, '0');",
+              "const s = p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + '/' + d.getUTCFullYear() + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds());",
+              "pm.environment.set('data_inicial', s);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "const lista = pm.response.json().lista || [];",
+              "console.log('Atendimentos de venda:', lista.length);",
+              "console.table(lista.map(l => ({ codigo: l.codigo, situacao: l.situacao, corretor: l.corretorcodigo, entrada: l.datahorainclusao, ultima_alteracao: l.datahoraultimaalteracao, repique: l.datahorarepique })));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "chave", "value": "{{imoview_chave}}" },
+          { "key": "codigoAcesso", "value": "{{codigo_acesso}}" }
+        ],
+        "url": {
+          "raw": "https://api.imoview.com.br/Atendimento/RetornarAtendimentos?codigoUsuario={{codigo_usuario}}&numeroPagina=1&numeroRegistros=100&dataInicial={{data_inicial}}&finalidade=1",
+          "protocol": "https",
+          "host": ["api", "imoview", "com", "br"],
+          "path": ["Atendimento", "RetornarAtendimentos"],
+          "query": [
+            { "key": "codigoUsuario", "value": "{{codigo_usuario}}" },
+            { "key": "numeroPagina", "value": "1" },
+            { "key": "numeroRegistros", "value": "100" },
+            { "key": "dataInicial", "value": "{{data_inicial}}" },
+            { "key": "finalidade", "value": "1" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "4. Detalhes do lead de teste (App_DetalhesAtendimentos)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+              "console.log(JSON.stringify(pm.response.json(), null, 2));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "description": "Nome do parâmetro não confirmado na documentação (codigoAtendimento). Se der erro, confira no fluxo 'Distribuição de leads' do n8n.",
+        "header": [
+          { "key": "chave", "value": "{{imoview_chave}}" },
+          { "key": "codigoAcesso", "value": "{{codigo_acesso}}" }
+        ],
+        "url": {
+          "raw": "https://api.imoview.com.br/Atendimento/App_DetalhesAtendimentos?codigoAtendimento={{lead_teste}}",
+          "protocol": "https",
+          "host": ["api", "imoview", "com", "br"],
+          "path": ["Atendimento", "App_DetalhesAtendimentos"],
+          "query": [{ "key": "codigoAtendimento", "value": "{{lead_teste}}" }]
+        }
+      }
+    },
+    {
+      "name": "5. ⚠ TRANSFERIR lead de teste (muda dados)",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.environment.get('lead_teste')) throw new Error('Preencha lead_teste no ambiente antes de transferir.');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "console.log('Status:', pm.response.code, '| Resposta:', pm.response.text());",
+              "console.log('Agora rode o 4 e o 2 de novo: apareceu interação com seu nome? datahorarepique foi preenchido? ultima_alteracao mudou?');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "description": "Use SOMENTE o lead de teste. É a mesma chamada que o nó 'Repique (transferir no Imoview)' faz.",
+        "header": [
+          { "key": "chave", "value": "{{imoview_chave}}" },
+          { "key": "codigoacesso", "value": "{{codigo_acesso}}" }
+        ],
+        "url": {
+          "raw": "https://api.imoview.com.br/Atendimento/App_Transferir?codigoUsuario={{codigo_usuario}}&codigoAtendimento={{lead_teste}}&codigoNovoCorretor={{corretor_destino}}&motivo=Teste repique - Postman",
+          "protocol": "https",
+          "host": ["api", "imoview", "com", "br"],
+          "path": ["Atendimento", "App_Transferir"],
+          "query": [
+            { "key": "codigoUsuario", "value": "{{codigo_usuario}}" },
+            { "key": "codigoAtendimento", "value": "{{lead_teste}}" },
+            { "key": "codigoNovoCorretor", "value": "{{corretor_destino}}" },
+            { "key": "motivo", "value": "Teste repique - Postman" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. Falha proposital (atendimento inexistente)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "console.log('Status:', pm.response.code, '| Resposta:', pm.response.text());",
+              "console.log(pm.response.code >= 400 ? 'Falha vem como ERRO HTTP: o n8n vai pela saída de erro (ok).' : 'Falha vem como 200: o n8n acharia que deu certo. Avise o Asimov.');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "chave", "value": "{{imoview_chave}}" },
+          { "key": "codigoacesso", "value": "{{codigo_acesso}}" }
+        ],
+        "url": {
+          "raw": "https://api.imoview.com.br/Atendimento/App_Transferir?codigoUsuario={{codigo_usuario}}&codigoAtendimento=0&codigoNovoCorretor=99&motivo=Teste falha",
+          "protocol": "https",
+          "host": ["api", "imoview", "com", "br"],
+          "path": ["Atendimento", "App_Transferir"],
+          "query": [
+            { "key": "codigoUsuario", "value": "{{codigo_usuario}}" },
+            { "key": "codigoAtendimento", "value": "0" },
+            { "key": "codigoNovoCorretor", "value": "99" },
+            { "key": "motivo", "value": "Teste falha" }
+          ]
+        }
+      }
+    }
+  ]
+}

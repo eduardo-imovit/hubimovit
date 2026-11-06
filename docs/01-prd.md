@@ -921,7 +921,7 @@ O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colabo
 - **Relatório da Diretoria**: resumo, entregue primeiro (é o que a Diretoria pediu);
 - **Aquisição**: ex-Performance (§5.0b);
 - **Atendimento**: junta Gestão v2 (§5.0c), jornada (§5.12), Dados de atendimento e Comercial/Meus números (o corretor vê esta página filtrada nele; "Ver como" do §5.11). Dados de atendimento deixa de ser página;
-- **Fechamento**: propostas e esteira;
+- ~~**Fechamento**: propostas e esteira~~ → **vira o capítulo 5 do Atendimento (03/11)**: as tabelas de propostas do Hub estão vazias (módulo desligado), a fonte é a mesma jornada do Atendimento e o volume é pequeno (12 negócios de locação e 2 de venda na safra jul–set). Volta a ser página quando o módulo de Propostas tiver valor em R$. A espinha fica com 5 páginas;
 - **Carteira**: ex-Adm locação (§5.13);
 - **Estoque**: ao lado da espinha (§5.14); recebe o capítulo "A carteira está atualizada?" do §5.0c.
 
@@ -934,7 +934,7 @@ O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colabo
 - **Ato 1 — Investimento e campanhas → Aquisição.** Investido por plataforma (Meta, Google); **no máximo 5 campanhas** (P2) com gasto, conversões na plataforma e custo por conversão. Aviso fixo: "a ligação campanha → lead do CRM ainda não é rastreada". Ex.: "R$ 5 mil investidos, 60% no Google; a campanha X levou metade da verba."
 - **Ato 2 — Leads → Aquisição.** Leads válidos (fluxo) por finalidade e canal; % vindo de mídia paga; **custo real por lead pago** = investimento Meta + Google ÷ leads "Campanhas pagas" no CRM (R4). Se o período pegar antes de 23/09, aviso de dias duplicados no Meta (custo inflado). Ex.: "196 leads, 28% pagos, a R$ 92 cada."
 - **Ato 3 — Funil → Atendimento.** Etapas em linha com quantos chegaram a cada uma no período (fluxo). Embaixo de cada etapa: **dias desde a entrada até chegar nela** (P3; funciona mesmo quando o corretor pula etapas; "acumulando" com menos de 5 casos) e a conversão por passagem (safra, com selo de maturidade). **Gargalo calculado** = passagem com a menor taxa, em destaque (R5). Ao lado: em atendimento agora e 🔴 esquecidos. Ex.: "Na locação o lead chega à Seleção de imóveis em 1 dia, mas só 35% dos qualificados chegam à visita."
-- **Ato 4 — Fechamento → Fechamento.** Negócios no período (fluxo), locação e venda; propostas em andamento (com o valor na locação); conversão lead → negócio e dias até o negócio (safra madura). Venda em **quantidade** de negócios, com a lacuna escrita na tela (R2).
+- **Ato 4 — Fechamento → Atendimento, cap. 5.** Negócios no período (fluxo), locação e venda; propostas em andamento (com o valor na locação); conversão lead → negócio e dias até o negócio (safra madura). Venda em **quantidade** de negócios, com a lacuna escrita na tela (R2).
 - **Ato 5 — Receita e carteira → Carteira.** **Receita total** = administração + intermediação recebidas, **sempre com a divisão** embaixo (R1): administração = recorrente; intermediação = pontual, com o nº de contratos. A frase diz de qual das duas veio a variação. Contratos ativos e saldo novos × encerrados; administração contratada (MRR); administração em risco (aviso de desocupação + fim do prazo em até 90 dias); inadimplência. Ex. (set/26): "Setembro rendeu R$ 115 mil, 30% acima de agosto; a alta veio da intermediação (6 contratos); a administração subiu 12%."
 - **Rodapé.** Fonte e hora de leitura de cada ato. Leitura atrasada → tarja "dados de dd/mm" **no próprio ato**.
 - **Cliques.** Placar e atos abrem a lista por trás do número (recebimentos sem dados pessoais; leads; negócios e propostas) ou a página detalhada já filtrada.
@@ -947,22 +947,83 @@ O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colabo
 
 **Página de Atendimento — detalhe aprovado em 29/10.** Só **clientes**: atendimentos de mídia "Captação" (`is_interno`, proprietário cadastrando imóvel) ficam fora de todas as contas, com **aviso fixo** da diferença para o CRM (decisão do Eduardo: evidenciar sempre). Conferido em 29/10: CRM 62 locação / 156 venda = Hub 56 / 126 + 5 / 31 captações (± 1 de horário da leitura). Sem faixa de Aquisição no topo (decidido 29/10): a mídia fica na página Aquisição e no Relatório.
 
-- **0 Manchete.** **Em atendimento agora = todos os ativos** (não só Qualificado a Proposta, como no §5.0c), para bater com o CRM: 182 (locação 56 · venda 126) em 29/10. Aviso: "O CRM mostra N: M são captações e ficam fora desta conta." Ao lado: 🔴 esquecidos (vs ontem), conversão na passagem gargalo (vs período anterior), negócios no período (vs mês anterior até o mesmo dia). Frase ex.: "182 clientes em atendimento, 143 sem nenhuma ação no prazo. O maior acúmulo está em Qualificado (103)." Cada número abre a sua lista; o gargalo leva ao capítulo 1.
-- **1 Onde trava?** Seletor Locação | Venda. **5 etapas**: Lead (Pré-atendimento + Seleção de perfil + Seleção de imóveis) → Qualificado → Visita → Proposta → Negócio. Em cada etapa: quantos chegaram (fluxo), dias desde a entrada (mediana; "acumulando" com n < 5) e descartados (clique → capítulo 2). Na seta: conversão da passagem (safra, com selo de maturidade). **Gargalo = menor taxa entre as passagens com base ≥ 20 leads**, seta em coral. Com a safra jul–set: locação Lead → Qualificado 29% (288 → 84 → 29 → 16 → 12); venda Qualificado → Visita 29%.
-- **1b Qual canal performa melhor? (pedido da Diretoria, 29/10; aprovado).** Tabela canal × funil: leads, qualificados, visitas, propostas, negócios e lead → negócio (safra madura), com a **pior passagem de cada canal em coral**. Canal com menos de 20 leads no período ganha o selo "base pequena". Clicar no canal filtra a página inteira (os motivos do capítulo 2 passam a ser os daquele canal); clicar num número abre a lista de leads. Finalidade, corretor e período continuam valendo. No Relatório, o Ato 2 ganha a linha "melhor e pior canal" com link para este capítulo.
-  - **Achado de 29/10 (safra abr–ago, clientes):** Campanhas pagas 208 leads → 55 qualificados (26%) → 8 visitas → **0 negócios**; Site 173 → 112 (65%) → 69 → 17 negócios (9,8%); Indicação 89 → 75 (84%) → 44 → 11 (12,4%); WhatsApp 122 → 3 (2,5%); Portais 94 → 3 (3,2%).
-  - **Conferência (29/10):** 5 leads pagos (5385, 5404, 5552, 5900, 5912) conferidos no Imoview, 5/5 descartados como no Hub; motivos de perfil (desistiu, sem condição, comprou com terceiros, não responde, outro). Pela pessoa nas atividades, 44 dos 208 eram rastreáveis: 2 tiveram outro atendimento, nenhum virou negócio. Conclusão: o zero se sustenta, com o limite de que só 1 em 5 era rastreável. Em aberto: "Campanha Halma" é anúncio da Imovit ou de construtora (se for de construtora, sai da conta de mídia paga).
-- **2 Por quê?** Motivos de descarte lidos das interações do CRM ("ATENDIMENTO DESCARTADO MOTIVO: …"), agrupados:
-  - 🔴 **Perdemos o contato**: não responde contato; +30 dias sem interação;
-  - 🟠 **Cliente sem perfil**: sem condições; desistiu; região fora do escopo; curiosidade;
-  - ⚪ **Não é perda**: repique/transferência de corretor; teste do marketing; alteração de etapa; corretor se passando por cliente; erro. **Sai das contas do funil**, como o ruído.
-  Desde 06/10: 112 / 45 / 41. Clicar numa etapa do capítulo 1 filtra os motivos; clicar num motivo abre a lista. O link para o Estoque saiu ("não encontrou imóvel" quase não aparece).
-- **3 Com quem?** Tabela por corretor: ativos, 🔴 esquecidos (n e %), atividades realizadas no período (sem anotações), conversão no gargalo vs média da equipe. **Ordenada pelo número de esquecidos.** Frase ex. (29/10): "9 de 13 corretores com mais de 2/3 da carteira esquecida: é processo, não pessoa." Clicar no corretor filtra a página; com corretor filtrado, valem as regras do §5.0c (só a média da equipe, sem nomes; "Comparar com" só para a Gestão).
-- **4 O que fazer hoje?** Lista de trabalho dos 🔴 em 3 blocos, do mais perto do dinheiro:
+- **0 Manchete.** **Em atendimento agora = todos os ativos** (não só Qualificado a Proposta, como no §5.0c), para bater com o CRM: 182 (locação 56 · venda 126) em 29/10. Aviso: "O CRM mostra N: M são captações e ficam fora desta conta." Ao lado: 🔴 esquecidos (vs ontem), conversão na passagem gargalo (vs período anterior), negócios no período (vs mês anterior até o mesmo dia). Frase ex.: "182 clientes em atendimento, 143 sem nenhuma ação no prazo. O maior acúmulo está em Qualificado (103)." Cada número abre a sua lista; os 🔴 esquecidos levam ao capítulo 1 e o gargalo, ao capítulo 2.
+  - **Velocidade (03/11, Eduardo):** entra na manchete o **tempo da entrada até Qualificado** (mediana, por finalidade), comparado com o período anterior e com uma meta (a definir; para locação, o Eduardo considera 2 dias tempo demais: o cliente já seguiu com outro corretor ou outra imobiliária). Em 29/10, na locação: Pré-atendimento → Seleção de imóveis 1,3 dia + Seleção de imóveis → Qualificado 2,2 dias. Sustenta a leitura: desde 06/10, 112 dos 157 descartes que são perda real (71%) são "Perdemos o contato".
+- **Ordem dos capítulos (revista em 03/11, Eduardo + Pareto):** primeiro o que ainda dá para salvar (indicador de ação), depois a explicação do passado. Ordem anterior (29/10): Onde trava? → Por quê? → Com quem? → O que fazer hoje?.
+- **1 O que fazer hoje?** Lista de trabalho dos 🔴 em 3 blocos, do mais perto do dinheiro:
   - 🔥 **Perto do dinheiro**: Proposta + Visita (29/10: 8 + 26);
   - 🔴 **Qualificados** (83; 39 nunca tiveram atividade);
   - ⚪ **Início do funil** (26).
   Colunas: código (abre o Imoview), corretor, etapa, dias na etapa, última atividade (ou "nunca"). **Dentro do bloco: quem passou do prazo há menos tempo primeiro** (mais chance de recuperar). O corretor vê só a dele. O Hub não escreve no CRM; a lista muda na leitura do dia seguinte. O e-mail diário leva o número do bloco 🔥. Substitui o mapa de pessoas e a página Dados de atendimento.
+- **2 Onde trava?** Seletor Locação | Venda. **5 etapas**: Lead (Pré-atendimento + Seleção de perfil + Seleção de imóveis) → Qualificado → Visita → Proposta → Negócio. Em cada etapa: quantos chegaram (fluxo), dias desde a entrada (mediana; "acumulando" com n < 5) e descartados (clique → capítulo 3). Na seta: conversão da passagem (safra, com selo de maturidade). **Gargalo = menor taxa entre as passagens com base ≥ 20 leads**, seta em coral. Com a safra jul–set: locação Lead → Qualificado 29% (288 → 84 → 29 → 16 → 12); venda Qualificado → Visita 29%.
+- **2b Qual canal performa melhor? (pedido da Diretoria, 29/10; aprovado).** Tabela canal × funil: leads, qualificados, visitas, propostas, negócios e lead → negócio (safra madura), com a **pior passagem de cada canal em coral**. Canal com menos de 20 leads no período ganha o selo "base pequena". Clicar no canal filtra a página inteira (os motivos do capítulo 3 passam a ser os daquele canal); clicar num número abre a lista de leads. Finalidade, corretor e período continuam valendo. No Relatório, o Ato 2 ganha a linha "melhor e pior canal" com link para este capítulo.
+  - **Achado de 29/10 (safra abr–ago, clientes):** Campanhas pagas 208 leads → 55 qualificados (26%) → 8 visitas → **0 negócios**; Site 173 → 112 (65%) → 69 → 17 negócios (9,8%); Indicação 89 → 75 (84%) → 44 → 11 (12,4%); WhatsApp 122 → 3 (2,5%); Portais 94 → 3 (3,2%).
+  - **Conferência (29/10):** 5 leads pagos (5385, 5404, 5552, 5900, 5912) conferidos no Imoview, 5/5 descartados como no Hub; motivos de perfil (desistiu, sem condição, comprou com terceiros, não responde, outro). Pela pessoa nas atividades, 44 dos 208 eram rastreáveis: 2 tiveram outro atendimento, nenhum virou negócio. Conclusão: o zero se sustenta, com o limite de que só 1 em 5 era rastreável. Em aberto: "Campanha Halma" é anúncio da Imovit ou de construtora (se for de construtora, sai da conta de mídia paga).
+- **3 Por quê?** Motivos de descarte lidos das interações do CRM ("ATENDIMENTO DESCARTADO MOTIVO: …"), agrupados:
+  - 🔴 **Perdemos o contato**: não responde contato; +30 dias sem interação;
+  - 🟠 **Cliente sem perfil**: sem condições; desistiu; região fora do escopo; curiosidade;
+  - ⚪ **Não é perda**: repique/transferência de corretor; teste do marketing; alteração de etapa; corretor se passando por cliente; erro. **Sai das contas do funil**, como o ruído.
+  Desde 06/10: 112 / 45 / 41. Clicar numa etapa do capítulo 2 filtra os motivos; clicar num motivo abre a lista. O link para o Estoque saiu ("não encontrou imóvel" quase não aparece).
+- **4 Com quem?** Tabela por corretor: ativos, 🔴 esquecidos (n e %), atividades realizadas no período (sem anotações), conversão no gargalo vs média da equipe. **Ordenada pelo número de esquecidos.** Frase ex. (29/10): "9 de 13 corretores com mais de 2/3 da carteira esquecida: é processo, não pessoa." Clicar no corretor filtra a página; com corretor filtrado, valem as regras do §5.0c (só a média da equipe, sem nomes; "Comparar com" só para a Gestão).
+- **5 O que fechou? (ex-página Fechamento, 03/11).** Negócios no período (locação e venda; vs mês anterior até o mesmo dia); dias até o negócio (safra madura); propostas paradas há mais de X dias, em lista (código abre o Imoview); receita de intermediação com link para a Carteira. Venda em quantidade, com a lacuna de valor escrita na tela (R2).
+
+**Página de Carteira — detalhe aprovado em 03/11 (Eduardo + Pareto).** Reorganiza a Adm locação (§5.13) pelas regras deste §5.19: primeiro o que ainda dá para salvar, depois o passado. Tudo na moeda da Imovit: **reais de administração por mês**. Quem vê: continua só a Gestão (§5.13).
+
+- **0 Manchete.** **Administração contratada/mês** (aluguel × taxa dos ativos), com a recebida (média dos 3 últimos meses fechados) embaixo. Ao lado: **− saindo** (administração dos contratos com aviso de desocupação). Contexto em letra menor: contratos ativos e soma dos aluguéis administrados (tamanho, nunca manchete). Ex. (03/11): "R$ 67,5 mil/mês de administração; R$ 6,1 mil (9%) com aviso de saída. 157 contratos, R$ 1,3 mi/mês em aluguéis."
+  - **Depois (03/11, decisão do Eduardo: não agora):** "+ entrando" (propostas de locação × taxa). Hoje não há fonte de valor: as tabelas de propostas do Hub estão vazias (módulo desligado) e a jornada do CRM não tem valor.
+- **1 Quem pode sair?** Lista em 3 blocos, do maior risco para o menor:
+  - 🔴 **Com aviso de desocupação** (03/11: 13 contratos, R$ 6,1 mil/mês);
+  - 🟠 **Fim do prazo em até 90 dias** (3, R$ 745/mês);
+  - ⚪ **Prazo indeterminado** (49, 31% dos ativos): não "vencem", e por isso a regra dos 90 dias não os enxerga, mas saem com 30 dias de aviso. Grupo separado, ordenado por administração.
+  Colunas: contrato (abre o Imoview), imóvel, administração/mês, data do aviso ou do fim, meses de contrato. Linha no fim: **reajustes atrasados** (03/11: 8, o mais antigo de 05/10).
+- **2 Quem não pagou?** Número principal: **administração em atraso** (o que a Imovit deixa de receber), com contratos por faixa de atraso (até 30 / 31–90 / +90 dias). O valor bruto vencido (aluguel do proprietário) aparece só como contexto. **Alerta de concentração** quando um contrato tiver mais de 1/3 do valor vencido. Ex. (03/11): 10 contratos, 8 com até 30 dias; R$ 287 mil brutos, um contrato com R$ 105 mil.
+- **3 A carteira cresce?** Novos × encerrados em contratos **e em R$ de administração**, comparados com o ano anterior (contas do §5.13).
+- **4 Por que saem?** Motivos de rescisão (Distratos, §5.16).
+- **Fica fora desta página:** "onde alugamos" (bairro e tipo; vai para o Estoque ou sai) e a lista de proprietários (ferramenta da ADM, não leitura da Diretoria).
+- ⚠ **Taxa zero (conferido em 03/11):** os ~1,5% vinham de contratos com `taxa_adm` = 0 no Imoview; a conta do Hub está certa. São 4 ativos com taxa zero (R$ 141,5 mil/mês de aluguel, 10,6% da carteira), todos de jun–set/26: 1805 e 1815 com intermediação de 100% (podem ser "só intermediação"); **1807 (comercial, R$ 102,7 mil/mês) e 1817 com administração e intermediação zeradas**. **Respondido pelo Eduardo (03/11):**
+  - **1807:** contrato bloqueado em negociação com o diretor; devia estar em **Moderação** no Imoview, não Ativo. A taxa (0% hoje) pode mudar. Enquanto aparecer como Ativo, ele infla a soma dos aluguéis (R$ 102,7 mil) e a inadimplência (R$ 105,5 mil dos R$ 287 mil). A correção é no Imoview (situação → Moderação); a leitura diária traz a mudança.
+  - **1817:** imóvel do diretor, 0% combinado.
+  - 1805 e 1815 (intermediação de 100%): sem resposta; tratados como "só intermediação".
+  Regra da página: contrato ativo com taxa zero aparece num aviso "sem taxa de administração" com o número de contratos, fora das médias de taxa.
+- **Exceção manual "Fora das contas: em negociação" (aprovada em 03/11).** Para contrato que o Imoview mostra como Ativo mas não deve contar, como o 1807: no Imoview ele é Ativo, Atrasado, "Cobrança amigável", sem campo de bloqueio, e o Eduardo não consegue mudar a situação. Regras para não virar lixeira de número feio:
+  - só a Gestão marca, com motivo obrigatório; fica registrado quem marcou e quando;
+  - **vence em 30 dias**: depois disso, o contrato volta às contas até alguém confirmar a marcação de novo;
+  - sai sozinha quando o Imoview mudar a situação (Moderação, Rescindido etc.);
+  - sempre visível: uma linha "N contrato(s) fora das contas, R$ X/mês de aluguel" na manchete e no capítulo 2, que abre a lista com os motivos;
+  - fora da inadimplência, da soma dos aluguéis e das médias. Continua no Imoview como está.
+  - A correção de verdade continua sendo a situação no Imoview (ADM ou suporte do Imoview).
+
+**Página de Aquisição — detalhe aprovado em 03/11 (Eduardo + Pareto).** Substitui o Painel de Performance (§5.0b), que foi feito para o marketing. A pergunta da Diretoria é uma só: **o real investido em anúncio volta como negócio?** (decisão: manter, cortar ou mudar a verba de lugar).
+
+- **0 Manchete.** Investido no mês (vs anterior até o mesmo dia); **custo real por lead pago** (investimento Meta + Google ÷ leads "Campanhas pagas" no CRM, R4); **custo por negócio da mídia paga** (investimento ÷ negócios vindos de leads pagos, safra madura). Antes de 23/09: aviso de dias duplicados no Meta.
+- **1 O dinheiro vira negócio?** Cascata investido → leads pagos → qualificados → visitas → negócios, com o custo de cada degrau e o orgânico (Site, Indicação) lado a lado. Achado de 29/10 (safra abr–ago): pagos 208 → 26% qualificados → 8 visitas → 0 negócios; Site 65% → 9,8%.
+- **2 O lead pago é bom?** O sinal antecipado: % qualificados e **tempo até qualificar** dos leads pagos, vs Site e Indicação, por mês. Aparece em semanas; o negócio leva meses.
+- **3 Onde está indo a verba?** Meta × Google; no máximo 5 campanhas, com gasto e custo por conversão na plataforma. Aviso fixo: "a ligação campanha → lead do CRM ainda não é rastreada" (0 de 156 leads pagos com campanha, jul–out).
+- **Página dona:** a tabela canal × funil completa é do Atendimento (cap. 2b); aqui só o recorte pago × orgânico, da mesma fonte.
+- **Sai da visão da Diretoria:** CPM, CTR, CPC, matriz de bolhas e ritmo de orçamento (orçamentos cadastrados só até ago/26). Viram uma aba "Detalhe do marketing", ou saem.
+- **Campanha Halma (respondido pelo Eduardo, 03/11):** campanha interna e antiga de **reativação de leads inativos** que responderam a uma ação, sem verba em Meta/Google. Não é mídia paga: sai de "Campanhas pagas" e vai para um canal próprio ("Reativação da base"). Efeito: 14 leads (abr–jul), 0 negócios; a mídia paga passa de 208 para 194 leads e continua em 0 negócios. A mudança é no mapa de mídias do CRM (escrita: Asimov/Eduardo).
+- **Marcação de canal da venda (conferido em 03/11, outubro):** as campanhas de venda gastaram R$ 680 (Google "Pesquisa - Venda" R$ 414 / 17 conversões; Meta "Vendas | WhatsApp | Casas" R$ 266 / 27) e o CRM marca **2** leads de venda como pagos (5% das conversões). Na locação, R$ 4,4 mil e 139 conversões viram 54 leads pagos (39%). Em out, a venda tem 18 leads "WhatsApp" e 17 "Site": hipótese, não provada, de que o lead pago de venda entra com a mídia do canal de chegada. **Teste do Eduardo:** um lead de teste pelo anúncio de venda no WhatsApp, para ver com que mídia cai no CRM. Até a correção, a venda paga aparece na Aquisição com o aviso "marcação incompleta: o custo por lead da venda não é confiável".
+  - **Hipótese confirmada pelo Eduardo (03/11):** o GTM registra a origem em `leads_wpp_gtm`, mas ela não chega ao CRM. Em out: 116 registros, 53 com marca de mídia paga (utm, `gclid`, `fbclid` ou `gbraid`). O `codigo_atendimento` dessa tabela é um **código curto do site** (ex. 6 letras), compartilhado com o `bot_severino`, **não o número do atendimento no CRM**: o cruzamento direto dá 0. Também há `utm_source = direct` com `gclid`/`fbclid` preenchido (a UTM se perde; o id de clique fica).
+  - **Requisito (alinhamento GTM → CRM):** quando o atendimento é criado no Imoview (bot/cadastro), gravar a mídia paga a partir do código do site (`gclid` → Google, `fbclid` → Meta, senão utm) **no próprio CRM**, que é o gabarito da Diretoria, e guardar o número do atendimento de volta em `leads_wpp_gtm`. Corrigir no Hub sem corrigir no CRM fica descartado. Detalhe técnico e ordem: Asimov/Brooks.
+
+**Página de Estoque — detalhe aprovado em 03/11 (Eduardo + Pareto).** Reorganiza o §5.14. A função principal da página é **achar imóvel de forma fácil**: a busca da revisão de 16/10 (texto livre, "quase lá", ficha comercial; corretor e Gestão) continua como está. Embaixo dela, um painel curto, só para a Gestão, que responde a duas decisões: **o que destravar no estoque de locação** e **o que captar**.
+
+- **0 Manchete.**
+  - Quantidade disponível por finalidade.
+  - Locação em **R$ de administração parada por mês** = aluguel dos vagos × **taxa média efetiva da carteira** (administração contratada ÷ aluguéis dos contratos ativos, sem os de taxa zero e sem os "Fora das contas"). Decisão do Eduardo, 03/11.
+  - % desatualizado (+45 d) e % fora do site.
+  - Venda em **quantidade**, com "% parado há mais de 1 ano". O valor somado (VGV) aparece só em letra pequena, como contexto, nunca como manchete.
+- **1 Quanto temos e onde?** Quantidade por tipo (card "Quanto temos disponível?" de 16/10) e mapa de calor (16/10). **Atualizações:** imóveis atualizados nos últimos 7 e 30 dias × desatualizados (+45 d). Mostra se o cadastro está sendo cuidado ou envelhecendo.
+- **2 O que fazer hoje?** Lista de trabalho dos vagos de locação **fora do site, desatualizados ou com menos de 5 fotos**, com o motivo de cada um.
+  - **Na faixa que aluga (pedido do Eduardo, 03/11):** selo nos vagos cujo aluguel está entre o 1º e o 3º quartil (p25–p75) dos contratos de locação novos dos últimos 12 meses. Faixa, não média: a média é puxada pelos poucos contratos caros. Esses vêm primeiro na lista, porque são os que viram administração mais rápido; dentro de cada grupo, do maior aluguel para o menor. A busca ganha o mesmo selo e o filtro "na faixa que aluga".
+- **3 Captamos o que aluga?** Estoque vago × contratos novos (12 meses) × procura dos leads, por faixa de valor e por bairro. Captações do mês × média de 12 meses entram como uma linha aqui. Hipótese a confirmar na construção: o aluguel médio do vago (~R$ 17 mil/mês) é o dobro do da carteira (~R$ 8 mil/mês): captamos caro e alugamos barato.
+- **4 Limpeza da venda.** Lista dos parados há mais de 1 ano (vago desde), para validar com o proprietário ou tirar do estoque, do mais antigo para o mais novo.
+- **Sai do §5.14:** "maiores tickets e R$/m² por bairro" e captações por mês em 24 meses (curiosidade, sem decisão).
+- **Retrato de 03/11** (`vw_estoque_imoveis`, Vago/Disponível):
+  - Locação: 208 imóveis, R$ 3,6 mi/mês de aluguel, mediana de 96 dias vago, **105 fora do site (50%)**, 51 desatualizados, 62 há mais de 1 ano.
+  - Venda: 970 imóveis, R$ 3,3 bi, mediana de 475 dias, 517 fora do site, 527 desatualizados (54%), **558 há mais de 1 ano (58%)**.
+  - Fora do Vago/Disponível: 93 de locação e 61 de venda em moderação, todos fora do site.
+  - Não comparar com o retrato de 08/10 (mediana da venda 310 d → 475 d): a definição não mudou (conferido com o Eduardo), mas o retrato de 08/10 é anterior à 1ª carga completa (15/10). **A base de comparação passa a ser 03/11.**
 
 **E-mail diário (7h30, Brevo; pedido da Diretoria).** Boletim, não o relatório inteiro:
 - **Ontem:** leads novos (L/V), mudanças de etapa, propostas novas, negócios.
@@ -981,6 +1042,7 @@ O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colabo
 - Todo número é clicável e abre a lista por trás dele, com os mesmos filtros; o código abre no Imoview. É o gabarito da Diretoria (não há relatório pronto no Imoview): conferência por amostra de códigos.
 - Barra de filtros fixa (período, finalidade, canal, corretor) que acompanha a navegação.
 - Cada métrica tem uma página dona; nas outras aparece o mesmo componente lendo a mesma fonte, nunca uma segunda conta.
+  - **Esquecidos (03/11):** a conta oficial é a de `boletim_diretoria()` (ativo há mais dias na etapa que o prazo, sem atividade realizada desde hoje − prazo e sem atividade agendada a partir de hoje). A página de Atendimento lê a mesma regra do banco, sem recalcular no navegador. O 143 × 142 de 29/10 não dá para reproduzir (a função usa o estado atual dos ativos) e fica encerrado por esta regra.
 - Título de capítulo/ato = conclusão gerada pelos dados.
 - Rodapé com fonte, hora da leitura, nº de registros e estado dos vigias.
 
@@ -1013,7 +1075,7 @@ O Hub liga a pessoa a tudo por dois campos: o **e-mail** (`perfis.email = colabo
 - `npm run build` ok.
 
 **Perguntas em aberto.**
-- Detalhe página por página: **Relatório ✅ (29/10)** → **e-mail diário ✅ (29/10)** → **Atendimento ✅ (29/10)** → Aquisição → Fechamento → Carteira → Estoque; `03-app-flow.md` e a fase no plano depois do detalhe.
+- Detalhe página por página: **Relatório ✅ (29/10)** → **e-mail diário ✅ (29/10)** → **Atendimento ✅ (29/10)** → **Aquisição ✅ (03/11)** → ~~Fechamento~~ (virou cap. 5 do Atendimento) → **Carteira ✅ (03/11)** → **Estoque ✅ (03/11)**; `03-app-flow.md` e a fase no plano depois do detalhe.
 
 ### 5.20 Processo de Locação: guia do processo no Hub (pedido do Eduardo, 30/10) — **APROVADO (30/10), v1 pode construir** (plano Fase 25, Schema §2.20)
 **Origem.** Em 30/10, a Direção (Daniel Aranovich) montou fora do Hub, no claude.ai, uma página HTML (`processo-locacao-imovit.html`) com o processo de locação desenhado. Ela já grava no banco do Hub, em 3 tabelas criadas fora das migrations do repo: `locacao_papeis` (9 papéis), `locacao_etapas` (42 etapas) e `locacao_casos` (vazia). Usa o login do Hub e as funções `is_team()` e `is_adm_ou_gestao()`. O Eduardo decidiu trazer uma cópia para dentro do Hub.
@@ -1080,6 +1142,15 @@ Divisão: **Comercial = resultado** (semana/mês, Gestão). **Operacional = exec
 | Operacional | Saúde dos dados | última data em CRM, Meta, Google e atividades; alerta se passar de 2 dias |
 
 **Lacunas conhecidas:** valor de venda (não existe no CRM); histórico de fases (só a fase atual); data da última interação; atribuição paga (mapa de canais e gclid pendentes). **Piso de histórico:** o CRM só tem negócios de leads que entraram a partir de 01/10/2025 (`INICIO_HISTORICO_CONFIAVEL` em `src/lib/paineis.js`); conversão compara o último semestre maduro (60–242 dias) com o anterior.
+
+### 5.21 Ajuda: manual de uso dentro do Hub (pedido do Eduardo, 06/11)
+
+O manual nasceu como documento no Claude (04/11) e o primeiro botão "Ajuda" abria esse link numa aba nova. O Eduardo vetou: o manual é **interno da Imovit** e mora no próprio Hub.
+
+- RF34.1: página `/ajuda` com o manual completo (introdução, primeiro acesso, navegação, uma seção por nível, perguntas frequentes, suporte). Texto em `src/pages/Ajuda.jsx`; mudar o manual = editar esse arquivo.
+- RF34.2: item **Ajuda** no fim do menu, para todos os níveis, inclusive "Sem nível". Abre na mesma aba.
+- RF34.3: sumário no topo com atalho para cada seção; a seção do nível de quem lê ganha o selo "seu nível" (Sem nível → Primeiro acesso).
+- Fora de escopo: busca no manual, edição pela tela, vídeos. Sem banco: é texto estático.
 
 ## 6. Regras de negócio
 - Só e-mails `@imovit.com.br` ganham perfil (`handle_new_user`). O locatário não tem perfil: acessa pelo e-mail da proposta.
