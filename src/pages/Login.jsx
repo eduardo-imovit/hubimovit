@@ -72,7 +72,13 @@ export default function Login() {
       return
     }
     if (error) {
-      setErro('Não foi possível criar a conta.')
+      // Senha recusada pelo Supabase (comum/vazada ou curta demais): dizer o motivo,
+      // senão a pessoa não sabe que basta trocar a senha.
+      if (error.code === 'weak_password' || /weak|easy to guess|at least/i.test(error.message)) {
+        setErro('Essa senha é muito comum ou fácil de adivinhar. Escolha outra mais longa, por exemplo três palavras e um número (cafe-janela-azul-47).')
+      } else {
+        setErro(`Não foi possível criar a conta: ${error.message}`)
+      }
       return
     }
     // Sem confirmação exigida, o signUp já devolve a sessão e o <Navigate> leva para a Home.

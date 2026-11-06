@@ -45,7 +45,7 @@
 | Pesos | 300 · 400 · 500 · 600 | 600 é o máximo |
 
 ### Espaço, raio, sombra, movimento
-- Espaço: `--space-1..10` = 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64 · 96 · 128 px. Grid de 12 colunas, gap 24 px; containers de 640/900/1200/1440 px.
+- Espaço: `--space-1..10` = 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64 · 96 · 128 px. Grid de 12 colunas, gap 24 px; containers de 640/900/1200/1440 px. Margem da página (`.app-main`): 24/32 px no desktop; **16 px nas laterais até 640 px** (06/11). Tabela de texto no celular vira lista de blocos (rótulo em cima, texto embaixo; ex.: `.ajuda-tabela`).
 - Raio: `xs` 2 · `sm` 4 · `md` 8 · `lg` 14 · `xl` 20 · `full`.
 - Sombra: `--shadow-xs..xl` em grafite a 5–18%; `--shadow-coral` só em CTA de destaque.
 - Movimento: `instant` 80 · `fast` 160 · `base` 220 · `slow` 360 · `poetic` 600 ms; `--ease-out` como padrão. Sempre respeitar `prefers-reduced-motion`.

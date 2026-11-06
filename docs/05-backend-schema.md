@@ -115,7 +115,9 @@ Triggers: `trg_propostas_locacao_expira` (bloqueia avanço quando expirada), `tr
 | `metas`, `metas_mensais`, `metas_campanhas`, `metas_atividades_tipo`, `campanhas_metas`, `kpi_baselines` | manual/n8n | **5 tabelas de metas com formatos diferentes.** ⚠ Unificar antes da tela de metas |
 | `imoveis_locados`, `proprietarios_locacao`, `envios_proprietarios` | Imoview/n8n | `imoveis_locados` vazia |
 
-**Fora do Hub (não mexer sem olhar o n8n):** `blog_posts`, `blog_temas`, `newsletter_contacts`, `knowledge_base` (pgvector), `pilares`, `campanha_entreverdes_05-2026`, `fila_repique_site`, `repique_control`, `repique_ponteiro`.
+**Fora do Hub (não mexer sem olhar o n8n):** `blog_posts`, `blog_temas`, `newsletter_contacts`, `knowledge_base` (pgvector), `pilares`, `campanha_entreverdes_05-2026`, `fila_repique_site`, `repique_control`, `repique_ponteiro`, `repique_tentativas`.
+
+**`repique_tentativas`** (migration `20261103180000_repique_tentativas`, Repique 3.0 do n8n): é o registro de quantas vezes cada lead foi repicado. `atendimento_id` bigint PK (código do atendimento no Imoview) · `tipo_operacao` text! (`venda`/`locacao`) · `tentativas` int! (1–3) · `ultimo_repique_em` timestamptz! · `ultimo_corretor` int! (código CRM) · `criado_em` timestamptz!. Regra: no máximo 3 repiques por lead. O prazo (locação 5 min, venda 30 min) conta da entrada quando não há linha e do `ultimo_repique_em` quando há. Depois da 3ª tentativa o lead fica com o último corretor. `repique_control` (vazia, de gerações antigas) não é usada.
 
 **Backups temporários (apagar depois de validar os números):** `dashboard_meta_ads_backup_20260923`, `dashboard_meta_ads_backup_20260924`, `leads_wpp_gtm_backup_20260923`.
 
@@ -580,6 +582,7 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | blog_posts | anon: só `status = 'publicado'` | — |
 | pilares | público | — |
 | repique_control, repique_ponteiro | RLS ligado, 0 políticas: só `service_role` (conferido em 26/10) | — |
+| repique_tentativas | RLS ligado, 0 políticas, sem grant para anon/authenticated: só `service_role` (n8n) | — |
 | vw_* (21 views, auditoria de 22/10) | só `authenticated`, com `security_invoker` (seguem a RLS das tabelas); anon sem acesso | — |
 
 ⚠ `leads_wpp_gtm` (telefone e nome de lead) e `atividades` são legíveis por qualquer usuário logado, inclusive "Sem nível". Rever se isso é intencional.

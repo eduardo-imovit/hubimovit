@@ -135,6 +135,11 @@ export default function Navbar() {
             Configurações
           </NavLink>
         )}
+
+        {/* Todos os níveis veem, inclusive "Sem nível": o manual explica o primeiro acesso */}
+        <NavLink to="/ajuda" className={({ isActive }) => `navbar-link${isActive ? ' is-active' : ''}`}>
+          Ajuda
+        </NavLink>
       </div>
 
       <WeatherWidget />

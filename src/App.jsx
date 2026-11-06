@@ -40,6 +40,7 @@ import PortalStatus from './pages/portal/PortalStatus'
 import PortalVendaLogin from './pages/portal/PortalVendaLogin'
 import PortalVenda from './pages/portal/PortalVenda'
 import Perfil from './pages/Perfil'
+import Ajuda from './pages/Ajuda'
 import { ACESSO } from './lib/acessos'
 
 /** Redireciona mantendo os filtros da URL (links de recorte antigos continuam valendo). */
@@ -86,6 +87,7 @@ export default function App() {
         <Route path="/feedback-visita" element={<ProtectedRoute papeis={ACESSO.formularios}><FeedbackVisita /></ProtectedRoute>} />
         <Route path="/materiais" element={<ProtectedRoute papeis={ACESSO.formularios}><MateriaisClientes /></ProtectedRoute>} />
         <Route path="/perfil" element={<ProtectedRoute><Perfil /></ProtectedRoute>} />
+        <Route path="/ajuda" element={<ProtectedRoute><Ajuda /></ProtectedRoute>} />
         {/* público (proprietário, sem login): link fixo de captação do corretor (código aleatório) */}
         <Route path="/captacao" element={<CaptacaoPublica />} />
         <Route path="/captacao/:token" element={<CaptacaoPublica />} />
