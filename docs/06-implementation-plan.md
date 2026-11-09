@@ -477,6 +477,16 @@ Estimativa da v1: **M–G, ~1,5 a 2 dias** (sem a aba "Em andamento"), contando 
 - **S3 Exibição:** etiqueta cor + ícone + rótulo na Home, TV (painel e card) e no admin; pendência por tipo.
 - **S4:** importar a 1ª escala de locação com o PDF real e conferir a leitura.
 
+## Fase 28 — Blog: revisão no Hub (RF35, PRD §5.22) — **APROVADA (09/11)**
+Depende do motor de pauta (`newsletters-imovit/docs/blog-pautas.md`, S1 e S2a feitas). Estimativa: **P–M, ~meio dia** com teste.
+- **S1 Banco (FEITA 09/11, migration `20261109220000`, 13 passos ok em ROLLBACK):** migration (no `newsletters-imovit`, dono do blog) com a policy de leitura dos rascunhos, `decidido_por`/`decidido_em`, `blog_decidir(post_id, acao)` por `pode_editar_conteudo()`; sai `token_aprovacao`. Conferir contra este Schema; testar em BEGIN…ROLLBACK simulando gestão, marketing e corretor (corretor não lê rascunho nem decide).
+- **S1b Limpeza (FEITA 09/11):** dos 46 rascunhos antigos, 7 ficam e 39 → `descartado` (lista em `newsletters-imovit/handoff.md`).
+- **S2 Tela:** `/blog/revisar` (lista + leitura renderizada + Aprovar/Rejeitar com confirmação), só com tokens do design system; item no menu de Gestão/Marketing.
+- **S3 Home:** pendência "N posts do blog para revisar" em `usePendenciasHome` (Gestão e Marketing).
+- **S4 n8n:** `conteúdo v2` (próxima pauta → pesquisa → títulos existentes → artigo → `blog_salvar_rascunho` → e-mail curto). Dois gatilhos: **segunda 8h** (pauta nova) e **a cada 15 min** (só reescreve pauta devolvida com "o que mudar"; sem devolução, não faz nada), criado ao lado e testado com 1 execução manual; depois desligar `aprovacao_blog`.
+- **Pronto quando:** um post gerado pelo v2 aparece na Home e em `/blog/revisar`, é aprovado pelo Hub e aparece no site; um rejeitado devolve a pauta para `pendente`; corretor não vê nada.
+- localhost → `teste` → `main`.
+
 ## Adiado conscientemente (rever quando o volume real crescer)
 - ~~Backup: upgrade para o plano Pro~~ decidido em 29/09: o Eduardo vai assinar o Pro (Fase 12, S0).
 - Ambiente de teste separado (hoje as migrations são testadas com `BEGIN … ROLLBACK` em produção).
