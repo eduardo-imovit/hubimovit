@@ -1152,6 +1152,19 @@ O manual nasceu como documento no Claude (04/11) e o primeiro botão "Ajuda" abr
 - RF34.3: sumário no topo com atalho para cada seção; a seção do nível de quem lê ganha o selo "seu nível" (Sem nível → Primeiro acesso).
 - Fora de escopo: busca no manual, edição pela tela, vídeos. Sem banco: é texto estático.
 
+### 5.22 Blog: revisão dos posts no Hub (pedido do Eduardo, 09/11) — **APROVADO (09/11)** (plano Fase 28)
+
+O motor do blog mora no projeto `newsletters-imovit` (`docs/blog-pautas.md`): o n8n pega a próxima pauta, escreve o post e grava um rascunho em `blog_posts`. Até aqui a aprovação era por **links no e-mail** (`aprovacao_blog`), que qualquer um com o link (ou um filtro de e-mail que abre links) podia acionar, com cópia no Google Docs para ler. Decisão de 09/11: **a revisão passa para o Hub**, com o login e a portaria que já existem. O Hub é só a mesa do editor; o motor continua fora.
+
+- RF35.1: página **`/blog/revisar`** para `gestao` e `marketing` (`pode_editar_conteudo()`): lista os rascunhos (título, pauta, data) e abre o artigo **renderizado como no site**.
+- RF35.2: botões **Aprovar** (vai para o site: `publicado`) e **Rejeitar** (`rejeitado`; a pauta volta para a fila e é **reescrita em até ~15 min**, não na segunda seguinte: robô que demora uma semana não serve), com campo opcional **"o que mudar"**, que vai junto para a IA quando a pauta voltar. Pede confirmação antes. A decisão grava quem decidiu e quando.
+- RF35.3: **Home → "Para você hoje"** (RF20) ganha a pendência "N posts do blog para revisar" → `/blog/revisar`, para Gestão e Marketing. Sem rascunho, não aparece.
+- RF35.4: aviso fora do Hub: o n8n manda **um e-mail curto, só para o Eduardo** ("1 post esperando revisão no Hub") com um link que **só abre o Hub**; nenhuma ação acontece pelo e-mail.
+- Fora de escopo (v1): editar o texto pelo Hub (se precisar mudar, rejeita e a pauta volta), gerenciar a fila de pautas pela tela, métricas do blog.
+- **Dados (Schema, a aplicar):** policy de leitura dos rascunhos em `blog_posts` para `pode_editar_conteudo()`; colunas `decidido_por` e `decidido_em`; função `blog_decidir(post_id, acao)` para usuário logado (substitui a versão por senha, que ainda não foi usada) e saem a coluna `token_aprovacao` e a senha do `blog_salvar_rascunho`.
+- **Sai do caminho:** o fluxo n8n `aprovacao_blog` (com o disparo no Brevo) e a cópia no Google Docs.
+- Decidido (09/11): o aviso vai só para o Eduardo; o campo "o que mudar" entra na v1.
+
 ## 6. Regras de negócio
 - Só e-mails `@imovit.com.br` ganham perfil (`handle_new_user`). O locatário não tem perfil: acessa pelo e-mail da proposta.
 - Ninguém muda o próprio nível ou e-mail (trigger `proteger_campos_perfil`). Só a Gestão decide pedidos de nível.
