@@ -115,7 +115,11 @@ Triggers: `trg_propostas_locacao_expira` (bloqueia avanço quando expirada), `tr
 | `metas`, `metas_mensais`, `metas_campanhas`, `metas_atividades_tipo`, `campanhas_metas`, `kpi_baselines` | manual/n8n | **5 tabelas de metas com formatos diferentes.** ⚠ Unificar antes da tela de metas |
 | `imoveis_locados`, `proprietarios_locacao`, `envios_proprietarios` | Imoview/n8n | `imoveis_locados` vazia |
 
-**Fora do Hub (não mexer sem olhar o n8n):** `blog_posts`, `blog_temas`, `newsletter_contacts`, `knowledge_base` (pgvector), `pilares`, `campanha_entreverdes_05-2026`, `fila_repique_site`, `repique_control`, `repique_ponteiro`, `repique_tentativas`.
+**Fora do Hub (não mexer sem olhar o n8n):** `blog_posts`, `blog_temas`, `blog_pautas`, `newsletter_contacts`, `newsletter_contatos`, `knowledge_base` (pgvector), `pilares`, `campanha_entreverdes_05-2026`, `fila_repique_site`, `repique_control`, `repique_ponteiro`, `repique_tentativas`.
+
+**`newsletter_contatos`** (09/11): pertence ao projeto `newsletters-imovit` (schema e migration lá, em `newsletters-imovit/docs/05-backend-schema.md`). Contatos de proprietários e locatários dos contratos ativos; só a Gestão lê. Não confundir com `newsletter_contacts`.
+
+**`blog_pautas`** (09/11): pertence ao blog, que mora no projeto `newsletters-imovit` (plano em `docs/blog-pautas.md` e migration lá). Fila de pautas do fluxo n8n `conteúdo`; só gestão/marketing leem. Em `blog_posts`, o status `descartado` tira um rascunho da fila sem apagar.
 
 **`repique_tentativas`** (migration `20261103180000_repique_tentativas`, Repique 3.0 do n8n): é o registro de quantas vezes cada lead foi repicado. `atendimento_id` bigint PK (código do atendimento no Imoview) · `tipo_operacao` text! (`venda`/`locacao`) · `tentativas` int! (1–3) · `ultimo_repique_em` timestamptz! · `ultimo_corretor` int! (código CRM) · `criado_em` timestamptz!. Regra: no máximo 3 repiques por lead. O prazo (locação 5 min, venda 30 min) conta da entrada quando não há linha e do `ultimo_repique_em` quando há. Depois da 3ª tentativa o lead fica com o último corretor. `repique_control` (vazia, de gerações antigas) não é usada.
 
@@ -565,6 +569,7 @@ Tabela à parte da §2.16 porque a RLS é por linha: o ADM precisa ler os dados 
 - A RPC foi recriada com `atualizado_em` e `atualizado_por_nome`.
 - Função `onboarding` v4: `editar_bancarios` (JWT gestão/adm; mesmas regras do `normalizarBancario`; grava quem e quando) e `excluir_bancarios` (JWT gestão/adm; apaga só a linha bancária).
 - Continua sem policy de escrita: no teste, o ADM recebeu 42501 ao alterar ou apagar direto na tabela.
+
 
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
