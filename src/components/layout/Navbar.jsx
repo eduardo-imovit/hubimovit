@@ -45,6 +45,7 @@ function buildMenus(perfil) {
   if (pode(perfil, 'formularios')) ferramentas.push({ to: '/materiais', label: 'Materiais para clientes' })
   // quem vê Locação ▸ Cadastros já tem os links lá; o corretor manda por aqui
   if (pode(perfil, 'formularios') && !pode(perfil, 'esteira')) ferramentas.push({ to: '/ferramentas/cadastros', label: 'Links de cadastro' })
+  if (pode(perfil, 'blog')) ferramentas.push({ to: '/blog/revisar', label: 'Revisar blog' })
   if (pode(perfil, 'tv')) ferramentas.push({ to: '/tv-display', label: 'TV Display' })
   menus.push({ label: 'Ferramentas', children: ferramentas })
 

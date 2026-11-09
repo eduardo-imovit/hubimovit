@@ -1608,3 +1608,40 @@
   .ajuda-tabela td { padding: 0; border: none; }
   .ajuda-tabela td:first-child { width: 100%; margin-bottom: var(--space-1); }
 }
+
+/* ===== Blog: revisar posts (PRD §5.22, RF35) — só tokens ===== */
+.blog-revisar { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--space-4); align-items: start; }
+.blog-lista { display: flex; flex-direction: column; gap: var(--space-2); position: sticky; top: var(--space-4); }
+.blog-lista-item {
+  display: flex; flex-direction: column; gap: var(--space-1); text-align: left; width: 100%;
+  padding: var(--space-3); background: var(--branco); border: var(--border); border-radius: var(--radius-md);
+  cursor: pointer; font: inherit; color: var(--grafite);
+}
+.blog-lista-item:hover { border-color: var(--coral-light); }
+.blog-lista-item.is-ativo { border: var(--border-focus); background: var(--coral-soft); }
+.blog-lista-titulo { font-size: var(--text-sm); font-weight: 500; line-height: 1.4; }
+.blog-lista-meta { font-size: var(--text-xs); color: var(--grafite-soft); }
+.blog-aviso { background: var(--success-soft); color: var(--success); margin-bottom: var(--space-4); }
+.blog-pauta { font-size: var(--text-sm); color: var(--grafite-mid); display: grid; gap: var(--space-1); margin-bottom: var(--space-3); }
+.blog-acoes { display: flex; flex-wrap: wrap; gap: var(--space-2); padding-bottom: var(--space-4); margin-bottom: var(--space-5); border-bottom: var(--border); }
+.blog-confirma { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); width: 100%; }
+.blog-confirma p { width: 100%; margin: 0; font-size: var(--text-sm); }
+.blog-confirma .field { width: 100%; }
+.blog-artigo { max-width: 720px; color: var(--grafite); line-height: 1.75; font-size: var(--text-base); }
+.blog-artigo h1 { font-family: var(--font-serif); font-size: var(--text-2xl); line-height: 1.2; margin: 0 0 var(--space-5); }
+.blog-artigo h2 { font-family: var(--font-serif); font-size: var(--text-xl); line-height: 1.25; margin: var(--space-6) 0 var(--space-3); }
+.blog-artigo h3 { font-size: var(--text-md); margin: var(--space-5) 0 var(--space-2); }
+.blog-artigo p, .blog-artigo ul, .blog-artigo ol { margin: 0 0 var(--space-4); }
+.blog-artigo ul, .blog-artigo ol { padding-left: var(--space-5); }
+.blog-artigo ul { list-style: disc; }
+.blog-artigo ol { list-style: decimal; }
+.blog-artigo li { margin-bottom: var(--space-1); }
+.blog-artigo a { color: var(--coral-dark); text-decoration: underline; }
+.blog-artigo hr { border: none; border-top: var(--border); margin: var(--space-6) 0; }
+@media (max-width: 860px) {
+  .blog-revisar { grid-template-columns: 1fr; }
+  .blog-lista { position: static; flex-direction: row; overflow-x: auto; padding-bottom: var(--space-1); }
+  .blog-lista-item { min-width: 220px; }
+  .blog-artigo h1 { font-size: var(--text-xl); }
+  .blog-artigo h2 { font-size: var(--text-lg); }
+}
