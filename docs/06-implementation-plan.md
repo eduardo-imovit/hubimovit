@@ -420,7 +420,7 @@ Depende de: jornada ativa (Fase 12, `crm_jornada_diaria v3`, ok em 06/10).
     - 3b (**feita em 28–29/10**; selo de saúde por `crm_leituras` e chave do Kanban por `codigo` em 29/10), telas: `useAtendimentos` lendo a view (**adiantado e feito em 28/10**, pedido do Eduardo depois da reunião: Kanban = painéis; fase 8 → coluna Lead qualificado no adaptador); colunas do Kanban por `fase_ordem` (a fase 8 entra em Lead qualificado); selo de saúde por `crm_leituras`;
     - 3c: localhost → `teste` → `main` e conferir o deploy de produção.
   - **E4 Gabarito final:** a mesma pergunta em Kanban, painéis, Km 32 e CRM.
-  - **E5 = S4:** pausar 7 dias, depois desligar; a tabela vira arquivo morto com a escrita bloqueada.
+  - **E5 = S4 (FEITA em 09/11):** fluxo desligado em 29/10, auditoria de 06/11 sem ninguém gravando, escrita bloqueada pela migration `20261109120000` (select mantido; view com 5.399 leads antes e depois).
   - **E6 Fechamento:** docs (A1/A5/A7) e vault ✅. Depois, opcional: sentinela "visto por último em".
 
 ## Fase 25 — Processo de Locação no Hub, v1 = guia (RF33, PRD §5.20, Schema §2.20) — **APROVADA (30/10)**

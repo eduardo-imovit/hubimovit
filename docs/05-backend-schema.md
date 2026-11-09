@@ -425,6 +425,7 @@ A escrita é feita só pela Edge Function `onboarding` (service role). A leitura
   - `kpis_tv` com `crm_atualizado_ate` = `max(crm_leituras.dia)`.
 - **Teste antes de aplicar (BEGIN … ROLLBACK):** total 5.194, ativos 218; corretor simulado (Patrícia Macedo) vê 564 = os dela e 0 de outros; TV com a data de hoje.
 - `dashboard_atendimentos_crm` fica só como **reserva** (data de entrada, data de fechamento e `id` dos leads antigos). Nenhuma tela a lê.
+- **Só leitura desde 09/11** (Fase 24 E5, migration `20261109120000_crm_antigo_somente_leitura`): `revoke insert, update, delete, truncate` de `anon`, `authenticated` e `service_role`; `select` mantido (a view ainda lê). Só o `postgres` (dono) escreve. Desfazer: `grant ... to service_role`.
 - Texto da proposta (28/10):
 - **Problema (auditoria de 27/10, `07-mapa-de-dados.md` §6.1):** `vw_atendimentos_base` tira *quais leads existem* (código, entrada, corretor, mídia, finalidade, data do negócio) de `dashboard_atendimentos_crm` e *em que fase estão* de `crm_atendimento_jornada`. O fluxo antigo só busca "o que mudou desde ontem" e não recupera o que perdeu:
   - **14 clientes ativos** estão só na jornada e somem de painéis e Kanban (A7);
