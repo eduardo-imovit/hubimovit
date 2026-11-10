@@ -294,6 +294,13 @@ Mesma lógica do Painel da Gestão (capítulos com conclusão como título, grá
 - **2º quadro:** esperado até hoje **no mês** = meta do mês ÷ dias do mês dentro da campanha × dias passados do mês, comparado com o **realizado no mês** (antes era a meta da campanha ÷ 87 dias × dias passados, contra o realizado total). Embaixo: "15 de 26 dias de outubro × R$ 321,8 mil" e o valor acima/abaixo. Em outubro dá o mesmo número que antes (a campanha começa em 06/10); muda a partir de novembro, quando o mês recomeça a conta.
 - A trilha (Km) continua na régua da campanha inteira. A TV usa a mesma régua (`lib/campanhaKm32.js`).
 
+**Ajuste de 10/11 (pedido do Daniel, feito pelo Eduardo): números da Home em mês × trimestre.** Objetivo: dar visibilidade ao objetivo, do mês e do trimestre.
+- **Como estava antes (20/10 a 10/11):** três quadros lado a lado. (1) Realizado no mês, com a meta do mês, o % e "faltam R$ X". (2) Esperado até hoje no mês ("15 de 26 dias × R$ por dia") e quanto o realizado estava acima ou abaixo disso. (3) Em proposta, com o número de propostas ativas (30 dias).
+- **Como ficou:** duas colunas, **Mês** (ex.: "Mês · novembro") e **Trimestre** ("out a dez"), cada uma com a meta no título e três linhas: **Realizado** (com o %, em destaque), **Para bater a meta** (em coral; "Meta batida" quando chega lá) e **Em proposta** (o mesmo valor nas duas colunas). Na locação, a linha "N contratos iniciados · X ativos" fica embaixo das colunas.
+- Trimestre = a campanha inteira: venda desde 06/10, locação desde 01/10, contra a meta da campanha.
+- O "esperado até hoje" saiu da Home. A conta continua em `lib/campanhaKm32.js`, e a **TV não mudou**.
+- No ar em 10/11 (commit 20c3085).
+
 **Na TV Display (16/10, Eduardo):** painel "Km 32" no carrossel do rodapé, entre Plantão e Comercial, só com a campanha no ar. Venda e Locação aparecem lado a lado (a TV não tem aba). Cada uma mostra a trilha com o Km e a marca de hoje, o realizado no mês × meta do mês, um selo acima (verde) ou abaixo (coral) do esperado até hoje e o valor em proposta. A régua é a mesma da Home (`lib/campanhaKm32.js`), e os números são relidos a cada 5 min. As barrinhas do indicador do rodapé passam a ser clicáveis: o clique vai direto ao painel e recomeça a contagem de 15 s.
 
 Também mostra as paradas no último dia de cada mês (meta acumulada proporcional aos dias) e o marcador "hoje".
