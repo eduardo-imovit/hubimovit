@@ -15,6 +15,13 @@ async function dados(consulta) {
 
 const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`
 
+/** Posts do blog esperando revisão (RF35.3): Gestão e Marketing. Sem rascunho, nada. */
+async function pendenciaBlog() {
+  const { count, error } = await supabase.from('blog_posts').select('id', { count: 'exact', head: true }).eq('status', 'rascunho')
+  if (error) throw error
+  return count ? [{ tom: 'atencao', n: count, texto: plural(count, 'post do blog para revisar', 'posts do blog para revisar'), to: '/blog/revisar', acao: 'Revisar' }] : []
+}
+
 /** Pendências da Gestão: pedidos de nível, CRM parado e leads sem contato (via kpis_tv). */
 async function pendenciasGestao(hoje) {
   const out = []
@@ -30,6 +37,7 @@ async function pendenciasGestao(hoje) {
   }
   const semContato = kpis?.operacao?.sem_contato
   if (semContato) out.push({ tom: 'atencao', n: semContato, texto: plural(semContato, 'lead ativo sem nenhum contato', 'leads ativos sem nenhum contato'), to: '/dashboard/gestao', acao: 'Ver quem' })
+  out.push(...await pendenciaBlog())
   return out
 }
 
@@ -91,6 +99,7 @@ async function pendenciasMarketing(hoje) {
     const nome = TIPOS_PLANTAO[tipo].rotulo.toLowerCase()
     if (semPlantao) out.push({ tom: 'atencao', n: semPlantao, texto: plural(semPlantao, `dia sem plantão de ${nome} nos próximos 7 dias`, `dias sem plantão de ${nome} nos próximos 7 dias`), to: '/configuracoes?aba=plantao', acao: 'Importar escala' })
   }
+  out.push(...await pendenciaBlog())
   return out
 }
 

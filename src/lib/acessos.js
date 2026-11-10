@@ -58,6 +58,7 @@ export const ACESSO = {
   dadosBancarios: ['gestao', 'adm'], // Configurações ▸ Usuários ▸ Dados bancários (PRD §5.18b); RLS/RPC: is_adm_ou_gestao()
   tv: ['gestao', 'adm', 'marketing', 'tvaccess'],
   spotify: ['gestao'],
+  blog: ['gestao', 'marketing'], // Revisar blog (PRD §5.22, RF35); RLS/RPC: pode_editar_conteudo()
 }
 
 export function pode(perfil, acesso) {
