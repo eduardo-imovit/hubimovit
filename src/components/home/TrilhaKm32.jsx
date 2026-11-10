@@ -11,6 +11,9 @@ import {
 // hoje, sem os cancelados (19/10). Nada é digitado nem fica no código. A régua (meta do
 // mês, esperado até hoje) fica em lib/campanhaKm32, a mesma da TV Display.
 
+// Coluna do trimestre: a campanha inteira (out–dez/26)
+const PERIODO_TRI = 'out a dez'
+
 export function TrilhaKm32() {
   const { dados, erro, carregando } = useCampanha(SLUG_KM32)
   const [aba, setAba] = useState('Venda')
@@ -36,7 +39,7 @@ export function TrilhaKm32() {
   const progresso = l?.progresso ?? 0
   const paradas = dados ? paradasDa(dados.inicio, dados.fim) : []
   const abaAtual = ABAS.find((a) => a.chave === aba)
-  const { tempo = 0, esperado, diferenca, noRitmo, metaMes, valorMes, pctMes, faltaMes, batida } = l ?? {}
+  const { tempo = 0, metaMes, valorMes, pctMes, faltaMes } = l ?? {}
 
   const leitura = dados?.ultima_leitura ? new Date(dados.ultima_leitura) : null
   const atrasado = leitura && (dataLocal(dados.hoje) - new Date(leitura.getFullYear(), leitura.getMonth(), leitura.getDate())) / DIA_MS > 1
@@ -82,54 +85,33 @@ export function TrilhaKm32() {
 
       {f && (
         <div className="km32-numeros">
-          <div title={`Na campanha: ${moeda(aba, f.valor)} de ${moeda(aba, f.meta_valor)} (${pctTexto(progresso)})`}>
-            <span className="km32-n">{moeda(aba, valorMes)}</span>
-            <span className="km32-l">realizado em {metaMes.mes} · meta do mês {moeda(aba, metaMes.valor)}</span>
-            <span className="km32-l">
-              {faltaMes > 0 ? (
-                <strong>{pctTexto(pctMes)} da meta do mês · faltam {moeda(aba, faltaMes)}</strong>
-              ) : (
-                <strong>meta de {metaMes.mes} batida · {pctTexto(pctMes)}</strong>
-              )}
-            </span>
-            {locacao && (
-              <span className="km32-l">
-                {f.negocios} {f.negocios === 1 ? 'contrato iniciado' : 'contratos iniciados'} · {f.ativos} {f.ativos === 1 ? 'ativo' : 'ativos'}
-                {f.em_ativacao > 0 && ` · ${f.em_ativacao} em ativação`}
-              </span>
-            )}
-          </div>
-          <div title={`Meta de ${metaMes.mes} (${moeda(aba, metaMes.valor)}) ÷ ${metaMes.dias} dias = ${moeda(aba, metaMes.porDia)} por dia, somados até hoje e comparados com o realizado no mês`}>
-            {batida ? (
-              <>
-                <span className="km32-n">Meta batida</span>
-                <span className="km32-l">{moeda(aba, f.valor)} de {moeda(aba, f.meta_valor)}</span>
-              </>
-            ) : (
-              <>
-                <span className={`km32-n${!noRitmo && diferenca < 0 ? ' is-falta' : ''}`}>{moeda(aba, esperado)}</span>
-                <span className="km32-l">
-                  esperado até hoje · {metaMes.diasPassados} de {metaMes.dias} dias de {metaMes.mes} × {moeda(aba, metaMes.porDia)}
-                </span>
-                <span className="km32-l">
-                  {noRitmo ? (
-                    <strong>no ritmo esperado</strong>
-                  ) : diferenca > 0 ? (
-                    <strong>{moeda(aba, diferenca)} acima do esperado</strong>
-                  ) : (
-                    <strong className="is-atras">{moeda(aba, -diferenca)} abaixo do esperado</strong>
-                  )}
-                </span>
-              </>
-            )}
-          </div>
-          {f.em_proposta != null && (
-            <div>
-              <span className="km32-n">{moeda(aba, f.em_proposta)}</span>
-              <span className="km32-l" title="Propostas em análise no CRM, com interação nos últimos 30 dias">
-                em proposta · {f.propostas} {f.propostas === 1 ? 'ativa' : 'ativas'} (30 dias)
-              </span>
+          {[
+            { titulo: `Mês · ${metaMes.mes}`, realizado: valorMes, meta: metaMes.valor, falta: faltaMes, pctFeito: pctMes },
+            { titulo: `Trimestre · ${PERIODO_TRI}`, realizado: f.valor, meta: f.meta_valor, falta: Math.max(0, f.meta_valor - f.valor), pctFeito: progresso },
+          ].map((c) => (
+            <div key={c.titulo} className="km32-col">
+              <div className="km32-col-titulo">{c.titulo} <span>meta {moeda(aba, c.meta)}</span></div>
+              <div className="km32-linha km32-linha--destaque">
+                <span className="km32-l">Realizado</span>
+                <span className="km32-n">{moeda(aba, c.realizado)} <small>{pctTexto(c.pctFeito)}</small></span>
+              </div>
+              <div className="km32-linha">
+                <span className="km32-l">Para bater a meta</span>
+                {c.falta > 0
+                  ? <span className="km32-n is-falta">{moeda(aba, c.falta)}</span>
+                  : <span className="km32-n">Meta batida</span>}
+              </div>
+              <div className="km32-linha" title="Propostas em análise no CRM, com interação nos últimos 30 dias">
+                <span className="km32-l">Em proposta{f.propostas != null && ` · ${f.propostas} ${f.propostas === 1 ? 'ativa' : 'ativas'}`}</span>
+                <span className="km32-n">{moeda(aba, f.em_proposta)}</span>
+              </div>
             </div>
+          ))}
+          {locacao && (
+            <p className="km32-l km32-contratos">
+              {f.negocios} {f.negocios === 1 ? 'contrato iniciado' : 'contratos iniciados'} · {f.ativos} {f.ativos === 1 ? 'ativo' : 'ativos'}
+              {f.em_ativacao > 0 && ` · ${f.em_ativacao} em ativação`}
+            </p>
           )}
         </div>
       )}
