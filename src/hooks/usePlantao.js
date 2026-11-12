@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 
+// Ordem de exibição dentro do dia: o banco devolve na ordem de inserção,
+// e a escala de locação costuma ser cadastrada com a tarde antes da manhã.
+const ORDEM_TURNO = { dia_inteiro: 0, manha: 1, tarde: 2 }
+const porDataETurno = (a, b) =>
+  a.data.localeCompare(b.data) || (ORDEM_TURNO[a.turno] ?? 9) - (ORDEM_TURNO[b.turno] ?? 9)
+
 export function usePlantao(inicioISO, fimISO) {
   const [plantoes, setPlantoes] = useState([])
   const [carregando, setCarregando] = useState(true)
@@ -15,7 +21,7 @@ export function usePlantao(inicioISO, fimISO) {
       .lte('data', fimISO)
       .order('data', { ascending: true })
     if (error) setErro(error.message)
-    else setPlantoes(data ?? [])
+    else setPlantoes((data ?? []).sort(porDataETurno))
     setCarregando(false)
   }, [inicioISO, fimISO])
 
