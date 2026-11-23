@@ -138,7 +138,7 @@ order by parados desc;
 ------------------------------------------------------------------------------------------
 -- Q8 · Comercial: dinheiro na mesa em receita da Imovit  (régua: AGORA)
 -- v1: só leads ativos em Proposta (posição 6), que têm o imóvel no CRM.
--- Venda: valor da proposta aberta (ou do imóvel) × 4,68%. Locação: aluguel × 5,9% × 12 meses.
+-- Venda: valor da proposta aberta (ou do imóvel) × 4,68%. Locação: 1 mês de aluguel (intermediação; D8, 23/11).
 ------------------------------------------------------------------------------------------
 with ult as (
   select distinct on (codigo) codigo, payload from crm_atendimento_jornada
@@ -157,10 +157,10 @@ p as (
 )
 select codigo, fin, situacao_imovel, valor_imovel, valor_proposta,
        round(case when fin = 'Venda' then coalesce(valor_proposta, valor_imovel) * 0.0468
-                  else coalesce(valor_proposta, valor_imovel) * 0.059 * 12 end, 2) as receita_estimada
+                  else coalesce(valor_proposta, valor_imovel) end, 2) as receita_estimada
 from p order by codigo;
--- 23/11: 7 propostas = R$ 358.984,80 (venda 347.302,80 + locação 11.682,00)
---        ⚠ 5716 tem imóvel "Vendido" e negociação cancelada (R$ 81.900): sem ele, R$ 277.084,80
+-- 23/11: 7 propostas = R$ 363.802,80 (venda 347.302,80 + locação 16.500,00)
+--        ⚠ 5716 tem imóvel "Vendido" e negociação cancelada (R$ 81.900): sem ele, R$ 281.902,80
 
 ------------------------------------------------------------------------------------------
 -- Q9 · Carteira: taxa de administração recebida no mês  (régua: EVENTO, mês até o domingo)
