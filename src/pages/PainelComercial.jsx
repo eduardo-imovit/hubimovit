@@ -180,7 +180,7 @@ export default function PainelComercial() {
 
           <Capitulo
             numero="1"
-            pergunta="Como o lead avança no funil?"
+            pergunta="Como o lead avança no funil?" regua="entrada"
             conclusao={
               h.funil.pior
                 ? (() => {
@@ -198,7 +198,7 @@ export default function PainelComercial() {
 
           <Capitulo
             numero="2"
-            pergunta="Estamos no ritmo?"
+            pergunta="Estamos no ritmo?" regua="entrada"
             conclusao={
               h.ritmo.projecaoMes != null
                 ? `${fmtDecimal(h.ritmo.porDia)} leads por dia; nesse ritmo o mês fecha com cerca de ${fmtNum(h.ritmo.projecaoMes)} leads.`
@@ -212,7 +212,7 @@ export default function PainelComercial() {
 
           <Capitulo
             numero="3"
-            pergunta="Onde o lead se perde e quanto custa?"
+            pergunta="Onde o lead se perde e quanto custa?" regua="entrada"
             conclusao={(() => {
               if (h.descartes.total === 0) return 'Nenhum lead do período foi descartado até agora.'
               const maior = h.descartes.porEtapa.reduce((m, e) => (e.n > m.n ? e : m), h.descartes.porEtapa[0])
@@ -229,7 +229,7 @@ export default function PainelComercial() {
 
           <Capitulo
             numero="4"
-            pergunta="Quais mídias trazem resultado?"
+            pergunta="Quais mídias trazem resultado?" regua="entrada"
             conclusao={(() => {
               const rel = h.canais.filter((c) => c.leads >= 10)
               if (rel.length === 0) return 'Poucos leads por mídia neste recorte para comparar eficiência.'
@@ -246,7 +246,7 @@ export default function PainelComercial() {
 
           <Capitulo
             numero="5"
-            pergunta="Onde e o que os clientes estão visitando?"
+            pergunta="Onde e o que os clientes estão visitando?" regua="evento" reguaDetalhe="pela data da visita"
             conclusao={
               h.tipos.total === 0
                 ? 'Nenhuma visita neste recorte.'
@@ -267,7 +267,7 @@ export default function PainelComercial() {
 
           <Capitulo
             numero="6"
-            pergunta="O que está em jogo agora?"
+            pergunta="O que está em jogo agora?" regua={PROPOSTAS_ATIVAS ? 'evento' : 'entrada'} reguaDetalhe={PROPOSTAS_ATIVAS ? 'pela criação da proposta' : undefined}
             conclusao={(() => {
               const valor = h.mesa.porFinalidade.reduce((s, p) => s + p.valorMesa, 0)
               const ativos = h.emAtendimento.reduce((s, e) => s + h.finalidades.reduce((t, f) => t + e[f], 0), 0)

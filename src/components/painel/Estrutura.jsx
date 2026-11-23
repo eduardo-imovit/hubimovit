@@ -85,8 +85,42 @@ export function BarraFiltros({ filtros, setFiltro, limpar, canais, corretores, a
   )
 }
 
-/** Capítulo da história: a pergunta pequena em cima, a conclusão como título. */
-export function Capitulo({ numero, pergunta, conclusao, children, rodape }) {
+/**
+ * Régua de data de cada capítulo (10/11): diz se o filtro de período conta os
+ * leads pela data de entrada (coorte), o que aconteceu no período (evento) ou
+ * se é a foto de agora. Evita comparar números com réguas diferentes.
+ */
+const REGUAS = {
+  entrada: {
+    rotulo: 'Leads que entraram no período',
+    explica: 'Coorte: conta os leads pela data de entrada e mostra onde cada um está hoje. O número de um período ainda muda enquanto esses leads avançam.',
+  },
+  evento: {
+    rotulo: 'O que aconteceu no período',
+    explica: 'Evento: conta o que aconteceu dentro do período, não importa quando o lead entrou. Depois que o período acaba, o número não muda.',
+  },
+  agora: {
+    rotulo: 'Situação de agora',
+    explica: 'Foto: mostra como está hoje (última leitura do Imoview). O filtro de período não muda estes números.',
+  },
+  misto: {
+    rotulo: 'Duas réguas',
+    explica: 'Este capítulo mistura duas contagens; o detalhe ao lado diz qual parte usa cada régua.',
+  },
+}
+
+export function ReguaData({ tipo, detalhe }) {
+  const r = REGUAS[tipo]
+  if (!r) return null
+  return (
+    <span className={`pg-regua pg-regua--${tipo}`} title={r.explica}>
+      {r.rotulo}{detalhe && <> · {detalhe}</>}
+    </span>
+  )
+}
+
+/** Capítulo da história: a pergunta pequena em cima, a régua de data e a conclusão como título. */
+export function Capitulo({ numero, pergunta, conclusao, children, rodape, regua, reguaDetalhe }) {
   return (
     <section className="pg-capitulo" aria-labelledby={`pg-cap-${numero}`}>
       <div className="pg-capitulo-cabeca">
@@ -94,6 +128,7 @@ export function Capitulo({ numero, pergunta, conclusao, children, rodape }) {
           <span className="pg-capitulo-numero">{numero}</span>
           {pergunta}
         </div>
+        {regua && <ReguaData tipo={regua} detalhe={reguaDetalhe} />}
         <h2 id={`pg-cap-${numero}`} className="pg-capitulo-conclusao">{conclusao}</h2>
       </div>
       {children}

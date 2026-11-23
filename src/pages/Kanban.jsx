@@ -6,6 +6,7 @@ import { pode } from '../lib/acessos'
 import { filtrarAtendimentos, filtrosKanbanPadrao } from '../lib/atendimentos'
 import KanbanFiltros from '../components/kanban/KanbanFiltros'
 import KanbanBoard from '../components/kanban/KanbanBoard'
+import { ReguaData } from '../components/painel/Estrutura'
 
 export default function Kanban() {
   const { atendimentos, carregando, erro } = useAtendimentos()
@@ -22,6 +23,7 @@ export default function Kanban() {
           <div className="page-eyebrow">Vendas & Locação</div>
           <div className="page-title">Kanban de atendimentos</div>
           <div className="page-sub">Somente leitura — espelho do CRM, atualizado por sincronização.</div>
+          <ReguaData tipo="agora" detalhe="fase e situação da última leitura do CRM; o filtro de datas usa a data de entrada do lead (padrão: últimos 7 dias)" />
         </div>
         {pode(perfil, 'dadosAtendimento') && <Link to="/kanban/dados" className="btn btn-ghost btn-sm">Dados de atendimento →</Link>}
       </header>

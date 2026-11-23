@@ -227,7 +227,7 @@ export default function PainelGestao() {
           {/* 1 — Funil: clientes por etapa, inbound × outbound */}
           <Capitulo
             numero="1"
-            pergunta={`Como foi o funil ${h.periodo.label}?`}
+            pergunta={`Como foi o funil ${h.periodo.label}?`} regua="entrada"
             conclusao={(() => {
               const parte = (g) =>
                 `${g.rotulo}: ${fmtNum(g.total)} ${g.total === 1 ? 'entrou' : 'entraram'}, ${fmtNum(g.proposta)} ${g.proposta === 1 ? 'chegou' : 'chegaram'} a proposta${
@@ -244,7 +244,7 @@ export default function PainelGestao() {
           {/* 2 — Onde perdemos: respeita os filtros; Gestão compara com outro corretor */}
           <Capitulo
             numero="2"
-            pergunta="Onde perdemos mais?"
+            pergunta="Onde perdemos mais?" regua="entrada"
             conclusao={
               h.perda.pior
                 ? `A maior perda está entre ${h.perda.pior.de.toLowerCase()} e ${h.perda.pior.para.toLowerCase()}: só ${fmtPct(h.perda.pior.taxa, 0)} avançam${
@@ -273,7 +273,7 @@ export default function PainelGestao() {
           {/* 3 — Jornada do lead: volume por etapa, dias para avançar, descartados (PRD §5.12) */}
           <Capitulo
             numero="3"
-            pergunta="Quanto tempo o lead leva em cada etapa?"
+            pergunta="Quanto tempo o lead leva em cada etapa?" regua="misto" reguaDetalhe="quadro por entrada do lead; tempos e descartes pelo que aconteceu no período"
             conclusao={(() => {
               const j = h.jornada
               if (!j.n[0]) return `Nenhum lead andou na jornada ${h.periodo.label} neste recorte (a jornada é medida desde 06/10).`
@@ -290,7 +290,7 @@ export default function PainelGestao() {
           {/* 4 — Motivos de descarte (todas as etapas ou a clicada no capítulo 3) */}
           <Capitulo
             numero="4"
-            pergunta="Por que os leads são descartados?"
+            pergunta="Por que os leads são descartados?" regua="evento" reguaDetalhe="pela data do descarte"
             conclusao={(() => {
               const m = h.motivos
               if (!m.total) return `Nenhum descarte com motivo ${h.periodo.label} neste recorte.`
@@ -314,7 +314,7 @@ export default function PainelGestao() {
           {/* 5 — Atividades: volume e variedade × média da equipe */}
           <Capitulo
             numero="5"
-            pergunta="Quem está atendendo?"
+            pergunta="Quem está atendendo?" regua="evento" reguaDetalhe="pela data da atividade"
             conclusao={
               h.atividades.modo === 'corretor'
                 ? h.atividades.media == null
@@ -333,7 +333,7 @@ export default function PainelGestao() {
           {h.disponivel && (
             <Capitulo
               numero="6"
-              pergunta="Quanto temos disponível?"
+              pergunta="Quanto temos disponível?" regua="agora" reguaDetalhe="estoque lido hoje"
               conclusao={(() => {
                 const d = h.disponivel
                 if (!d.total) return 'Nenhum imóvel vago/disponível neste recorte.'
@@ -354,7 +354,7 @@ export default function PainelGestao() {
           {h.carteira && (
             <Capitulo
               numero="7"
-              pergunta="A carteira está atualizada?"
+              pergunta="A carteira está atualizada?" regua="agora" reguaDetalhe="estoque lido hoje"
               conclusao={(() => {
                 const c = h.carteira
                 // venda em R$ e locação em R$/mês, nunca somados
@@ -392,7 +392,7 @@ export default function PainelGestao() {
           {/* 8 — Pessoas */}
           <Capitulo
             numero={h.carteira ? '8' : '6'}
-            pergunta="Quem precisa agir agora?"
+            pergunta="Quem precisa agir agora?" regua="agora"
             conclusao={`${fmtNum(h.pessoasCap.totais.semContato)} leads ativos sem nenhum contato, ${fmtNum(h.pessoasCap.totais.abertos30)} abertos há mais de 30 dias e ${fmtNum(h.pessoasCap.totais.vencidas30)} atividades vencidas no último mês.`}
             rodape={`Quanto mais escura a célula, pior em relação aos colegas. Clique num corretor para ver o painel inteiro só com a carteira dele. Há ainda ${fmtNum(h.pessoasCap.totais.esquecidas)} atividades vencidas há mais de 30 dias (provável limpeza no CRM). "Abertos" conta dias desde a entrada do lead; o CRM não exporta a data da última interação.`}
           >

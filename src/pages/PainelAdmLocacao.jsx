@@ -362,7 +362,7 @@ export default function PainelAdmLocacao() {
 
           <Capitulo
             numero="1"
-            pergunta="Quanto entra para a Imovit?"
+            pergunta="Quanto entra para a Imovit?" regua="evento" reguaDetalhe="pelo mês do pagamento"
             conclusao={
               r.admUltimoMes
                 ? `Em ${rotuloMes(r.admUltimoMes.mes)} entraram ${fmtMoeda(r.admUltimoMes.valor)} de administração, ${fmtPct(r.admPrevista ? (r.admUltimoMes.valor / r.admPrevista) * 100 : null, 0)} do previsto para a carteira atual.`
@@ -385,7 +385,7 @@ export default function PainelAdmLocacao() {
 
           <Capitulo
             numero="2"
-            pergunta="A carteira está crescendo?"
+            pergunta="A carteira está crescendo?" regua="evento" reguaDetalhe="início e rescisão do contrato"
             conclusao={`Em ${mov.atual.ano} entraram ${fmtNum(mov.atual.novos)} contratos e saíram ${fmtNum(mov.atual.encerrados)} (em ${mov.anterior.ano}, ${fmtNum(mov.anterior.novos)} × ${fmtNum(mov.anterior.encerrados)}): ${
               mov.atual.saldo > 0 ? 'a carteira cresceu' : mov.atual.saldo < 0 ? 'a carteira encolheu' : 'a carteira ficou estável'
             } em contratos e ${mov.atual.saldoMrr >= 0 ? 'ganhou' : 'perdeu'} ${fmtMoedaCurta(Math.abs(mov.atual.saldoMrr))}/mês de administração${h.crescimento.rotatividade != null ? `. Nos últimos 12 meses, ${fmtPct(h.crescimento.rotatividade, 0)} da carteira trocou` : ''}.`}
@@ -405,7 +405,7 @@ export default function PainelAdmLocacao() {
 
           <Capitulo
             numero="3"
-            pergunta="Onde e o que alugamos?"
+            pergunta="Onde e o que alugamos?" regua="agora" reguaDetalhe="carteira ativa"
             conclusao={
               h.onde.bairros[0]
                 ? `${h.onde.bairros[0].rotulo} lidera com ${fmtNum(h.onde.bairros[0].n)} contratos; ${h.onde.tipos[0]?.rotulo.toLowerCase()} é ${fmtPct((h.onde.tipos[0]?.n / (h.onde.total || 1)) * 100, 0)} da carteira.`
@@ -426,7 +426,7 @@ export default function PainelAdmLocacao() {
 
           <Capitulo
             numero="4"
-            pergunta="Quem está saindo e por quê?"
+            pergunta="Quem está saindo e por quê?" regua="agora" reguaDetalhe="vencimentos a partir de hoje"
             conclusao={`${fmtNum(h.saidas.comAviso.length)} locatários já avisaram que vão sair (${fmtMoedaCurta(h.saidas.comAvisoAdm)}/mês de administração em risco) e ${fmtNum(h.saidas.ultimoTrimestre.length)} contratos estão no último trimestre do prazo.`}
             rodape={`Último trimestre = o fim do prazo do contrato cai nos próximos 90 dias. Prazo indeterminado = o prazo já acabou e o contrato segue ativo: o locatário pode sair com 30 dias de aviso. No Imoview a renovação não gera contrato novo. "Sem administração" = o proprietário tirou o imóvel da Imovit (${fmtNum(h.saidas.semAdministracao)} em 12 meses).`}
           >
@@ -457,7 +457,7 @@ export default function PainelAdmLocacao() {
 
           <Capitulo
             numero="5"
-            pergunta="O que reajusta nos próximos meses?"
+            pergunta="O que reajusta nos próximos meses?" regua="agora" reguaDetalhe="reajustes a partir de hoje"
             conclusao={`${fmtNum(h.reajustes.proximos)} reajustes nos próximos 90 dias${h.reajustes.vencidos.length ? `, e ${fmtNum(h.reajustes.vencidos.length)} contratos estão com a data de reajuste vencida` : ''}.`}
             rodape="Data do próximo reajuste como está no Imoview. Uma data já passada indica reajuste ainda não aplicado no sistema. O valor reajustado oficial é o calculado no Imoview."
           >
@@ -481,7 +481,7 @@ export default function PainelAdmLocacao() {
 
           <Capitulo
             numero="6"
-            pergunta="Quanto está em atraso?"
+            pergunta="Quanto está em atraso?" regua="agora"
             conclusao={`${fmtNum(h.inad.inadimplentes.length)} contratos ativos estão em cobrança (${fmtPct(h.inad.taxa)} da carteira): ${fmtMoeda(h.inad.valor)} vencidos.`}
             rodape="Inadimplência pela regra do Imoview: o contrato ativo marcado como Atrasado (cobrança amigável). O valor soma as cobranças de locação vencidas e não pagas desses contratos (aluguel e encargos cobrados juntos). Atenção = cobranças que o Imoview mantém em aberto mas que já têm pagamento informado: falta a baixa (conciliação) ou o pagamento foi parcial."
           >
@@ -535,7 +535,7 @@ export default function PainelAdmLocacao() {
 
           <Capitulo
             numero="7"
-            pergunta="A carteira está protegida?"
+            pergunta="A carteira está protegida?" regua="agora"
             conclusao={`${fmtNum(h.protecao.seguroVencido + h.protecao.seguroVence30)} seguros incêndio vencidos ou vencendo em 30 dias e ${fmtNum(h.protecao.seguroSemRegistro)} contratos sem seguro registrado.`}
             rodape={`Datas do seguro incêndio e da garantia locatícia como estão no contrato do Imoview. Garantia com validade (seguro fiança, título de capitalização) cadastrada em ${fmtNum(h.protecao.comValidade)} contratos ativos; fiador e caução não têm data de fim.`}
           >
@@ -563,7 +563,7 @@ export default function PainelAdmLocacao() {
 
           <Capitulo
             numero="8"
-            pergunta="Quem são os nossos proprietários?"
+            pergunta="Quem são os nossos proprietários?" regua="agora"
             conclusao={`${fmtNum(h.proprietarios.total)} proprietários; os 10 maiores respondem por ${fmtPct(h.proprietarios.concentracaoTop10, 0)} da administração.`}
             rodape="Participação de cada proprietário pelo percentual dele no imóvel. Administração = aluguel × taxa do contrato. Não segue os filtros."
           >

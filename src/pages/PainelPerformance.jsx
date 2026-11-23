@@ -145,7 +145,7 @@ export default function PainelPerformance() {
 
           <Capitulo
             numero="1"
-            pergunta="Estamos gastando no ritmo certo?"
+            pergunta="Estamos gastando no ritmo certo?" regua="evento" reguaDetalhe="pelo dia do gasto"
             conclusao={
               p.orcamento.total > 0
                 ? p.ritmo.corrente
@@ -160,7 +160,7 @@ export default function PainelPerformance() {
 
           <Capitulo
             numero="2"
-            pergunta="O dinheiro está virando atenção?"
+            pergunta="O dinheiro está virando atenção?" regua="evento" reguaDetalhe="pelo dia de veiculação"
             conclusao={conclusaoAtencao(p.serie, p.plataformas)}
             rodape="Seis meses, por mês. CPM mede quanto custa aparecer; CTR, quanto o anúncio atrai; CPC, quanto custa cada visita ao anúncio. Abril tem só alguns dias de dados."
           >
@@ -170,7 +170,7 @@ export default function PainelPerformance() {
 
           <Capitulo
             numero="3"
-            pergunta="Quais campanhas entregam?"
+            pergunta="Quais campanhas entregam?" regua="evento" reguaDetalhe="pelo dia de veiculação"
             conclusao={conclusaoCampanhas(p.campanhas)}
             rodape="A marca vertical na barra é o orçamento do mês da campanha. Status compara o CPL da plataforma com a meta de CPL cadastrada. Clique numa campanha para filtrar o painel inteiro por ela."
           >
@@ -179,14 +179,14 @@ export default function PainelPerformance() {
 
           <Capitulo
             numero="4"
-            pergunta="A conversão vira negócio?"
+            pergunta="A conversão vira negócio?" regua="misto" reguaDetalhe="anúncios pelo dia de veiculação; etapas do CRM pela entrada do lead"
             conclusao={conclusaoCascata(p.degraus)}
             rodape={`As etapas em cinza-claro (CRM) contam todos os leads de "Campanhas pagas" do período${p.recorteAtivo ? ' e não respeitam os filtros de plataforma, etapa, finalidade ou campanha: o CRM ainda não guarda a campanha de origem' : ''}. Leads de anúncio que entram pelo bot do WhatsApp ainda chegam como "WhatsApp", então os números do CRM estão subestimados. Leads recentes ainda podem avançar para visita e negócio.`}
           >
             <CascataDinheiro investimento={p.totais.investimento} degraus={p.degraus} />
           </Capitulo>
 
-          <Capitulo numero="5" pergunta="Onde colocar o próximo real?" conclusao={p.recs.length ? p.recs[0].texto : 'Sem recomendação clara neste recorte.'}>
+          <Capitulo numero="5" pergunta="Onde colocar o próximo real?" regua="evento" reguaDetalhe="pelo dia de veiculação" conclusao={p.recs.length ? p.recs[0].texto : 'Sem recomendação clara neste recorte.'}>
             <div className="pg-duas">
               <MatrizCampanhas campanhas={p.campanhas} plataformas={p.plataformas} />
               <div>
