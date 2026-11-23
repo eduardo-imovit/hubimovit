@@ -1201,6 +1201,7 @@ O motor do blog mora no projeto `newsletters-imovit` (`docs/blog-pautas.md`): o 
 - **Decisões do micro ciclo** (entra por último): 3 ações com dono e a métrica que devem mexer; na semana seguinte, a página abre mostrando se mexeram.
 
 **Regras decididas (23/11).**
+- **Régua de data em todo número** (Saúde semanal, Aquisição, Comercial): uma etiqueta diz se o número conta por **entrada** (leads que entraram no período), **evento** (o que aconteceu no período) ou é **agora** (foto do momento), com a explicação ao passar o mouse. Motivo: a divergência de números na reunião de 10/11. Substitui a régua dos painéis antigos (sprint de 10/11, descartada sem commit em 23/11), que não será refeita nas páginas que vão ser reorganizadas.
 - **Qualificado** = passou de seleção de imóveis, seleção de perfil e pré-atendimento (fase ≥ 4 do Imoview). Já é a regra do código.
 - **Meta por etapa: não tem agora (decidido 23/11).** O objetivo do momento é enxergar e otimizar. A referência de cada número é a **semana anterior** e a **média das últimas 8 semanas** (rotulada "média", não "meta"). Sem crescimento fixo. Mais tarde a meta é definida à mão; a regra pensada para quando houver: maior entre a média de 8 semanas e a meta anterior, derivada de trás para frente pela conversão histórica. A meta do Km 32 (`campanha_metas`) continua.
 - **Prazo por etapa** = **mediana** do tempo na etapa (não a média: lead esquecido por 90 dias distorce a média). "Acima do prazo" = acima da mediana. Depois, prazo definido à mão.
