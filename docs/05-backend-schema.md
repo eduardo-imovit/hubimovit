@@ -572,6 +572,88 @@ Tabela à parte da §2.16 porque a RLS é por linha: o ADM precisa ler os dados 
 - Continua sem policy de escrita: no teste, o ADM recebeu 42501 ao alterar ou apagar direto na tabela.
 
 
+### 2.22 Saúde Imovit — fonte, cálculo e régua de cada número (Fase 29a S1, PRD §5.23) — **DOCUMENTO, 23/11; sem migration**
+Queries de conferência (só leitura, numeradas Q1–Q12): `docs/sql/saude_semanal_gabarito_2026-11-23.sql`. Conferidas pelo Asimov em 23/11 nas 2 semanas fechadas: **S−2 = 09–15/11** e **S−1 = 16–22/11**.
+
+**Convenções**
+- **Semana** = segunda a domingo, fuso America/Sao_Paulo. A página abre na última semana fechada.
+- **Régua:** **entrada** = leads que entraram no período (coorte); **evento** = o que aconteceu no período, pela data do fato; **agora** = foto do momento (para semana passada, a foto do domingo).
+- **Referência:** a semana anterior e a **média das N semanas anteriores** (até 8; rótulo "média de N semanas"; a semana atual não entra na média). Com menos de 5 casos no número → **"acumulando"**, sem sinal.
+- **Sinal:** verde = na média ou acima · amarelo = até 15% abaixo · vermelho = mais de 15% abaixo. **Invertido** (mais = pior) para custo por qualificado e, proposto (D10), para R$ em atraso e saídas avisadas.
+- Sempre `not is_ruido and not is_interno` nos números de atendimento.
+
+**Números**
+
+| # | Número | Régua | Fonte e cálculo | S−2 (09–15/11) | S−1 (16–22/11) |
+|---|---|---|---|---|---|
+| P1 | Negócios fechados | evento | `crm_atendimento_jornada.payload→imoveisnegocio` da última linha de cada atendimento; 1 por `codigonegocio`, `situacaonegocio = 'Realizado'`, pela `datanegocio` (Q1) | **1** (locação) · ant 3 · média 1,50 → 🔴 | **1** (venda) · ant 1 · média 1,25 → 🔴 |
+| P2 | Receita da semana | evento | comissão bruta (`valorcomissao`) das **vendas** de P1 + `contratos_locacao_recebimentos.taxa_adm` por `data_pagamento` (Q2) | **R$ 5.064,33** · média 81.231,50 → 🔴 | **R$ 90.833,81** · média 71.543,72 → 🟢 |
+| A1 | Leads que chegaram ao CRM | entrada | `vw_atendimentos_base` por `data_entrada` (Q3) | **18** · ant 31 · média 41,0 → 🔴 | **33** · ant 18 · média 38,5 → 🟡 |
+| A2 | % qualificados | entrada (coorte) | qualificou (1ª passagem com `posicao ≥ 4` em `vw_jornada_etapas`) **em até 7 dias** da entrada ÷ leads da semana (Q4). Média só com coortes desde 12/10 | **22,2%** (4/18) · média 41,2% (N=4) → 🔴 | **33,3%** (11/33) **parcial até 29/11** · média 37,4% (N=5) → 🟡 |
+| A3 | Custo por qualificado | evento ÷ entrada | gasto `dashboard_meta_ads` + `dashboard_google_ads` ÷ qualificados em 7 dias de `canal = 'Campanhas pagas'` (Q5) | R$ 1.282,13 ÷ 0 → **acumulando** · 4 semanas: R$ 876,86 | R$ 1.360,90 ÷ 3 → **acumulando** · 4 semanas: R$ 857,63 |
+| C1 | Visitas | evento | `atividades`: `nometipo = 'Visita'`, `realizada`, por `datahorainicio` (Q6) | **6** · ant 8 · média 7,1 → 🔴 (−16%) | **2** · ant 6 · média 7,6 → 🔴 |
+| C2 | Etapa gargalo + parados | agora | `vw_jornada_etapas`: mediana de dias por etapa (passagens que entraram nas últimas 8 semanas; abertas contam até hoje); gargalo = etapa com mais ativos acima da mediana (Q7) | não reconstruível (sem foto) | **23/11:** Lead qualificado, **83 de 98** acima de 16 dias |
+| C3 | Dinheiro na mesa (receita Imovit) | agora | ativos em Proposta (`fase_ordem = 6`) com `payload→imoveisproposta`: venda = proposta aberta (ou valor do imóvel) × 4,68%; locação = aluguel × 5,9% × 12 (Q8) | não reconstruível | **23/11: R$ 358.985** em 7 propostas (R$ 277.085 sem o 5716, ver alertas) |
+| K1 | Taxa de adm recebida no mês | evento | `contratos_locacao_recebimentos.taxa_adm`, do dia 1 até o domingo; referência proposta = mês anterior até o mesmo dia (Q9) | **R$ 26.737,30** × out R$ 59.292,81 → 🔴 | **R$ 44.571,11** × out R$ 70.674,33 → 🔴 |
+| K2 | R$ em atraso | agora (foto do domingo) | `contratos_locacao_fotos.inadimplentes_valor` (regra do Imoview; foto desde 11/10) (Q10) | **R$ 431.881,32** (9) · média 286.459,85 (N=5) → 🔴 invertido | **R$ 476.838,52** (18) · média 310.696,76 (N=6) → 🔴 invertido |
+| K3 | Saídas avisadas | agora (reconstruído no domingo) | `contratos_locacao`: `data_aviso_desocupacao ≤ domingo` e não rescindido até o domingo, sem cancelados (Q11) | **10** (0 novos) · média 10,8 → 🟢 invertido | **9** (1 novo) · média 10,8 → 🟢 invertido |
+
+**Detalhe granular (formato decidido em 23/11, PRD §5.23)** — mesmas convenções; queries Q13–Q17 no gabarito.
+
+| Bloco | Régua | Fonte e cálculo | S−1 (16–22/11) |
+|---|---|---|---|
+| 1.1 Por campanha | evento | `dashboard_meta_ads` + `dashboard_google_ads` por `campanha`: investimento, impressões, cliques, CTR, CPC, `leads_conversoes`, custo por lead na plataforma (Q13) | Google Locação R$ 1.024,80 / 9,7 · Meta Locação R$ 303,80 / 20 · Brand R$ 32,30 / 20,7 ⚠ |
+| 1.2 Plataforma → CRM | evento → entrada | soma de `leads_conversoes` → leads `canal = 'Campanhas pagas'` → qualificados em 7 dias (Q14) | 50,4 → 8 → 3 · custo por lead no CRM R$ 170,11 |
+| 1.3 Por canal e mídia | entrada | `vw_atendimentos_base` por `canal`, `midia_raw`, `finalidade` + qualificados em 7 dias (Q15) | OLX 10 · Pagos 8 · Indicação 7 · Site 5 · WhatsApp 2 · Instagram 1 |
+| 1.4 Orgânico | evento | **fase 29e**: tabelas novas `organico_diario` (data × rede × métrica, upsert) e `organico_posts`, ao lado dos leads orgânicos do CRM por rede | — (até a 29e, só leads do CRM) |
+| 2.1 Entrada × saída | entrada / evento | leads (Q3), qualificados (Q4), visitas (Q6), descartados da semana (`vw_jornada_descartes.descartado_em`), negócios (Q1) | 33 · 11 · 2 · 12 · 1 |
+| 2.2 Funil agora | agora | Q7, todas as etapas | gargalo Lead qualificado 83/98 |
+| 2.3 Ativos por canal | agora | `is_ativo` e `dias_parado > 30` por `canal` (Q16) | Indicação 60 (46) · Site 39 (26) · Portais 26 (10)… |
+| 2.4 Canais que descartam | entrada (coorte 8 semanas) | dos leads que **entraram** em 8 semanas: descartados, % descarte, qualificados, perdidos após qualificar, motivo principal (Q17). ⚠ Não misturar com descartes **da** janela (evento): passa de 100% | Pagos 76%, 15 de 20 qualificados perdidos (não responde) · Indicação 25% |
+| 2.5 Dinheiro na mesa | agora | Q8 | R$ 358.985 |
+
+**Alertas de dado (23/11)**
+- **Plataforma × CRM:** 50,4 leads nas plataformas × 8 pagos no CRM (16%). O Brand (Google) marca 20,7 conversões com R$ 32: provável conversão que não é lead. Conferir a ação de conversão no Google Ads.
+- **Repique como motivo de descarte** (8 no Site em 8 semanas): repassar o lead não deveria virar descarte; conferir o fluxo de repique.
+- **`campanha_locacao` com finalidade Venda** (3 em S−1): classificação antiga pela palavra; corrigida para os leads novos desde 23/11 (§29b).
+- **Captura do CRM com buracos:** sem leitura em 10–12/11 e 18–22/11. Entradas usam a data real (`datahoraentradalead`), mas **mudanças de etapa caem no dia em que a leitura volta** (13/11 = 17; 23/11 = 23). Por isso as visitas vêm de `atividades`, e o A2 de S−1 pode subir quando as datas forem 23/11.
+- **`datanegocio` × base:** a `vw_atendimentos_base` usa a data do **registro** do negócio (interação) e conta 1 por atendimento. Casos: 6383 negócio de 19/10 registrado em 10/11; 6427 com 2 negócios. O placar usa `datanegocio` e conta por negócio.
+- **Jornada antes de 06/10:** coortes anteriores saem com 0% em A2 e não entram na média.
+- **Leads pagos subcontados até 23/11:** os leads do Google pelo site entravam como "Site" (conciliação no ar desde 23/11, §29b); A3 histórico fica alto.
+- **C3:** o atendimento 5716 está em Proposta com imóvel "Vendido" e negociação cancelada (R$ 81.900 na conta).
+- **K1:** novembro bem abaixo de outubro; dias sem pagamento em 14–15 e 20–22/11 (fim de semana e feriado de 20/11). Parece real, conferir com o financeiro.
+- **A1 de S−2 = 18** é o menor da série (média 41): conferir no CRM.
+
+**Para o S2 (migration, depois das decisões):** os números "agora" (C2, C3) não têm histórico. Para comparar com a semana anterior, a `saude_semanal()` precisa de uma **foto semanal** (tabela nova, gravada no domingo à noite ou na 1ª abertura da semana). K2 e K3 já são reconstruíveis.
+
+**Decisões pendentes (Eduardo)** — D1 a D12 no `handoff.md` (sprint 2026-11-23, Fase 29a S1).
+
+### 2.23 Orgânico: redes sociais, Search Console e Perfil do Google (Fase 29e, PRD §5.23 pendência 8) — **PROPOSTA (23/11), não aplicada**
+Métricas aprovadas pelo Eduardo em 23/11 ("pode seguir o seu schema"). Uso: bloco **1.4 Orgânico** da Saúde Imovit e capítulo "Orgânico" da Aquisição, sempre com os leads orgânicos da rede ao lado.
+
+**Decisão de formato: tabela "longa" (1 linha por data × rede × conta × métrica), não "larga" (1 coluna por métrica).** Cada rede tem métricas diferentes e a Meta muda nomes (em 2025 trocou `impressions` por `views` no Instagram). No formato longo, métrica nova é linha nova, sem migration.
+
+- **`organico_metricas`** (dicionário; escrita só Gestão/migration): `rede` text, `metrica` text, `rotulo` text (como aparece na tela), `descricao` text, `ordem` int; PK (`rede`, `metrica`). Carga inicial:
+
+  | Rede (`rede`) | Métricas diárias (`metrica`) |
+  |---|---|
+  | `instagram` | `alcance`, `visualizacoes`, `interacoes`, `seguidores_novos`, `visitas_perfil`, `cliques_site` |
+  | `facebook` | `alcance`, `visualizacoes`, `interacoes`, `seguidores_novos`, `cliques_site` |
+  | `tiktok` | `visualizacoes`, `interacoes`, `seguidores_novos`, `visitas_perfil` |
+  | `search_console` | `cliques`, `impressoes`, `ctr`, `posicao_media` (site inteiro) |
+  | `google_perfil` | `visualizacoes`, `ligacoes`, `rotas`, `cliques_site` |
+
+  Nome exato de cada métrica na API: conferir na doc oficial quando cada fluxo for montado.
+
+- **`organico_diario`**: `id` bigint identity PK, `data` date!, `rede` text!, `conta` text! (id da página/perfil/site), `metrica` text!, `valor` numeric!, `atualizado_em` timestamptz default now(). **Unique (`data`, `rede`, `conta`, `metrica`)** + FK (`rede`, `metrica`) → `organico_metricas`. Releitura do mesmo dia **atualiza** (as APIs consolidam os números com 1–3 dias de atraso; o fluxo relê os últimos 7 dias, como a janela do `meta_ads`).
+- **`organico_posts`** (1 linha por post, valores acumulados da vida do post, atualizados a cada leitura): `id` bigint identity PK, `rede`, `conta`, `post_id` text, `publicado_em` timestamptz, `tipo` (reels | carrossel | imagem | video | story), `legenda` (primeiros 280 caracteres), `url`, `miniatura_url`, `alcance`, `visualizacoes`, `curtidas`, `comentarios`, `compartilhamentos`, `salvamentos`, `interacoes`, `atualizado_em`. **Unique (`rede`, `post_id`)**. O fluxo relê os posts dos últimos 30 dias.
+- **RPC `carregar_organico(p_diario jsonb, p_posts jsonb default '[]')`** (security definer, só `service_role`): valida rede/métrica pelo dicionário, faz upsert nas duas tabelas numa transação e devolve quantas linhas entraram/atualizaram. Mesmo padrão da `carregar_carteira_locacao` (§2.10): o n8n não escreve direto na tabela.
+- **View `vw_organico_semana`** (security_invoker): soma por semana (seg–dom) × rede × métrica (para `ctr` e `posicao_media`, média ponderada pelas impressões) + **leads orgânicos do CRM** da rede na semana.
+- **Leads orgânicos por rede (CRM):** `instagram` = mídia "Instagram" (375 leads até 23/11); `tiktok` = mídia "Tik Tok" (2, hoje no canal "Outros"); `search_console` = canal "Site" **sem** clique pago (depois da conciliação de 23/11). ⚠ **Facebook orgânico e Perfil do Google não têm mídia no Imoview**: sem cadastrar essas mídias (e o Severino/corretor usá-las), o bloco mostra alcance sem lead. Encaixa na tarefa de enxugar as mídias do Imoview.
+- **RLS:** leitura por `pode_ver_dash()` (Gestão e Marketing); escrita só pela RPC; `anon` sem acesso.
+- **Fluxos n8n (um por fonte, diário):** `organico_meta` (Instagram + Facebook, Graph API), `organico_search_console`, `organico_google_perfil`, `organico_tiktok`. Token/credenciais sempre em credencial do n8n, nunca no nó.
+- **Acessos necessários (Eduardo):** Meta: token do usuário do sistema com `instagram_basic`, `instagram_manage_insights`, `pages_read_engagement`, `read_insights`; Google: conta de serviço com leitura no Search Console + **pedido de acesso à API do Business Profile** (aprovação do Google); TikTok: app no TikTok for Business (aprovação do TikTok).
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 

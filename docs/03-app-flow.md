@@ -68,8 +68,8 @@ Estados: link de corretor inexistente/inativo → formulário sem corretor pré-
 **Home:** bloco "Ferramentas" (forms do Hub + links externos restantes) no lugar de "Links úteis".
 
 ### Menu Dados e entrada por nível (decisão de 23/11, PRD §5.23) — atualiza a linha "Dados" da navegação de 12/11
-**Dados ▾:** Saúde semanal (nova, 1º item) · Aquisição (ex-Performance) · Comercial · Equipe (ex-Painel da Gestão) · Carteira (ex-Adm locação). Cada página responde uma pergunta (ver PRD §5.23); Aquisição vai até o lead qualificado/descartado, Comercial dali em diante.
-**Ao entrar:** cada nível vê até 6 cartões (número + comparação + "ver detalhe"), sem trocar de aba: Gestão = receita, Km 32, funil com gargalo, carteira, mídia, quem agir; ADM = carteira em risco; Corretor = minha meta e meus leads; Marketing = mídia × negócio. A Saúde semanal é a página da reunião semanal (micro ciclo de 1 semana).
+**Dados ▾:** Saúde Imovit (nova, 1º item) · Aquisição (ex-Performance) · Comercial · Equipe (ex-Painel da Gestão) · Carteira (ex-Adm locação). Cada página responde uma pergunta (ver PRD §5.23); Aquisição vai até o lead qualificado/descartado, Comercial dali em diante.
+**Ao entrar:** cada nível vê até 6 cartões (número + comparação + "ver detalhe"), sem trocar de aba: Gestão = receita, Km 32, funil com gargalo, carteira, mídia, quem agir; ADM = carteira em risco; Corretor = minha meta e meus leads; Marketing = mídia × negócio. A Saúde Imovit é a página da reunião semanal (micro ciclo de 1 semana).
 Quem vê cada página e as rotas: a definir no fechamento da navegação (pendência do PRD §5.23).
 
 ### Navegação por intenção (briefing de 12/11) — PROPOSTA, aguardando aprovação; substitui a de 15/10

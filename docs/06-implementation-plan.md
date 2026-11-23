@@ -487,23 +487,24 @@ Depende do motor de pauta (`newsletters-imovit/docs/blog-pautas.md`, S1 e S2a fe
 - **Pronto quando:** um post gerado pelo v2 aparece na Home e em `/blog/revisar`, é aprovado pelo Hub e aparece no site; um rejeitado devolve a pauta para `pendente`; corretor não vê nada.
 - localhost → `teste` → `main`.
 
-## Fase 29 — Dados para a reunião (PRD §5.23) — **APROVADA (23/11)**; começa pela Saúde semanal
+## Fase 29 — Dados para a reunião (PRD §5.23) — **APROVADA (23/11)**; começa pela Saúde Imovit
 Estimativa do que falta: **GG, ~6 a 8 dias**, quebrada em 29a–29f. Cada parte é publicada sozinha. Feitos em 23/11: pendência 4 (migrations `20261123150000` e `20261123160000`), 5 e 6 (29b) e as capturas (S0).
 
-### 29a — Saúde semanal v1 (G, ~2 dias). Placar + blocos Aquisição, Comercial e Carteira; Decisões fica para a 29f
+### 29a — Saúde Imovit v1 (G, ~2 dias). Placar + blocos Aquisição, Comercial e Carteira; Decisões fica para a 29f
 - **S0 Capturas no ar — FEITO (23/11):** CRM religado (leitura de 23/11) e `meta_ads` com credencial nova (14–22/11 recuperados).
-- **S1 Schema (doc, P):** seção nova §2.22 no `05-backend-schema.md` com a fonte e a régua (entrada / evento / agora) do placar e dos 9 números:
+- **S1 Schema (doc, P) — ESCRITO (23/11), aguardando as decisões D1–D12 do Eduardo (handoff):** §2.22 + gabarito `docs/sql/saude_semanal_gabarito_2026-11-23.sql`. Seção nova §2.22 no `05-backend-schema.md` com a fonte e a régua (entrada / evento / agora) do placar e dos 9 números:
   - **Placar no topo (23/11):** negócios fechados na semana (venda + locação, pela data do negócio no CRM) e receita da semana = comissão bruta de venda (`valorcomissao`) dos negócios fechados + taxa de administração recebida na semana. Régua: **evento**.
   - Aquisição: leads que chegaram ao CRM e % de qualificados (fase ≥ 4), por **entrada**, de `vw_atendimentos_base`. Custo por qualificado: gasto de `dashboard_meta_ads` + `dashboard_google_ads` ÷ qualificados de "Campanhas pagas".
   - Comercial: visitas por **evento** (fonte a confirmar no S1: jornada ou `atividades`). Etapa gargalo e quantos estão parados acima da mediana: **agora**. Dinheiro na mesa em receita da Imovit: **agora**.
   - Carteira: taxa de administração recebida no mês (`contratos_locacao_recebimentos.taxa_adm`), por **evento**. R$ em atraso (`vw_cobrancas_locacao`) e saídas avisadas: **agora**.
   - Referência: a semana anterior e a média das últimas N semanas (até 8, rotulada "média de N semanas"). Etapa com menos de 5 casos aparece como "acumulando". O prazo de cada etapa é a mediana (pendência 7).
   - **Sinal (decidido 23/11):** verde = na média ou acima · amarelo = até 15% abaixo · vermelho = mais de 15% abaixo. Invertido para custo (custo por qualificado): verde = na média ou abaixo · amarelo = até 15% acima · vermelho = mais de 15% acima.
-- **S2 Banco (M):** migration com `saude_semanal(p_semana date)`, que devolve o placar e os 3 blocos × 3 números × (semana, semana anterior, média, N, régua, sinal), e a função da mediana por etapa. Acesso por `pode_ver_dash()`.
+- **Formato granular (Eduardo, 23/11):** BLUF + detalhe por bloco (PRD §5.23, blocos 1.1–1.4 e 2.1–2.5; Schema §2.22, Q13–Q17). A estimativa da 29a sobe de G (~2 dias) para **G+ (~3 dias)**. A 29d (Aquisição e Comercial) passa a reaproveitar os blocos da Saúde Imovit em vez de construir do zero.
+- **S2 Banco (M):** migration com `saude_semanal(p_semana date)`, que devolve o placar, os alertas do BLUF e os blocos granulares, cada número com (semana, semana anterior, média, N, régua, sinal); a função da mediana por etapa; e a **foto semanal** dos números "agora" (D11). Acesso por `pode_ver_dash()`. O bloco 1.4 Orgânico entra vazio até a 29e.
   - Testar em `BEGIN … ROLLBACK` simulando gestão, corretor e anon.
   - **Gabarito:** cada número bate com a página de hoje (Performance, Comercial, Adm locação) e com o CRM em 2 semanas fechadas.
-- **S3 Tela (M):** página Saúde semanal com o placar no topo, seletor de semana (padrão: a última semana fechada), 3 blocos, etiqueta da régua com explicação no hover e link "ver detalhe" para a página de origem. Usa só tokens e componentes do Hub. Testar a 375 px.
-- **S4 Menu (P):** Saúde semanal como 1º item de Dados ▾. A rota e quem vê seguem o fechamento da navegação (`03-app-flow.md`, "Menu Dados"). Até lá, só Gestão.
+- **S3 Tela (M):** página Saúde Imovit com o placar no topo, seletor de semana (padrão: a última semana fechada), 3 blocos, etiqueta da régua com explicação no hover e link "ver detalhe" para a página de origem. Usa só tokens e componentes do Hub. Testar a 375 px.
+- **S4 Menu (P):** Saúde Imovit como 1º item de Dados ▾. A rota e quem vê seguem o fechamento da navegação (`03-app-flow.md`, "Menu Dados"). Até lá, só Gestão.
 - **S5 Publicar (P):** localhost → `teste` → `main`. Validar na reunião semanal seguinte, com o diretor abrindo só essa página.
 - **Pronto quando:** a reunião roda com uma aba só e o placar e os 9 números batem com o gabarito do S2.
 - **Custo por qualificado:** a conciliação (29b) já está no ar. Conferir no gabarito do S2 se os leads pagos do site aparecem como "Campanhas pagas".
@@ -520,6 +521,13 @@ Estimativa do que falta: **GG, ~6 a 8 dias**, quebrada em 29a–29f. Cada parte 
 
 ### 29e — Orgânico (pendência 8, G)
 - Ponte de Instagram/Facebook, TikTok, Search Console e Google Maps via n8n, com o capítulo "Orgânico" da Aquisição. Começa só depois da 29b.
+- **S0 Acessos (Eduardo, começar já, em paralelo):** pedir a API do Business Profile (Google) e o app do TikTok for Business, que dependem de aprovação externa; token Meta com as permissões de orgânico; conta de serviço no Search Console.
+- **S1 Schema (doc) — PROPOSTA ESCRITA (23/11):** Schema §2.23 (`organico_metricas`, `organico_diario` longo com upsert, `organico_posts`, RPC `carregar_organico`, `vw_organico_semana`). Falta o OK para a migration.
+- **S2 Banco (P):** migration + teste `BEGIN … ROLLBACK` (upsert não duplica; rede/métrica fora do dicionário é recusada; anon não lê).
+- **S3 Instagram + Facebook (M):** fluxo `organico_meta`; conferir 2 dias contra o Meta Business Suite.
+- **S4 Search Console (P) → S5 Perfil do Google (M) → S6 TikTok (M):** conforme os acessos saírem.
+- **S7 Tela:** bloco 1.4 da Saúde Imovit e capítulo Orgânico da Aquisição.
+- **Dependência de dado:** cadastrar no Imoview as mídias "Facebook" e "Google Perfil" (e mapear "Tik Tok"), senão essas redes aparecem sem leads.
 
 ### 29f — Decisões do micro ciclo (pendência 9, M)
 - Tabela nova (Schema antes): 3 ações por semana, cada uma com dono e a métrica que deve mexer. Na semana seguinte, a página abre mostrando se a métrica mexeu.
@@ -554,7 +562,7 @@ Estimativa do que falta: **GG, ~6 a 8 dias**, quebrada em 29a–29f. Cada parte 
 | 2026-10-09 | Fase 19 (cadastro locador PF) | Eduardo: Google Form vira rota pública de link fixo (grava + e-mail a administrativo3); Propostas em produção só gestão/adm; documentos seguem por e-mail |
 | 2026-10-14 | Fase 20 (distratos) | Pedido do Eduardo: procedimento de desocupação + motivo + pesquisa de satisfação pelo Hub; o ADM gera o link por contrato; o envio é o aviso oficial; 1ª entrega só com registro + lista |
 | 2026-10-14 | Fase 21 (central de cadastros) | Eduardo: 6 cadastros do Google num motor único (1 página + 1 tabela + 1 função + 1 lista); piloto Locador PJ; destino de e-mail por tipo; histórico das 2 planilhas importado; pode construir |
-| 2026-11-23 | Fase 29 (dados para a reunião, PRD §5.23) | Eduardo: a reunião precisa de uma página só. A fase começa pela Saúde semanal e vai depois para conciliação, entrada por nível, Aquisição/Comercial, orgânico e decisões |
+| 2026-11-23 | Fase 29 (dados para a reunião, PRD §5.23) | Eduardo: a reunião precisa de uma página só. A fase começa pela Saúde Imovit e vai depois para conciliação, entrada por nível, Aquisição/Comercial, orgânico e decisões |
 | 2026-10-19 | Fase 23 (onboarding de colaboradores) | Entrada da Giovana feita à mão (INSERT + checklist no Obsidian); Eduardo: a pessoa passa os dados por link, ele cria e-mail e Imoview, aprova no Hub → `colaboradores_raw`; checklist com CRM e fila de repique |
 | 2026-10-28 | Fase 24 (fonte única dos atendimentos) | Auditoria de 27/10: duas fontes para o mesmo lead (A1/A7); Eduardo aprovou a jornada como fonte única, trocando ao lado e comparando antes |
 | 2026-10-29 | PRD §5.19 (Relatório da Diretoria e dashboards finais) | Reclamação da Diretoria: dados divergem e a navegação perde o fio. Eduardo aprovou a espinha de 6 páginas, o relatório + e-mail diário, safra × fluxo sem filtro e o "parado" 3/7 dias com 🟢🟡🔴. **Sem fase no plano ainda**: depende da Fase 24 S3 e do detalhe página por página; ordem com o Brooks |
