@@ -67,6 +67,41 @@ Estados: link de corretor inexistente/inativo → formulário sem corretor pré-
 **Feedback de visita (corretor):** Ferramentas → Feedback de visita → formulário → "Gerar PDF" (download) → salvo no histórico (`/feedbacks`, o corretor vê os dele).
 **Home:** bloco "Ferramentas" (forms do Hub + links externos restantes) no lugar de "Links úteis".
 
+### Menu Dados e entrada por nível (decisão de 23/11, PRD §5.23) — atualiza a linha "Dados" da navegação de 12/11
+**Dados ▾:** Saúde semanal (nova, 1º item) · Aquisição (ex-Performance) · Comercial · Equipe (ex-Painel da Gestão) · Carteira (ex-Adm locação). Cada página responde uma pergunta (ver PRD §5.23); Aquisição vai até o lead qualificado/descartado, Comercial dali em diante.
+**Ao entrar:** cada nível vê até 6 cartões (número + comparação + "ver detalhe"), sem trocar de aba: Gestão = receita, Km 32, funil com gargalo, carteira, mídia, quem agir; ADM = carteira em risco; Corretor = minha meta e meus leads; Marketing = mídia × negócio. A Saúde semanal é a página da reunião semanal (micro ciclo de 1 semana).
+Quem vê cada página e as rotas: a definir no fechamento da navegação (pendência do PRD §5.23).
+
+### Navegação por intenção (briefing de 12/11) — PROPOSTA, aguardando aprovação; substitui a de 15/10
+Desenhada pelo Eduardo no Miro ("Hub Imovit · Navegação", quadros 5 e 6: https://miro.com/app/board/uXjVEOyf0bU=/). Princípio: o menu responde **"o que vim fazer?"**, não "que tipo de tela é". Motivo: na de 15/10 o menu misturava tipo de tela (Painéis) com área (Locação/Venda), uma tela aparecia em dois lugares e as telas do dia de cada papel ficavam espalhadas.
+
+Navbar: **[logo] · Dados ▾ · Visão geral ▾ · Negócios ▾ · Ferramentas ▾ · Configurações · Ajuda** (+ avatar → Perfil). O item "Home" sai da barra: o **logo leva à Home**, com os blocos reordenados (12/11): **Busca** (só a barra, acima de tudo) → **Trilha Km 32** → **Para você hoje** (essencial) ao lado de **Links e atalhos** (os Atalhos por papel e os Links úteis viram um bloco só; o nome "Ferramentas" sai da Home para não repetir o menu) → **Avisos** → **Plantão** ao lado da **Agenda da semana**.
+
+| Menu | Intenção | Telas (rota de hoje) | Quem vê |
+|---|---|---|---|
+| **Dados** | analisar a fundo (visão da gestão) | Análise de funil = Painel da Gestão (`/dashboard/gestao`) | Gestão, Mkt |
+| | | Análise de performance (`/dashboard/performance`) | Gestão, Mkt, Corretor |
+| | | Análise de carteira = Adm locação (`/dashboard/adm-locacao`) | Gestão, ADM |
+| | | Análise de jornada — **nova** (performance + funil + redes + GA4) | a definir (PRD) |
+| **Visão geral** | acompanhar o meu dia | Comercial = Meus números (`/dashboard/comercial`; a gestão escolhe o corretor) | Gestão, Mkt, Corretor |
+| | | Kanban · Relatório de atividades | Gestão, ADM, Corretor |
+| | | Dados de atendimento (`/kanban/dados`) · Estoque (`/dashboard/estoque`) | Gestão, Corretor |
+| **Negócios** | seguir o processo; **Locação \| Venda** é um seletor dentro da página | Guia de processos (`/admin/processo-locacao`) | todos |
+| | | Proposta, com Processos como aba (locação `/admin/propostas` + `/admin/processos`; venda `/admin/vendas` + `/admin/vendas/processos`) | Gestão, ADM |
+| | | Esteira (`/admin/esteiras`; só locação, venda não tem esteira) · Distrato (só locação) | Gestão, ADM |
+| | | Cadastro, com os links para o cliente (`/admin/cadastros`) | Gestão, ADM; o corretor vê só os links |
+| **Ferramentas** | fazer algo pontual | Materiais para clientes · Form de captação · Feedback de visita | Gestão, ADM, Corretor |
+| | | Revisar blog | Gestão, Mkt |
+| | | TV Display | Gestão, ADM, Mkt |
+| **Configurações** | manutenção | abas de hoje, com Onboarding | como hoje |
+
+Regras:
+- Dentro de um menu, cada papel vê só as telas liberadas a ele (`acessos.js`); menu sem tela visível não aparece. A RLS não muda: é só onde as telas ficam.
+- As URLs atuais ficam (os e-mails das Edge Functions apontam para elas). Se uma rota mudar de nome, a antiga redireciona.
+- "Links de cadastro" deixa de existir em Ferramentas: um lugar só, Negócios ▸ Cadastro.
+
+Em aberto: PRD da Análise de jornada; o que muda na Análise de performance ("granular por anúncio, canal, finalidade, ajustar metas, comparar com o período anterior"); links entre telas ("as telas não levam umas às outras", atrito do quadro 2), tratado depois do menu.
+
 ### Navegação por trabalho (decisão do Eduardo, 15/10) — substitui Dash / Propostas / Ferramentas
 A Navbar ficou: **Home · Painéis ▾ · Atendimento ▾ · Locação ▾ · Venda ▾ · Ferramentas ▾ · Configurações**. Cada item aparece conforme o nível (`acessos.js`), e um menu sem nenhum item visível não aparece. A montagem está em `buildMenus` (`Navbar.jsx`).
 - **Painéis:** Comercial (para o corretor, "Meus números"), Painel da Gestão, Performance, Adm locação.
