@@ -1194,7 +1194,7 @@ O motor do blog mora no projeto `newsletters-imovit` (`docs/blog-pautas.md`): o 
 - **Aquisição:** (1) impressões → cliques → leads na plataforma → leads que chegaram ao CRM, por canal; (2) qualidade por canal: qualificados, descartados, motivo, onde estão no funil; (3) campanhas: mais leads e mais **qualificados**; (4) custo por lead e por qualificado (o "canal desperdício" mora aqui); (5) meta: investimento, leads e qualificados; (6) orgânico.
 - **Comercial:** (1) entrada: leads, qualificados, visitas, de onde vêm (volume, sem custo); (2) saúde por etapa: quantos em cada etapa, tempo, dentro × acima do prazo; (3) gargalo (maior queda, automático); (4) descarte: motivo por etapa e canais que mais descartam depois de qualificados; (5) dinheiro na mesa, em receita da Imovit.
 
-**Saúde semanal (micro ciclo = 1 semana).** Uma página, quatro blocos com até 3 números cada (× semana anterior e × meta, sinal verde/amarelo/vermelho):
+**Saúde semanal (micro ciclo = 1 semana).** No topo, um **placar** (decidido 23/11): negócios fechados na semana (venda + locação) e receita da semana (comissão bruta de venda dos negócios fechados + taxa de administração recebida). Sinal: verde = na média ou acima · amarelo = até 15% abaixo · vermelho = mais de 15% abaixo; invertido para custo. Abaixo do placar, uma página com quatro blocos com até 3 números cada (× semana anterior e × meta, sinal verde/amarelo/vermelho):
 - Aquisição (paga + orgânica): leads que chegaram ao CRM · % qualificados · custo por qualificado.
 - Comercial: visitas · etapa gargalo e quantos parados nela · dinheiro na mesa.
 - Carteira: taxa de administração recebida no mês · R$ em atraso · saídas avisadas.
