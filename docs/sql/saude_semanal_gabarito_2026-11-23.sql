@@ -3,6 +3,22 @@
 -- Semana = segunda a domingo. Troque a data em "params" pela SEGUNDA-FEIRA da semana que quer ver.
 -- Valores de referência (conferidos em 23/11):
 --   S-2 = 2026-11-09 (09–15/11)   ·   S-1 = 2026-11-16 (16–22/11)
+--
+-- ATUALIZAÇÃO 24/11 — período livre (Schema §2.22 v2, função saude_imovit(p_inicio, p_fim, p_finalidade)):
+--   As queries valem para qualquer período: troque "p.ini + 6" pela data fim. Comparação = período anterior de
+--   mesmo tamanho (ex.: 30 dias × 30 dias antes). Média de 8 semanas só para os números "agora".
+--   Finalidade: filtre vw_atendimentos_base.finalidade ('Aluguel'/'Venda'); negócios pela finalidade do negócio;
+--   mídia paga pelo nome da campanha (~* 'loca' / ~* 'vend'); taxa adm e intermediação só em locação.
+--   Q5 (custo 4 semanas) saiu: custo por qualificado = investimento do período ÷ qualificados pagos do período.
+--   Novas: Q18 propostas, Q19 contratos ativos e do trimestre. Rodadas de novo em 24/11 (valores ao lado de cada uma).
+--   Diferenças de 24/11 × 23/11, todas por dado novo, não por regra: S-1 qualificados 11 → 12 (coorte ainda aberta
+--   até 29/11), saídas avisadas 9 → 10 (carteira relida em 24/11). Descartados de S-1 = 3 (o "12" do Schema 2.1 era de 13/11).
+--
+-- ATUALIZAÇÃO 24/11 (tarde) — VALOR FECHADO (Eduardo, padrão do Km 32). A manchete deixa de ser receita:
+--   venda = valornegocio (VGV) dos negócios da Q1; locação = valor_aluguel dos contratos iniciados (Q2b).
+--   Dinheiro na mesa (Q8) = valor da proposta/imóvel (venda) + 1 aluguel (locação), sem os 4,68%.
+--   A receita (Q2) continua como referência (receita_referencia no JSON). Confirmados pelo Eduardo: Q19 (trimestre)
+--   e custo por qualificado = investimento do período ÷ qualificados pagos do período.
 
 ------------------------------------------------------------------------------------------
 -- Q1 · Placar: negócios fechados na semana  (régua: EVENTO, pela data do negócio no CRM)
@@ -48,6 +64,26 @@ select
 -- receita = comissão de venda (Q1) + taxa_adm
 -- S-2: 0 + 5.064,33 = R$ 5.064,33   (intermediação R$ 6.750,00)
 -- S-1: 73.000 + 17.833,81 = R$ 90.833,81   (intermediação R$ 0)
+-- (24/11: com D3 a intermediação soma; a receita virou REFERÊNCIA, a manchete é o valor fechado da Q2b)
+
+------------------------------------------------------------------------------------------
+-- Q2b · Cabeçalho: VALOR FECHADO do período  (régua: EVENTO; Eduardo 24/11, padrão do Km 32)
+-- venda = soma de valornegocio das vendas da Q1 (datanegocio) · locação = valor_aluguel dos contratos com
+-- data_inicio no período, sem cancelados (igual ao campanha_resumo). A contagem de negócios continua a Q1.
+------------------------------------------------------------------------------------------
+with params as (select date '2026-11-16' as ini, date '2026-11-22' as fim)
+select
+  (select coalesce(sum(valor), 0) from saude_negocios(), params p
+    where finalidade = 'Venda' and data_negocio between p.ini and p.fim) as venda_vgv,
+  (select coalesce(sum(valor_aluguel), 0) from contratos_locacao, params p
+    where situacao <> 'Cancelado' and data_inicio between p.ini and p.fim) as locacao_aluguel,
+  (select count(*) from contratos_locacao, params p
+    where situacao <> 'Cancelado' and data_inicio between p.ini and p.fim) as contratos_iniciados;
+-- saude_negocios() é interna: rode como postgres no SQL Editor.
+-- S-2 (09–15/11): venda 0 + locação 7.200 (contrato 1825, 10/11) = R$ 7.200
+--      ⚠ o CRM tem 1 negócio de locação (6538, R$ 6.800, 09/11) que não é o mesmo valor do contrato
+-- S-1 (16–22/11): venda 1.610.000 (6416) + locação 9.000 (contrato 1829, 16/11, Moderação) = R$ 1.619.000
+--      ⚠ 0 negócio de locação no CRM nessa semana, mas 1 contrato iniciado
 
 ------------------------------------------------------------------------------------------
 -- Q3 · Aquisição: leads que chegaram ao CRM  (régua: ENTRADA)
@@ -77,7 +113,7 @@ from vw_atendimentos_base b
 left join q using (codigo), params p
 where not b.is_ruido and not b.is_interno
   and b.data_entrada between p.ini and p.ini + 6;
--- S-2: 4 de 18 = 22,2%   · S-1: 11 de 33 = 33,3% (PARCIAL até 29/11)
+-- S-2: 4 de 18 = 22,2%   · S-1: 11 de 33 = 33,3% (PARCIAL até 29/11) · 24/11: 12 de 33 = 36,4%
 
 ------------------------------------------------------------------------------------------
 -- Q5 · Aquisição: custo por qualificado  (régua: EVENTO no gasto, ENTRADA nos qualificados)
@@ -136,7 +172,9 @@ order by parados desc;
 -- S-2 e S-1: não dá para reconstruir (número "agora" sem foto guardada)
 
 ------------------------------------------------------------------------------------------
--- Q8 · Comercial: dinheiro na mesa em receita da Imovit  (régua: AGORA)
+-- Q8 · Comercial: dinheiro na mesa  (régua: AGORA)
+-- 24/11: a página mostra VALOR (proposta/imóvel + 1 aluguel) = R$ 7.437.500 (venda 7.421.000 + locação 16.500;
+-- R$ 1.750.000 do 5716 com imóvel vendido). A conta abaixo (× 4,68%) virou a receita de referência.
 -- v1: só leads ativos em Proposta (posição 6), que têm o imóvel no CRM.
 -- Venda: valor da proposta aberta (ou do imóvel) × 4,68%. Locação: 1 mês de aluguel (intermediação; D8, 23/11).
 ------------------------------------------------------------------------------------------
@@ -197,7 +235,7 @@ from contratos_locacao c, params p
 where c.data_aviso_desocupacao <= p.ini + 6
   and (c.data_rescisao is null or c.data_rescisao > p.ini + 6)
   and c.situacao <> 'Cancelado';
--- S-2: 10 (0 novos)   · S-1: 9 (1 novo)
+-- S-2: 10 (0 novos)   · S-1: 9 (1 novo) · 24/11: S-1 = 10 (carteira relida)
 
 ------------------------------------------------------------------------------------------
 -- Q12 · Referência: série semanal + semana anterior + média das N semanas anteriores (até 8)
@@ -334,3 +372,34 @@ order by leads desc;
 -- 28/09–22/11: Pagos 79 · 76% · 15 de 20 qualificados perdidos (Não responde 24)
 --              Portais 74 · 70% · 18 de 30 · WhatsApp 67 · 78% · 8 de 16 · Site 51 · 59% · 10 de 24 (Repique ⚠ 8)
 --              Indicação 36 · 25% · 6 de 23
+------------------------------------------------------------------------------------------
+-- Q18 · Comercial: propostas no período  (régua: EVENTO, 1ª entrada na etapa Proposta = posição 6)
+------------------------------------------------------------------------------------------
+with params as (select date '2026-11-16' as ini, date '2026-11-22' as fim),
+p6 as (select codigo, min(entrou_em) as quando from vw_jornada_etapas where posicao = 6 group by codigo)
+select b.finalidade, b.canal, count(*) as propostas
+from p6 join vw_atendimentos_base b using (codigo), params p
+where not b.is_ruido and not b.is_interno and p6.quando between p.ini and p.fim
+group by rollup (b.finalidade, b.canal);
+-- 24/11: S-1 = 1 (Aluguel, Site). ⚠ Datas de etapa caem no dia em que a captura volta (buracos 10–12 e 18–22/11).
+
+------------------------------------------------------------------------------------------
+-- Q19 · Carteira: contratos ativos na data fim e contratos novos no último trimestre
+-- Ativos: foto diária da carteira (contratos_locacao_fotos.ativos). Trimestre (CONFIRMADO pelo Eduardo, 24/11):
+-- contratos com data_inicio nos 3 meses até a data fim × os 3 meses antes, sem cancelados.
+------------------------------------------------------------------------------------------
+with params as (select date '2026-11-22' as fim)
+select
+  (select ativos from contratos_locacao_fotos, params p where data <= p.fim order by data desc limit 1) as ativos,
+  (select count(*) from contratos_locacao, params p where situacao <> 'Cancelado'
+     and data_inicio > (p.fim - interval '3 months')::date and data_inicio <= p.fim) as novos_trimestre,
+  (select count(*) from contratos_locacao, params p where situacao <> 'Cancelado'
+     and data_inicio > (p.fim - interval '6 months')::date and data_inicio <= (p.fim - interval '3 months')::date) as novos_trimestre_anterior;
+-- 24/11: fim 22/11 → 154 ativos · 15 novos no trimestre × 16 no anterior
+
+------------------------------------------------------------------------------------------
+-- Q20 · Período de 30 dias (padrão da página = 30 dias até ontem) — conferência rápida
+------------------------------------------------------------------------------------------
+-- saude_imovit() em 24/11 = 25/10–23/11 × 25/09–24/10: VALOR FECHADO R$ 6.606.000 (venda 6.555.000 + locação 51.000)
+-- receita de referência R$ 420.778,71 · investimento R$ 5.583,44 (× 4.925,01)
+-- visitas 26 (× 32) · Campanhas pagas: descartados 35 (× 34), qualificados 9 (× 11), custo por lead no CRM R$ 150,90, custo por qualificado R$ 620,38 (parcial)
