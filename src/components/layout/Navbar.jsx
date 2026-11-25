@@ -17,6 +17,8 @@ function buildMenus(perfil) {
   const menus = []
 
   const paineis = []
+  // Saúde Imovit em 1º (Fase 29a S4); vai para o menu Dados quando a navegação nova entrar
+  if (pode(perfil, 'saude')) paineis.push({ to: '/dashboard/saude', label: 'Saúde Imovit' })
   if (pode(perfil, 'dashComercial')) paineis.push({ to: '/dashboard/comercial', label: ehCorretor ? 'Meus números' : 'Comercial' })
   if (pode(perfil, 'dash')) paineis.push({ to: '/dashboard/gestao', label: 'Painel da Gestão' })
   if (pode(perfil, 'dashPerformance')) paineis.push({ to: '/dashboard/performance', label: 'Painel de Performance' })

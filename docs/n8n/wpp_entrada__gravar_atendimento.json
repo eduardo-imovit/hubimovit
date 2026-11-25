@@ -1,0 +1,55 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://api.imoview.com.br/Cliente/RetornarDadosCliente",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "emailOuTelefone", "value": "={{ $('extrair IDs e definir finalidade').item.json.telefone }}" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "codigoAcesso", "value": "={{ $('Solicitar acesso API').item.json.codigoacesso }}" }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Buscar atendimento criado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [2240, -144],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "leads_wpp_gtm",
+        "filters": {
+          "conditions": [
+            { "keyName": "lead_id", "condition": "eq", "keyValue": "={{ $('Alimentar planilha GTM/WPP').item.json.lead_id }}" }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "imoview_atendimento", "fieldValue": "={{ $json.codigoatendimento || $('Buscar lead no sistema').item.json.codigoatendimento }}" }
+          ]
+        }
+      },
+      "name": "Gravar atendimento Imoview",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2464, -256],
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Buscar atendimento criado": {
+      "main": [[{ "node": "Gravar atendimento Imoview", "type": "main", "index": 0 }]]
+    }
+  }
+}

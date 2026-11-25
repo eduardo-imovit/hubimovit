@@ -14,6 +14,7 @@ import PainelGestao from './pages/PainelGestao'
 import PainelComercial from './pages/PainelComercial'
 import PainelPerformance from './pages/PainelPerformance'
 import PainelAdmLocacao from './pages/PainelAdmLocacao'
+import SaudeImovit from './pages/SaudeImovit'
 import EstoqueBusca from './pages/EstoqueBusca'
 import Configuracoes from './pages/Configuracoes'
 import Propostas from './pages/admin/Propostas'
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="/kanban" element={<ProtectedRoute papeis={ACESSO.kanban}><Kanban /></ProtectedRoute>} />
         <Route path="/kanban/dados" element={<ProtectedRoute papeis={ACESSO.dadosAtendimento}><DadosAtendimento /></ProtectedRoute>} />
         <Route path="/kanban/atividades" element={<ProtectedRoute papeis={ACESSO.kanban}><RelatorioAtividades /></ProtectedRoute>} />
+        <Route path="/dashboard/saude" element={<ProtectedRoute papeis={ACESSO.saude}><SaudeImovit /></ProtectedRoute>} />
         <Route path="/dashboard/comercial" element={<ProtectedRoute papeis={ACESSO.dashComercial}><PainelComercial /></ProtectedRoute>} />
         <Route path="/dashboard/gestao" element={<ProtectedRoute papeis={ACESSO.dash}><PainelGestao /></ProtectedRoute>} />
         <Route path="/dashboard/performance" element={<ProtectedRoute papeis={ACESSO.dashPerformance}><PainelPerformance /></ProtectedRoute>} />
