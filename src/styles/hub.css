@@ -971,12 +971,15 @@
 .estoque-busca { display: flex; gap: var(--space-2); align-items: center; }
 .estoque-busca .search-bar input { height: 46px; font-size: var(--text-base); }
 .estoque-exemplos { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); margin: var(--space-2) 0 var(--space-5); }
-.estoque-filtros .pg-campo input {
+.estoque-filtros .pg-campo input,
+.pg-campo input[type="date"] {
   height: 34px; width: 110px; padding: 0 var(--space-3);
   border: 1px solid var(--champagne); border-radius: var(--radius-sm);
   background: var(--branco); color: var(--grafite); font: inherit; font-size: var(--text-sm);
 }
-.estoque-filtros .pg-campo input:focus { outline: none; border-color: var(--coral); }
+.pg-campo input[type="date"] { width: 150px; }
+.estoque-filtros .pg-campo input:focus,
+.pg-campo input[type="date"]:focus { outline: none; border-color: var(--coral); }
 .estoque-filtros .pg-campo select { min-width: 110px; }
 .estoque-opcoes { display: flex; flex-direction: column; gap: 2px; font-size: var(--text-xs); color: var(--grafite-mid); }
 .estoque-opcoes label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
