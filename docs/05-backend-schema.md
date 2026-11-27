@@ -766,7 +766,9 @@ Por quê: a jornada do CRM ficou sem rodar de 18 a 22/11 e ninguém percebeu; as
 - **Teste (27/11, ~10h20 SP, em transação desfeita):** 9 linhas; atrasadas = `carteira_receita` (último 24/11 06:45) e `estoque` (último 24/11 01:39), as duas reais; as outras OK; `organico_instagram` desligada (último 26/11). Com `p_desligar = '{}'` continuam 2 atrasadas. EXECUTE: anon ✗, authenticated ✗, service_role ✓. Depois do ROLLBACK a função não existe.
 - **Sobreposição com §2.18:** `saude_leituras` + `alerta-leituras` (7h15, Brevo, só eduardo@) cobrem 6 destas fontes desde 29/10 e **não avisaram** a falha de 18–22/11 (causa não investigada). Quando o vigia estiver validado, decidir se o `pg_cron` "alerta-leituras" sai.
 
-### 2.26 Alerta do lead do Severino (Fase 32, PRD §5.24) — **PROPOSTA (27/11, revista: só WhatsApp), nada aplicado, sem migration**
+### 2.26 Alerta do lead do Severino (Fase 32, PRD §5.24) — **32a APLICADA (27/11, OK do Eduardo; no banco como `20261127181235`), `recebe_alerta_lead` default false**
+
+**Migration 32a:** `supabase/migrations/20261127181235_alerta_lead_severino.sql` (aplicada 27/11 pelo MCP; arquivo renomeado para a versão gravada). **Mudança na aplicação (Eduardo):** `recebe_alerta_lead` nasce **false** para todos (ninguém recebe alerta até a conferência das 23 linhas); `whatsapp_alerta` vazio. Conferido depois: 27 linhas, 0 com `true`; `perfil_id` em 17 dos 23 ativos; tabela vazia, RLS ligado, 0 policies, anon/authenticated sem SELECT; EXECUTE anon ✗ / authenticated ✗ / service_role ✓; `authenticated` continua lendo `colaboradores_raw` (Home/plantão). Além do desenho abaixo, ela traz: check `finalidade in (1, 2)`; check `(fim_em is null) = (fim_motivo is null)`; índice em `lead_id`; trigger `fn_update_atualizado_em`; o `update` do `perfil_id` pelo e-mail (17 dos 23 ativos); e a coluna `algo_vencido` no retorno de `alerta_lead_a_vigiar()` (a função devolve **todas** as abertas, e o n8n filtra). Teste de 27/11 em transação desfeita: 15 casos de `minutos_uteis` OK, vigia 15/40/180 min OK, índice e checks OK, EXECUTE anon ✗ / authenticated ✗ / service_role ✓, `authenticated` não lê a tabela.
 
 Por quê: o `wpp_entrada v4` cria o atendimento no Imoview e não avisa ninguém (6 de 30 atendimentos rastreáveis sem 1ª resposta). Para avisar por WhatsApp, o fluxo precisa de 2 coisas que hoje não tem: **(1)** saber o WhatsApp do corretor (e da gestão) a partir do código dele no Imoview e **(2)** lembrar o que já foi avisado, para o vigia de 30 min / 2 h não repetir.
 
@@ -783,7 +785,7 @@ Por quê: o `wpp_entrada v4` cria o atendimento no Imoview e não avisa ninguém
 | Campo novo | Tipo | Nota |
 |---|---|---|
 | `perfil_id` | uuid null → `perfis(id)` on delete set null | liga à pessoa no Hub quando ela tem login; preenchido pelo e-mail (`lower(email_oficial) = lower(perfis.email)`) na carga |
-| `recebe_alerta_lead` | boolean not null default true | desliga o alerta de alguém sem tirar do cadastro (férias, recepção, direção) |
+| `recebe_alerta_lead` | boolean not null default false | liga o alerta pessoa a pessoa, depois da conferência; `false` desliga sem tirar do cadastro (férias, recepção, direção). Linha nova (onboarding) entra `false` |
 | `whatsapp_alerta` | text null check (`~ '^55[0-9]{10,11}$'`) | só se o número do alerta for diferente de `telefone_whats`; formato E.164 sem `+` (`5519…`), que é o que as duas opções de envio pedem. O fluxo usa `coalesce(whatsapp_alerta, telefone_whats normalizado)` |
 
 - **Carga:** a lista que o Eduardo levanta vira **conferência** das 23 linhas (o `telefone_whats` é o WhatsApp? quem sai do alerta?), não carga do zero. Depois, um `update` para `perfil_id` pelo e-mail.
