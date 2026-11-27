@@ -1,0 +1,256 @@
+{
+  "name": "organico_meta",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 3 * * *"
+            }
+          ]
+        },
+        "options": {
+          "timezone": "America/Sao_Paulo"
+        }
+      },
+      "id": "b1f3c8d0-2001-4001-9001-000000000001",
+      "name": "Agenda 03:30",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-420, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://graph.facebook.com/v27.0/17841402369467127",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "followers_count"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1f3c8d0-2002-4002-9002-000000000002",
+      "name": "Perfil Instagram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-140, 20]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://graph.facebook.com/v27.0/17841402369467127/insights",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "metric",
+              "value": "reach,views,total_interactions,profile_views,website_clicks"
+            },
+            {
+              "name": "period",
+              "value": "day"
+            },
+            {
+              "name": "metric_type",
+              "value": "total_value"
+            },
+            {
+              "name": "since",
+              "value": "={{ Math.floor($now.setZone('America/Sao_Paulo').minus({ days: 1 }).startOf('day').toSeconds()) }}"
+            },
+            {
+              "name": "until",
+              "value": "={{ Math.floor($now.setZone('America/Sao_Paulo').startOf('day').toSeconds()) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1f3c8d0-2003-4003-9003-000000000003",
+      "name": "Insights ontem",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-140, 220]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://graph.facebook.com/v27.0/17841402369467127/insights",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "metric",
+              "value": "follows_and_unfollows"
+            },
+            {
+              "name": "period",
+              "value": "day"
+            },
+            {
+              "name": "metric_type",
+              "value": "total_value"
+            },
+            {
+              "name": "breakdown",
+              "value": "follow_type"
+            },
+            {
+              "name": "since",
+              "value": "={{ Math.floor($now.setZone('America/Sao_Paulo').minus({ days: 1 }).startOf('day').toSeconds()) }}"
+            },
+            {
+              "name": "until",
+              "value": "={{ Math.floor($now.setZone('America/Sao_Paulo').startOf('day').toSeconds()) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b1f3c8d0-2004-4004-9004-000000000004",
+      "name": "Seguidores novos (ontem)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-140, 420]
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 3
+      },
+      "id": "b1f3c8d0-2007-4007-9007-000000000007",
+      "name": "Merge 3 respostas",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [20, 200]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const REDE = 'instagram';\nconst CONTA = '17841402369467127';\nconst diaOntem = $now.setZone('America/Sao_Paulo').minus({ days: 1 }).toISODate();\nconst linhas = [];\n\nconst achar = (teste) => $input.all().find(i => teste(i.json || {}))?.json;\nconst perfil = achar(j => 'followers_count' in j);\nconst insights = achar(j => Array.isArray(j.data) && j.data.some(m => m.name === 'reach' || m.name === 'views' || m.name === 'total_interactions'));\nconst novos = achar(j => Array.isArray(j.data) && j.data.some(m => m.name === 'follows_and_unfollows'));\n\nconst faltando = [];\nif (!perfil) faltando.push('Perfil Instagram');\nif (!insights) faltando.push('Insights ontem');\nif (!novos) faltando.push('Seguidores novos (ontem)');\nif (faltando.length) throw new Error('Sem resposta de: ' + faltando.join(', ') + '. Confira conexoes e credenciais.');\n\nconst nomes = {\n  reach: 'alcance',\n  views: 'visualizacoes',\n  total_interactions: 'interacoes',\n  profile_views: 'visitas_perfil',\n  website_clicks: 'cliques_site',\n};\n\nfor (const m of insights.data) {\n  const metrica = nomes[m.name];\n  if (!metrica) continue;\n  const valor = m.total_value?.value;\n  if (valor === null || valor === undefined) continue;\n  linhas.push({ data: diaOntem, rede: REDE, conta: CONTA, metrica, valor });\n}\n\nif (perfil.followers_count !== null && perfil.followers_count !== undefined) {\n  linhas.push({ data: diaOntem, rede: REDE, conta: CONTA, metrica: 'seguidores', valor: perfil.followers_count });\n}\n\nconst m = novos.data.find(x => x.name === 'follows_and_unfollows');\nconst follow = m?.total_value?.breakdowns?.[0]?.results?.find(r => String(r.dimension_values?.[0]).toUpperCase() === 'FOLLOWER');\nif (follow && follow.value !== null && follow.value !== undefined) {\n  linhas.push({ data: diaOntem, rede: REDE, conta: CONTA, metrica: 'seguidores_novos', valor: follow.value });\n}\n\nreturn [{ json: { p_diario: linhas } }];"
+      },
+      "id": "b1f3c8d0-2005-4005-9005-000000000005",
+      "name": "Monta linhas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [180, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://vlsrmtryzwddqkwqugfr.supabase.co/rest/v1/rpc/carregar_organico",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_diario: $json.p_diario }) }}",
+        "options": {}
+      },
+      "id": "b1f3c8d0-2006-4006-9006-000000000006",
+      "name": "RPC carregar_organico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 200]
+    }
+  ],
+  "connections": {
+    "Agenda 03:30": {
+      "main": [
+        [
+          {
+            "node": "Perfil Instagram",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Insights ontem",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Seguidores novos (ontem)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perfil Instagram": {
+      "main": [
+        [
+          {
+            "node": "Merge 3 respostas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insights ontem": {
+      "main": [
+        [
+          {
+            "node": "Merge 3 respostas",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Seguidores novos (ontem)": {
+      "main": [
+        [
+          {
+            "node": "Merge 3 respostas",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge 3 respostas": {
+      "main": [
+        [
+          {
+            "node": "Monta linhas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Monta linhas": {
+      "main": [
+        [
+          {
+            "node": "RPC carregar_organico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

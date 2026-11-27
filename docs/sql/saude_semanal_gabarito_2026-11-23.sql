@@ -19,6 +19,10 @@
 --   Dinheiro na mesa (Q8) = valor da proposta/imóvel (venda) + 1 aluguel (locação), sem os 4,68%.
 --   A receita (Q2) continua como referência (receita_referencia no JSON). Confirmados pelo Eduardo: Q19 (trimestre)
 --   e custo por qualificado = investimento do período ÷ qualificados pagos do período.
+--
+-- ATUALIZAÇÃO 24/11 (noite) — NEGÓCIOS DE LOCAÇÃO POR CONTRATOS (Eduardo, "igual ao Km 32"; D2 resolvida):
+--   negócios = vendas da Q1 (finalidade Venda) + contratos_iniciados da Q2b. Os negócios de Aluguel da Q1 deixam
+--   de contar. S-2: 0 + 1 = 1 · S-1: 1 + 1 = 2. Migration 20261124120000 (não aplicada em 24/11).
 
 ------------------------------------------------------------------------------------------
 -- Q1 · Placar: negócios fechados na semana  (régua: EVENTO, pela data do negócio no CRM)
@@ -49,6 +53,7 @@ from neg, params p
 where data_negocio between p.ini and p.ini + 6
 group by finalidade;
 -- S-2: 1 (Aluguel)          · S-1: 1 (Venda, R$ 1.610.000, comissão R$ 73.000)
+-- (24/11: a Saúde conta só as vendas desta query; a locação vem dos contratos da Q2b)
 
 ------------------------------------------------------------------------------------------
 -- Q2 · Placar: receita da semana  (régua: EVENTO)
@@ -69,7 +74,8 @@ select
 ------------------------------------------------------------------------------------------
 -- Q2b · Cabeçalho: VALOR FECHADO do período  (régua: EVENTO; Eduardo 24/11, padrão do Km 32)
 -- venda = soma de valornegocio das vendas da Q1 (datanegocio) · locação = valor_aluguel dos contratos com
--- data_inicio no período, sem cancelados (igual ao campanha_resumo). A contagem de negócios continua a Q1.
+-- data_inicio no período, sem cancelados (igual ao campanha_resumo). Negócios (desde 24/11) = vendas da Q1 +
+-- contratos_iniciados desta query.
 ------------------------------------------------------------------------------------------
 with params as (select date '2026-11-16' as ini, date '2026-11-22' as fim)
 select
@@ -84,6 +90,7 @@ select
 --      ⚠ o CRM tem 1 negócio de locação (6538, R$ 6.800, 09/11) que não é o mesmo valor do contrato
 -- S-1 (16–22/11): venda 1.610.000 (6416) + locação 9.000 (contrato 1829, 16/11, Moderação) = R$ 1.619.000
 --      ⚠ 0 negócio de locação no CRM nessa semana, mas 1 contrato iniciado
+-- Negócios pela regra de 24/11 (venda Q1 + contratos): S-2 = 1 (contrato 1825) · S-1 = 2 (6416 + contrato 1829)
 
 ------------------------------------------------------------------------------------------
 -- Q3 · Aquisição: leads que chegaram ao CRM  (régua: ENTRADA)

@@ -34,7 +34,7 @@
 | Serviço | Para quê | Auth | Riscos conhecidos |
 |---|---|---|---|
 | Imoview | Atendimentos, atividades, colaboradores (via n8n); sincronizar a proposta (via função) | `IMOVIEW_API_KEY` | Senha/chave em texto aberto em fluxos do n8n |
-| Imoview (contratos e cobranças) — RF26 | Adm locação: `ContratoAluguel/RetornarContratos` e `Movimento/RetornarMovimentos` (em aberto e pagas), via n8n `carteira_locacao_diaria` e Edge Function `carteira-locacao`; só leitura | `chave` (credencial no n8n; secret `IMOVIEW_API_KEY` na função) | Máx. 50 por página; filtro de vencimento solto; a API devolve CPF/CNPJ (mascarados na carga). **A secret `IMOVIEW_API_KEY` não está definida (07/10)**: a esteira-locacao também depende dela |
+| Imoview (contratos e cobranças) — RF26 | Adm locação: `ContratoAluguel/RetornarContratos` e `Movimento/RetornarMovimentos` (em aberto e pagas), via n8n `carteira_locacao_diaria` e Edge Function `carteira-locacao`; só leitura | `chave` + login de integração (usuário 111; sessão compartilhada `imoview_sessao`, Schema §2.24). Na função: secrets `IMOVIEW_CHAVE`, `IMOVIEW_EMAIL`, `IMOVIEW_SENHA` (27/11, Fase 30; antes `IMOVIEW_API_KEY`) | Máx. 50 por página; filtro de vencimento solto; a API devolve CPF/CNPJ (mascarados na carga). **A secret `IMOVIEW_API_KEY` não está definida (07/10)**: a esteira-locacao também depende dela |
 | Imoview (estoque de imóveis) — proposta RF27 | Estoque: `Imovel/RetornarImoveisDisponiveis` com `naoconsiderarmeusite` (cadastro inteiro) e sem ele (publicados no site), via Edge Function `estoque-imoveis`; só leitura | secret `IMOVIEW_API_KEY` | 20 por página (~560 páginas): a função lê uma finalidade por chamada para caber no tempo da Edge Function; valor pode ser "Sob consulta" |
 | Meta Ads / Google Ads | Investimento e resultado diários (via n8n) | tokens no n8n | O fluxo `meta_ads` reinseria 14 dias (corrigido com trigger em 23/09) |
 | GTM + n8n `wpp_gtm` | Cliques no WhatsApp do site, com UTMs e gclid/fbclid | webhook público | Webhook sem chave; recebia chamadas vazias em massa (bloqueadas por trigger) |
@@ -74,7 +74,7 @@
 ## 6. Ambientes e deploy
 - Só existe produção. Para rodar local: `npm run dev`, com `.env` contendo `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_WEATHER_API_KEY`, `VITE_SPOTIFY_CLIENT_ID` e `VITE_SPOTIFY_PLAYLIST_ID`.
 - As mesmas variáveis `VITE_*` precisam estar cadastradas na Vercel. Sem elas, a tela fica branca.
-- Secrets das Edge Functions: `APP_URL`, `AGENDADOR_CHAVE` (29/10, = Vault `carteira_agendador_chave`), `BREVO_API_KEY`, `IMOVIEW_API_KEY`, `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` (além das padrão do Supabase). Editar Secrets no painel republica a função, por isso os números de versão "pulam".
+- Secrets das Edge Functions: `APP_URL`, `AGENDADOR_CHAVE` (29/10, = Vault `carteira_agendador_chave`), `BREVO_API_KEY`, `IMOVIEW_API_KEY`, `IMOVIEW_CHAVE` / `IMOVIEW_EMAIL` / `IMOVIEW_SENHA` (27/11, só a `carteira-locacao`; a cadastrar), `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` (além das padrão do Supabase). Editar Secrets no painel republica a função, por isso os números de versão "pulam".
 - **Ordem de deploy** quando o front depende de algo novo no banco: migration → Edge Function → push do front.
 - Migrations e funções são aplicadas pelo conector MCP do Supabase (o CLI local não está logado). O push é feito pelo Eduardo, no VS Code.
 
