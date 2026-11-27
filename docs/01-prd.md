@@ -1268,6 +1268,58 @@ O motor do blog mora no projeto `newsletters-imovit` (`docs/blog-pautas.md`): o 
 8. Ponte das impressões orgânicas. **Decidido (23/11):** entram 4 fontes: Instagram e Facebook (API do Meta), TikTok (API de Business), Google Search Console e Perfil da empresa no Google (Maps). Uso: base de informação e resultado do time de mídias (alcance, interações, cliques no perfil/site). **Onde aparece:** capítulo "Orgânico" da Aquisição, sempre com os leads orgânicos de cada rede ao lado (alcance sem lead é contexto, não resultado). A Saúde Imovit mostra só leads orgânicos. **Ordem:** depois de consertar as capturas (`meta_ads`, CRM) e a conciliação GTM (pendência 6), para não comparar alcance com leads "orgânicos" que são pagos. **Métricas e desenho (23/11):** por rede, por dia: alcance, visualizações, interações, seguidores novos, visitas ao perfil e cliques no site (Search Console: cliques, impressões, CTR, posição; Perfil do Google: visualizações, ligações, rotas, cliques no site); por post: tipo, data, alcance, visualizações, interações e salvamentos. Proposta no Schema §2.23. ⚠ Facebook orgânico e Perfil do Google não têm mídia no Imoview: cadastrar para ter os leads ao lado do alcance.
 9. Decisões do micro ciclo (tabela nova; por último).
 
+### 5.24 Alerta ao corretor quando o lead do Severino entra (pedido do Eduardo, 27/11; revisto no mesmo dia: só WhatsApp) — **PROPOSTA, aguardando aprovação** (plano Fase 32, Schema §2.26, Fluxo "Alerta do lead do Severino")
+
+**Problema.** O Severino responde o lead em 8 s, mas ninguém avisa o corretor. Dos 30 atendimentos rastreáveis, 6 ficaram sem 1ª resposta, e dois deles estão assim há 1 mês. O `wpp_entrada v4` (`TQ1EWzw1e2lAfvjT`, ativo desde 26/11) cria o lead ou a atividade no Imoview e grava o código do atendimento em `leads_wpp_gtm.imoview_atendimento`, mas não notifica ninguém. Os fluxos de repique estão todos desligados. Resultado: lead pago esfria sem ninguém saber.
+
+**Quem recebe (por WhatsApp).**
+- **Corretor do atendimento** (o `corretorcodigo` do Imoview): alerta na hora e lembrete de 30 min.
+- **Gestão**: Daniel Aranovich (código 6) e Gabriel Rosa (código 24), aviso das 2 h úteis. O WhatsApp de cada um vem do `colaboradores_raw`, como o dos corretores; o fluxo guarda só os 2 códigos (`GESTAO_CODIGOS = [6, 24]`).
+
+**Decisões do Eduardo (27/11).**
+- D1 Canal: **só WhatsApp**. Sem e-mail: o Imoview já manda e-mail e notificação no app ao corretor quando o atendimento entra; o que falta é o toque no celular. O alerta da hora, o lembrete de 30 min e o aviso de 2 h vão todos por WhatsApp. **Como o n8n envia ainda está aberto** (Fase 32b: opção A, número do Severino pelo prestador; opção B, número próprio de alertas com a WhatsApp Cloud API da Meta).
+- D2 O alerta sai **na hora, inclusive fora do horário**. Agir é responsabilidade do corretor.
+- D3 Lembrete ao corretor com **30 min** e aviso à gestão com **2 h** sem 1ª resposta, contando **só em horário comercial: seg a sáb, 9h–18h** (America/Sao_Paulo).
+- D4 A 1ª resposta é verificada **no Imoview, direto** (não na `crm_atendimento_jornada`, que só é lida às 6h).
+- D5 O ramo do Repique 3.0 fica **desenhado no fluxo, mas desligado**. Não aplicar.
+- D6 **Feriado conta como horário útil.** A régua é só seg–sáb 9h–18h, sem calendário de feriados.
+- D7 **O lead que voltou também entra no vigia** (30 min / 2 h), contando a partir da nova entrada.
+- D8 Ligação corretor ↔ pessoa: **3 colunas novas em `colaboradores_raw`** (Schema §2.26 A). Sem tabela nova.
+
+**Requisitos (RF36).**
+- RF36.1 Quando o `wpp_entrada v4` termina com um atendimento no Imoview, **nos 2 caminhos** (lead novo e lead que já tinha atendimento, ramo da atividade), o corretor do atendimento recebe uma mensagem de WhatsApp com: nome do lead, telefone, trecho da mensagem que ele mandou, finalidade, código do atendimento, se é lead novo ou retorno, e "responda pelo Imoview; a gestão é avisada com 2 h úteis sem resposta". Texto curto, porque fora da janela de 24 h só sai como modelo (template) aprovado (ver Fase 32b).
+- RF36.2 O alerta não pode atrasar nem derrubar a entrada do lead. Se o WhatsApp falhar, o lead já está no Imoview; a falha fica gravada na linha do alerta e vai para o Error workflow "Alerta n8n · erro" (Fase 31 S1).
+- RF36.3 Sem corretor no atendimento (o Imoview ainda não distribuiu) ou sem WhatsApp cadastrado para o código: o alerta vai para a gestão com o motivo ("atendimento X sem corretor" / "corretor 59 sem WhatsApp no cadastro"). Nunca some em silêncio.
+- RF36.4 **Vigia da 1ª resposta**: para cada atendimento do Severino (novo ou retorno) ainda sem resposta, consulta o Imoview e:
+  - com **30 min úteis** sem resposta → 1 lembrete ao corretor por WhatsApp (uma vez só por entrada);
+  - com **2 h úteis** sem resposta → 1 aviso à gestão por WhatsApp (uma vez só por entrada), com corretor, lead, entrada e quanto tempo passou.
+  - Respondeu → para de vigiar. Mudou de corretor → os prazos continuam contando da entrada, e o lembrete vai para o corretor atual.
+- RF36.5 Horário útil = seg a sáb, 9h–18h, fuso America/Sao_Paulo; **feriado conta como dia normal** (D6). Lead que entra às 17h50 de sábado tem os 30 min vencendo na segunda às 9h20. Fora do horário, o vigia não manda lembrete nem aviso (o alerta da RF36.1 sai mesmo assim).
+- RF36.6 **Lead que voltou** (D7): cada nova entrada no Severino recomeça a contagem (30 min / 2 h a partir dela) e vale como resposta só uma interação manual do corretor **depois** dessa entrada. Se o lead escrever de novo antes de a entrada anterior ser respondida, a contagem **não** recomeça (o atraso continua o mesmo) e não sai 2º lembrete.
+- RF36.7 O vigia para de olhar uma entrada depois de **5 dias úteis** (ou quando o atendimento é encerrado no Imoview). O que passou disso já foi avisado à gestão.
+- RF36.8 Cada envio fica registrado (quem, quando, qual etapa, deu certo ou não) para não repetir e para medir o critério de sucesso.
+- RF36.9 Ramo do repique (Repique 3.0): desenhado no vigia, **desligado** por uma chave de configuração. Não transfere ninguém.
+
+**Fora de escopo.**
+- **E-mail** (D1): o Imoview já cobre.
+- Repique/transferência automática de lead (D5). Também depende de um substituto do `App_Transferir` (Fase 30, "Depois").
+- Calendário de feriados (D6).
+- Alerta para leads que não vêm do Severino (site, portais, OLX).
+- Tela no Hub para ver os alertas. Por enquanto a conferência é por SELECT; um cartão na Saúde/Comercial pode vir depois.
+- Responder o lead pelo WhatsApp do alerta. A mensagem só avisa; a resposta é pelo Imoview.
+- Mudar o atendimento do Severino (pedir e-mail, mandar `anotacoes`): está em outras pendências.
+
+**Critérios de sucesso.**
+- **0 lead do Severino sem 1ª resposta por mais de 2 h úteis sem a gestão saber** (toda entrada nessa situação tem o aviso registrado).
+- 100 % das entradas do `wpp_entrada v4` com WhatsApp enviado ao corretor (ou à gestão, no caso RF36.3) em até 1 min.
+- Depois de 2 semanas: menos atendimentos do Severino sem 1ª resposta do que os 6 de 30 de hoje (meta a definir com o Pareto).
+- Zero alerta duplicado (mesma entrada, mesma etapa).
+
+**Perguntas em aberto.**
+- P1 **Canal de envio (bloqueio):** A (número do Severino, pelo prestador) ou B (número próprio de alertas na Cloud API da Meta)? O Eduardo pergunta ao prestador em 27/11. Prós, contras e estimativa na Fase 32b.
+- P2 A atividade que o `wpp_entrada` cria pelo usuário 111 (Marketing Integração) aparece em `interacoes` e não pode contar como resposta. Confirmar no 1º teste.
+- P3 O número do WhatsApp das 23 linhas ativas do `colaboradores_raw` (`telefone_whats`) é mesmo o WhatsApp de cada um? Conferir na 32a.
+
 ## 6. Regras de negócio
 - Só e-mails `@imovit.com.br` ganham perfil (`handle_new_user`). O locatário não tem perfil: acessa pelo e-mail da proposta.
 - Ninguém muda o próprio nível ou e-mail (trigger `proteger_campos_perfil`). Só a Gestão decide pedidos de nível.

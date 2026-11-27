@@ -245,6 +245,38 @@ Outros níveis não veem o item, e a rota redireciona para a Home.
 - CPF ou CEP inválido: erro no campo, sem perder o resto.
 - Erro de envio: mantém o preenchido e mostra "Tentar de novo".
 
+### Alerta do lead do Severino (PRD §5.24, Fase 32) — proposta, 27/11 (revista: só WhatsApp)
+Fora do Hub (n8n + WhatsApp; canal A = prestador do Severino ou B = número próprio de alertas na Cloud API, a decidir). Quem recebe é o corretor do atendimento e, no atraso, a gestão (Daniel e Gabriel Rosa). E-mail não: o Imoview já manda.
+
+```
+Lead fala com o Severino ──▶ wpp_entrada v4 ──▶ Imoview (lead novo ou atividade no atendimento)
+                                   │
+                                   ├─ corretor tem WhatsApp? ── sim ──▶ WhatsApp AGORA ao corretor (24 h, 7 dias)
+                                   │                            └ não / sem corretor ──▶ WhatsApp à gestão com o motivo
+                                   └─ alerta_lead_severino: já há entrada aberta deste atendimento?
+                                         ├─ não ──▶ linha nova (novo ou retorno), prazos contam de agora
+                                         └─ sim ──▶ só atualiza; prazos não recomeçam
+
+Vigia (a cada 5 min) ──▶ alerta_lead_a_vigiar (conta só seg–sáb 9h–18h; feriado conta)
+   ├─ venceu algo? não ──▶ nada
+   └─ sim ──▶ Imoview: RetornarAtendimentos (datahora1Resposta, interações)
+         ├─ respondeu / encerrado ──▶ fecha a linha, sem mensagem
+         ├─ 30 min úteis, sem resposta ──▶ WhatsApp de lembrete ao corretor (1× por entrada)
+         ├─ 2 h úteis, sem resposta ──▶ WhatsApp à gestão: Daniel + Gabriel Rosa (1× por entrada)
+         ├─ 5 dias úteis ──▶ fecha a linha
+         └─ [repique] DESLIGADO (desenhado, não transfere)
+```
+
+| Mensagem (template) | Para quem | Quando | Conteúdo |
+|---|---|---|---|
+| `imovit_alerta_lead` (lead novo / voltou) | corretor do atendimento | na hora, qualquer horário | nome, telefone, trecho da mensagem, finalidade, código do atendimento, "a gestão é avisada com 2 h úteis" |
+| o mesmo, para a gestão | gestão | na hora, se não há corretor ou WhatsApp | o mesmo + o motivo |
+| `imovit_lembrete_30` | corretor atual | 30 min úteis sem resposta | lead, atendimento, tempo útil passado |
+| `imovit_gestao_2h` | gestão | 2 h úteis sem resposta | lead, atendimento, corretor, entrada, tempo útil passado |
+
+Lead que voltou: conta como resposta só a interação manual do corretor depois da nova entrada.
+Estados: WhatsApp falhou → o lead segue no Imoview, a falha fica na linha (`*_erro`) e o "Alerta n8n · erro" avisa; Imoview fora no vigia → tenta na rodada seguinte (5 min), sem mensagem falsa; corretor responde ao número do alerta → ninguém lê (o texto avisa; na opção A cairia no Severino, ver Fase 32).
+
 ## 4. Estados de tela
 | Tela | Vazio | Carregando | Erro | Sem permissão |
 |---|---|---|---|---|

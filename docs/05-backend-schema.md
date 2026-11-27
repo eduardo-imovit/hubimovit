@@ -766,6 +766,79 @@ Por quê: a jornada do CRM ficou sem rodar de 18 a 22/11 e ninguém percebeu; as
 - **Teste (27/11, ~10h20 SP, em transação desfeita):** 9 linhas; atrasadas = `carteira_receita` (último 24/11 06:45) e `estoque` (último 24/11 01:39), as duas reais; as outras OK; `organico_instagram` desligada (último 26/11). Com `p_desligar = '{}'` continuam 2 atrasadas. EXECUTE: anon ✗, authenticated ✗, service_role ✓. Depois do ROLLBACK a função não existe.
 - **Sobreposição com §2.18:** `saude_leituras` + `alerta-leituras` (7h15, Brevo, só eduardo@) cobrem 6 destas fontes desde 29/10 e **não avisaram** a falha de 18–22/11 (causa não investigada). Quando o vigia estiver validado, decidir se o `pg_cron` "alerta-leituras" sai.
 
+### 2.26 Alerta do lead do Severino (Fase 32, PRD §5.24) — **PROPOSTA (27/11, revista: só WhatsApp), nada aplicado, sem migration**
+
+Por quê: o `wpp_entrada v4` cria o atendimento no Imoview e não avisa ninguém (6 de 30 atendimentos rastreáveis sem 1ª resposta). Para avisar por WhatsApp, o fluxo precisa de 2 coisas que hoje não tem: **(1)** saber o WhatsApp do corretor (e da gestão) a partir do código dele no Imoview e **(2)** lembrar o que já foi avisado, para o vigia de 30 min / 2 h não repetir.
+
+#### A) Ligação código do corretor no Imoview → pessoa (decidido: 3 colunas em `colaboradores_raw`)
+
+**Achado (27/11, só SELECT):** essa ligação **já existe** em `colaboradores_raw` (§2.1): `id_corretor_crm` (= `corretorcodigo` do Imoview, PK) → `telefone_whats`, `email_oficial`, `ativo`. É o que o Repique 3.0 lia (nó "Ler e-mails dos corretores"). Cobertura:
+- 23 ativos, **23 com telefone** (e 23 com e-mail); última atualização 20/10 (carga manual + onboarding).
+- Os **14 corretores com atendimento nos últimos 60 dias** estão todos lá, ativos, com telefone.
+- 17 dos 23 ativos casam com um `perfis` pelo e-mail; dos 14 que atendem, só o código 13 não tem perfil no Hub (não impede o alerta: o número vem do `colaboradores_raw`).
+- Daniel Aranovich (código 6) e Gabriel Rosa (código 24), a gestão do aviso de 2 h, também estão lá, com telefone.
+
+**Decisão (Eduardo, 27/11): não criar tabela nova.** Uma segunda lista de corretores seria outra fonte para divergir (lição da Fase 24, "fonte única"). Acrescentar 3 colunas em `colaboradores_raw`:
+
+| Campo novo | Tipo | Nota |
+|---|---|---|
+| `perfil_id` | uuid null → `perfis(id)` on delete set null | liga à pessoa no Hub quando ela tem login; preenchido pelo e-mail (`lower(email_oficial) = lower(perfis.email)`) na carga |
+| `recebe_alerta_lead` | boolean not null default true | desliga o alerta de alguém sem tirar do cadastro (férias, recepção, direção) |
+| `whatsapp_alerta` | text null check (`~ '^55[0-9]{10,11}$'`) | só se o número do alerta for diferente de `telefone_whats`; formato E.164 sem `+` (`5519…`), que é o que as duas opções de envio pedem. O fluxo usa `coalesce(whatsapp_alerta, telefone_whats normalizado)` |
+
+- **Carga:** a lista que o Eduardo levanta vira **conferência** das 23 linhas (o `telefone_whats` é o WhatsApp? quem sai do alerta?), não carga do zero. Depois, um `update` para `perfil_id` pelo e-mail.
+- **Quem lê:** n8n (`service_role`) no `wpp_entrada v4` e no vigia. No Hub a leitura continua como hoje (qualquer `authenticated`, §3).
+- **Quem escreve:** gestão (SQL Editor hoje; a Central de Cadastros/onboarding no futuro). O n8n só lê.
+- **RLS:** sem mudança na migration desta fase. ⚠ Continua valendo o aviso do §3: `colaboradores_raw` (com telefone) é legível por qualquer usuário logado, inclusive "Sem nível". Se a Gestão quiser fechar, é uma policy à parte (`is_team()`), fora desta fase.
+- *Descartado (27/11):* tabela nova `corretor_contato`. Duplicaria o que o `colaboradores_raw` já tem.
+
+#### B) O que o vigia lê e grava: tabela `alerta_lead_severino` (nova)
+
+Uma linha por **entrada do Severino avisada** (lead novo ou retorno). Criada pelo `wpp_entrada v4` (32b), atualizada pelo vigia (32c). Uma linha por entrada, e não por atendimento, porque o lead que volta entra de novo no vigia (D7) e cada entrada tem os seus envios.
+
+| Campo | Tipo | Nota |
+|---|---|---|
+| `id` | bigint identity PK | |
+| `atendimento_id` | bigint not null | código do atendimento no Imoview (`leads_wpp_gtm.imoview_atendimento`) |
+| `lead_id` | bigint null → `leads_wpp_gtm(lead_id)` | a entrada do Severino que gerou a linha |
+| `codigo_cliente` | bigint not null | para o vigia consultar `RetornarAtendimentos?codigoCliente=` (o endpoint filtra por cliente, não por atendimento) |
+| `finalidade` | smallint not null | 1 = venda, 2 = locação (o endpoint exige) |
+| `tipo` | text not null check (`novo`, `retorno`) | lead novo ou atendimento que já existia (ramo da atividade) |
+| `entrada_em` | timestamptz not null | quando o `wpp_entrada` concluiu; os prazos úteis contam daqui |
+| `corretor_codigo` | bigint null | corretor do atendimento no último olhar (null = Imoview ainda não distribuiu) |
+| `alerta_em` / `alerta_para` / `alerta_erro` | timestamptz / text / text | alerta da hora (RF36.1); `alerta_para` = código do corretor ou `gestao` (RF36.3); nunca o número em si |
+| `lembrete_30_em` / `lembrete_30_erro` | timestamptz / text | lembrete de 30 min úteis |
+| `gestao_2h_em` / `gestao_2h_erro` | timestamptz / text | aviso de 2 h úteis à gestão |
+| `respondido_em` | timestamptz null | resposta vista no Imoview |
+| `resposta_fonte` | text null check (`datahora1Resposta`, `interacao`) | de onde veio a resposta (ver C) |
+| `fim_em` / `fim_motivo` | timestamptz / text check (`respondido`, `encerrado_imoview`, `prazo_5_dias_uteis`) | o vigia para de olhar |
+| `verificado_em`, `verificacoes` | timestamptz / int default 0 | último olhar no Imoview e quantos |
+| `criado_em`, `atualizado_em` | timestamptz not null default now() | |
+
+- **Índice único parcial:** `unique (atendimento_id) where fim_em is null`. No máximo 1 entrada aberta por atendimento.
+- **Lead que volta (D7):** o `wpp_entrada` olha se há linha aberta para o atendimento.
+  - **Não há** (a anterior foi respondida, encerrada ou venceu os 5 dias) → insere linha nova, `tipo = 'retorno'`, `entrada_em` = agora: o vigia conta 30 min / 2 h do zero.
+  - **Há** (a anterior ainda sem resposta) → só atualiza `lead_id`; não reinicia prazo nem manda 2º lembrete. O alerta da hora sai mesmo assim ("o lead escreveu de novo").
+- **RLS:** ligada, 0 policies, `revoke all` de anon/authenticated (padrão do §2.24). Só o n8n (`service_role`) lê e escreve. Uma leitura no Hub (cartão "sem resposta") fica para depois, por função `security definer` com `is_gestao()`.
+- Cresce ~10 linhas por dia. Sem limpeza automática. Nenhum telefone gravado nesta tabela.
+
+**Funções propostas** (todas `security definer`, `search_path = public`, só `service_role`):
+- `minutos_uteis(p_de timestamptz, p_ate timestamptz)` → int. Conta só seg a sáb, 9h–18h em America/Sao_Paulo. **Sem feriados** (D6: feriado conta como dia normal). Ex.: sáb 17h50 → seg 9h20 = 30. `stable` (o fuso impede `immutable`).
+- `alerta_lead_a_vigiar()` → linhas abertas (`fim_em` nulo) com `minutos_uteis(entrada_em, now())` e o que venceu: `deve_lembrete` (≥ 30 e `lembrete_30_em` nulo), `deve_gestao` (≥ 120 e `gestao_2h_em` nulo), `deve_fechar` (≥ 5 dias úteis = 2.700 min). O n8n só consulta o Imoview para as linhas com algo vencido: poucas chamadas por rodada.
+
+#### C) Como saber se o corretor respondeu (Imoview, direto)
+
+Endpoint: `GET Atendimento/RetornarAtendimentos` (Integração · Atendimentos, **só chave**, já usado pelo `wpp_entrada v4` no nó "Retornar Atendimento") com `codigoCliente`, `finalidade` e `situacao`. Pelo sub-fluxo "Imoview: requisição" (`eeBeBvPVCwnm3XWU`). Campos do item da `lista` (o mesmo `codigo` do atendimento):
+- `datahora1Resposta` — vazio = sem 1ª resposta. É o campo da régua B2 da Saúde (§2.22, `saude_respostas`) e o que o Repique 3.0 usava.
+- `interacoes[]` (`usuario`, `datahora`, descrição) — interação manual = usuário que não é robô. O Repique 3.0 ignorava `ROBÔ` e `ROBERTA BARRETO`; aqui entra também **`MARKETING INTEGRAÇÃO`** (usuário 111), porque a atividade que o `wpp_entrada` cria sai com ele.
+- `corretorcodigo` (dono atual), `situacao` (encerrado = fim), `datahoraultimaalteracao`.
+
+Regra: **novo** = respondeu se `datahora1Resposta` preenchido **ou** há interação manual depois de `entrada_em`. **Retorno** = o `datahora1Resposta` já vem preenchido da 1ª vez, então só conta interação manual com `datahora` > `entrada_em`.
+⚠ A conferir no 1º teste: se a atividade criada pelo usuário 111 preenche o `datahora1Resposta` (o que daria falso "respondido"), e se `interacoes` vem nos atendimentos abertos pela chave de integração (o Repique lia com o login App_, que caiu).
+
+#### D) Configuração no n8n (não no banco)
+`GESTAO_CODIGOS = [6, 24]` (Daniel Aranovich, Gabriel Rosa; o número sai do `colaboradores_raw`), `USUARIOS_IGNORADOS`, `REPIQUE_LIGADO = false` e a credencial do canal de WhatsApp escolhido na Fase 32b (opção A: a do prestador; opção B: token de usuário do sistema da Meta + `phone_number_id`), sempre em credencial do n8n, nunca em texto no nó. Nomes dos modelos de mensagem: `TEMPLATE_ALERTA`, `TEMPLATE_LEMBRETE`, `TEMPLATE_GESTAO`.
+
 ## 3. Permissões (RLS) por papel
 Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_conteudo()` = gestao|marketing, `pode_ver_dash()` = gestao|marketing, `pode_ver_proposta(id)` = adm|gestao, ou corretor que criou, ou e-mail do JWT = e-mail da proposta.
 
@@ -785,6 +858,8 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | repique_control, repique_ponteiro | RLS ligado, 0 políticas: só `service_role` (conferido em 26/10) | — |
 | repique_tentativas | RLS ligado, 0 políticas, sem grant para anon/authenticated: só `service_role` (n8n) | — |
 | imoview_sessao, wpp_entrada_reserva (§2.24, aplicada 26/11) | RLS ligado, 0 políticas, sem grant para anon/authenticated: só `service_role` (n8n) | — |
+| alerta_lead_severino (§2.26, **proposta**) | RLS ligado, 0 políticas, sem grant para anon/authenticated: só `service_role` (n8n) | — |
+
 | vw_* (21 views, auditoria de 22/10) | só `authenticated`, com `security_invoker` (seguem a RLS das tabelas); anon sem acesso | — |
 
 ⚠ `leads_wpp_gtm` (telefone e nome de lead) e `atividades` são legíveis por qualquer usuário logado, inclusive "Sem nível". Rever se isso é intencional.
@@ -807,6 +882,8 @@ Funções: `papel_atual()`, `is_gestao()`, `is_adm_ou_gestao()`, `pode_editar_co
 | `handle_new_user` | trigger em auth.users | cria perfil `user` para `@imovit.com.br` | Auth |
 | `saude_leituras` | função definer (só service_role) | confere as 6 leituras automáticas (§2.18) | Edge `alerta-leituras` |
 | `vigia_fontes(p_desligar)` | função definer (só service_role) — **aplicada 27/11** (`20261127134546`) | uma linha por fonte automática com `ultimo_dado`, `esperado_ate`, `atrasada` (§2.25) | n8n "Vigia de dados · 7h30" |
+| `minutos_uteis`, `alerta_lead_a_vigiar` (§2.26, **proposta**) | função definer (só service_role) | minutos em horário útil (seg–sáb 9h–18h SP, feriado conta) e entradas do Severino com lembrete/aviso vencido | n8n "Vigia 1ª resposta · Severino" (Fase 32c) |
+
 | `meus_codigos_crm` | função definer | leads cujo dono **atual** é o corretor logado (§2.17) | RLS da jornada, `atividades`, `leads_wpp_gtm` |
 | Edge `carteira-locacao` | Edge Function | lê contratos, cobranças e **pagamentos** do Imoview e grava pela RPC `carregar_carteira_locacao` (§2.10). Desde 27/11 (código no repo, deploy pendente): sessão pelas RPCs `imoview_sessao_*` (§2.24), nunca login próprio | painel Adm locação ("Atualizar") e `pg_cron` 6h45 |
 | `boletim_diretoria` | função definer (só service_role) | números do e-mail diário (§2.19) | Edge "boletim-diretoria" |
